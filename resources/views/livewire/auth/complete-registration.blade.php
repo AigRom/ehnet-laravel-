@@ -138,25 +138,13 @@
             />
             @error('phone') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
 
-            <flux:input
-                name="region"
-                :label="__('County / Region')"
-                :value="old('region')"
-                type="text"
-                required
-                :placeholder="__('County / Region')"
-            />
-            @error('region') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+           
 
-            <flux:input
-                name="city"
-                :label="__('City')"
-                :value="old('city')"
-                type="text"
-                required
-                :placeholder="__('City')"
-            />
-            @error('city') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+            {{-- Location (Livewire autocomplete) --}}
+                <div class="relative overflow-visible">
+                    <livewire:location-autocomplete :initial-id="old('location_id')" :wire:key="'loc-'.(old('location_id') ?? 'new')" />
+                </div>
+            
 
             <!-- Password -->
             <flux:input

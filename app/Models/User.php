@@ -39,8 +39,8 @@ class User extends Authenticatable
         // kontakt ja asukoht
         'email',
         'phone',
-        'region',
-        'city',
+        'location_id',
+        
 
         // ettevõte
         'company_name',
@@ -90,6 +90,19 @@ class User extends Authenticatable
         ];
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    Location/Location
+    |--------------------------------------------------------------------------
+    */
+
+    public function location()
+    {
+        return $this->belongsTo(\App\Models\Location::class);
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | Abimeetodid
@@ -138,4 +151,22 @@ class User extends Authenticatable
     {
         return (bool) $this->is_active;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kuulutused
+    |--------------------------------------------------------------------------
+    |
+    | Kasutaja poolt loodud kuulutused (müügi- ja oksjonikuulutused).
+    | Seos: User 1 → N Listing
+    |
+    */
+    public function listings()
+    {
+        return $this->hasMany(\App\Models\Listing::class);
+    }
+
+
+
+
 }

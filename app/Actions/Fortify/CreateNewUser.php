@@ -20,7 +20,6 @@ class CreateNewUser implements CreatesNewUsers
     public function create(array $input): User
     {
         Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',
@@ -28,34 +27,42 @@ class CreateNewUser implements CreatesNewUsers
                 'max:255',
                 Rule::unique(User::class),
             ],
+
             'password' => $this->passwordRules(),
             'terms' => ['accepted', 'required'],
 
-            'type' => ['nullable', Rule::in(['customer', 'business'])],
+            'type' => ['required', Rule::in(['customer', 'business'])],
 
-            // EHNET väljad
-            'first_name' => ['nullable', 'string', 'max:255'],
-            'last_name'  => ['nullable', 'string', 'max:255'],
+            // Customer (eraisik)
+            'first_name' => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
+            'last_name'  => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
             'date_of_birth' => ['nullable', 'date'],
 
-            'phone'  => ['nullable', 'string', 'max:50'],
-            'region' => ['nullable', 'string', 'max:255'],
-            'city'   => ['nullable', 'string', 'max:255'],
+            // Business (ettevõte)
+            'company_name'       => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'company_reg_no'     => ['required_if:type,business', 'nullable', 'string', 'max:50'],
+            'contact_first_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'contact_last_name'  => ['required_if:type,business', 'nullable', 'string', 'max:255'],
 
-            'company_name'       => ['nullable', 'string', 'max:255'],
-            'company_reg_no'     => ['nullable', 'string', 'max:50'],
-            'contact_first_name' => ['nullable', 'string', 'max:255'],
-            'contact_last_name'  => ['nullable', 'string', 'max:255'],
+            // Common
+            'phone'       => ['required', 'string', 'max:50'],
+            'location_id' => ['required', 'integer', 'exists:locations,id'],
         ])->validate();
 
         // Roll
-        $role = User::ROLE_CUSTOMER;
-        if (($input['type'] ?? null) === 'business') {
-            $role = User::ROLE_BUSINESS;
-        }
+        $role = ($input['type'] === 'business')
+            ? User::ROLE_BUSINESS
+            : User::ROLE_CUSTOMER;
+
+        // users.name kasutame UI jaoks (sidebar, dropdown jne)
+        $displayName = ($input['type'] === 'business')
+            ? ($input['company_name'] ?? '')
+            : ($input['first_name'] ?? '');
 
         return User::create([
-            'name'              => $input['name'],
+            // Laravel starter kit eeldab, et "name" on olemas -> täidame automaatselt
+            'name'              => $displayName,
+
             'email'             => $input['email'],
             'password'          => Hash::make($input['password']),
 
@@ -65,8 +72,7 @@ class CreateNewUser implements CreatesNewUsers
             'date_of_birth'     => $input['date_of_birth'] ?? null,
 
             'phone'             => $input['phone'] ?? null,
-            'region'            => $input['region'] ?? null,
-            'city'              => $input['city'] ?? null,
+            'location_id'       => (int) $input['location_id'],
 
             'company_name'      => $input['company_name'] ?? null,
             'company_reg_no'    => $input['company_reg_no'] ?? null,

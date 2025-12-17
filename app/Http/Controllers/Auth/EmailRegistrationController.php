@@ -83,85 +83,57 @@ class EmailRegistrationController extends Controller
                 ->with('status', 'This registration link is invalid or expired.');
         }
 
-        // 1) Üldine validatsioon (kõigile) – ainult ühised asjad on required
+        // Üks validatsiooniplokk on siin kõige puhtam (required_if reeglitega)
         $data = $request->validate([
             'type' => ['required', Rule::in(['customer', 'business'])],
 
-            'phone'  => ['required', 'string', 'max:50'],
-            'region' => ['required', 'string', 'max:255'],
-            'city'   => ['required', 'string', 'max:255'],
-
+            // Customer (eraisik)
+            'first_name' => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
+            'last_name'  => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
             'date_of_birth' => ['nullable', 'date'],
 
-            // eraisik (nõuame all)
-            'first_name' => ['nullable', 'string', 'max:255'],
-            'last_name'  => ['nullable', 'string', 'max:255'],
+            // Business (ettevõte)
+            'contact_first_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'contact_last_name'  => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'company_name'       => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'company_reg_no'     => ['required_if:type,business', 'nullable', 'string', 'max:50'],
 
-            // ettevõte (nõuame all)
-            'contact_first_name' => ['nullable', 'string', 'max:255'],
-            'contact_last_name'  => ['nullable', 'string', 'max:255'],
-            'company_name'       => ['nullable', 'string', 'max:255'],
-            'company_reg_no'     => ['nullable', 'string', 'max:50'],
+            // Common (kõigile)
+            'phone'       => ['required', 'string', 'max:50'],
+            'location_id' => ['required', 'exists:locations,id'],
 
             'password' => ['required', 'confirmed'],
         ]);
 
-        // 2) Rollipõhine kohustuslikkus
-        if ($data['type'] === 'customer') {
-            $request->validate([
-                'first_name' => ['required', 'string', 'max:255'],
-                'last_name'  => ['required', 'string', 'max:255'],
-            ]);
-        }
-
-        if ($data['type'] === 'business') {
-            $request->validate([
-                'company_name'       => ['required', 'string', 'max:255'],
-                'company_reg_no'     => ['required', 'string', 'max:50'],
-                'contact_first_name' => ['required', 'string', 'max:255'],
-                'contact_last_name'  => ['required', 'string', 'max:255'],
-            ]);
-        }
-
-        // 3) Arvutame EHNET "name" automaatselt:
-        // - eraisik: eesnimi
-        // - ettevõte: ettevõtte nimi
-        $displayName = $data['type'] === 'business'
-            ? $request->input('company_name')
-            : $request->input('first_name');
-
-        // 4) Sisend Fortify CreateNewUser actionile
+        // Sisend Fortify CreateNewUser actionile
         $input = [
             'type'  => $data['type'],
             'email' => $pending->email,
 
-            'name' => $displayName,
+            'first_name'    => $data['first_name'] ?? null,
+            'last_name'     => $data['last_name'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
 
-            'first_name'    => $request->input('first_name'),
-            'last_name'     => $request->input('last_name'),
-            'date_of_birth' => $request->input('date_of_birth'),
+            'phone'       => $data['phone'],
+            'location_id' => (int) $data['location_id'],
 
-            'phone'  => $data['phone'],
-            'region' => $data['region'],
-            'city'   => $data['city'],
-
-            'company_name'       => $request->input('company_name'),
-            'company_reg_no'     => $request->input('company_reg_no'),
-            'contact_first_name' => $request->input('contact_first_name'),
-            'contact_last_name'  => $request->input('contact_last_name'),
+            'company_name'       => $data['company_name'] ?? null,
+            'company_reg_no'     => $data['company_reg_no'] ?? null,
+            'contact_first_name' => $data['contact_first_name'] ?? null,
+            'contact_last_name'  => $data['contact_last_name'] ?? null,
 
             'password'              => $data['password'],
-            'password_confirmation' => $data['password'],
+            'password_confirmation' => $data['password'], // confirmed juba kontrollis
             'terms'                 => true, // 1. sammus aktsepteeritud
         ];
 
-        // 5) Loome kasutaja läbi CreateNewUser actioni
+        // Loome kasutaja läbi CreateNewUser actioni
         $user = $creator->create($input);
 
-        // 6) Kustutame pending kirje
+        // Pending kirje võib kustutada
         $pending->delete();
 
-        // 7) Logime sisse ja suuname dashboardile
+        // Logime kasutaja sisse ja suuname dashboardile
         auth()->login($user);
 
         return redirect()->route('dashboard');

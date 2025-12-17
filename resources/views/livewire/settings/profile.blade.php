@@ -2,108 +2,144 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string $name = '';
     public string $email = '';
 
-    /**
-     * Mount the component.
-     */
+    // ühised
+    public string $phone = '';
+    public ?int $location_id = null;
+
+    // eraisik
+    public string $first_name = '';
+    public string $last_name = '';
+    public ?string $date_of_birth = null; // Y-m-d
+
+    // ettevõte
+    public string $company_name = '';
+    public string $company_reg_no = '';
+    public string $contact_first_name = '';
+    public string $contact_last_name = '';
+
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $this->email  = $user->email ?? '';
+
+        $this->phone  = $user->phone ?? '';
+        $this->location_id = $user->location_id;
+
+        $this->first_name = $user->first_name ?? '';
+        $this->last_name  = $user->last_name ?? '';
+        $this->date_of_birth = $user->date_of_birth?->format('Y-m-d');
+
+        $this->company_name = $user->company_name ?? '';
+        $this->company_reg_no = $user->company_reg_no ?? '';
+        $this->contact_first_name = $user->contact_first_name ?? '';
+        $this->contact_last_name  = $user->contact_last_name ?? '';
     }
 
-    /**
-     * Update the profile information for the currently authenticated user.
-     */
     public function updateProfileInformation(): void
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-
             'email' => [
                 'required',
                 'string',
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($user->id)
+                Rule::unique(User::class)->ignore($user->id),
             ],
+
+            'phone'       => ['required', 'string', 'max:50'],
+            'location_id' => ['required', 'integer', 'exists:locations,id'],
+
+            'date_of_birth' => ['nullable', 'date'],
+
+            // eraisik
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'last_name'  => ['nullable', 'string', 'max:255'],
+
+            // ettevõte
+            'company_name'       => ['nullable', 'string', 'max:255'],
+            'company_reg_no'     => ['nullable', 'string', 'max:50'],
+            'contact_first_name' => ['nullable', 'string', 'max:255'],
+            'contact_last_name'  => ['nullable', 'string', 'max:255'],
         ]);
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+        if ($user->isCustomer()) {
+            $this->validate([
+                'first_name' => ['required', 'string', 'max:255'],
+                'last_name'  => ['required', 'string', 'max:255'],
+            ]);
         }
 
+        if ($user->isBusiness()) {
+            $this->validate([
+                'company_name'       => ['required', 'string', 'max:255'],
+                'company_reg_no'     => ['required', 'string', 'max:50'],
+                'contact_first_name' => ['required', 'string', 'max:255'],
+                'contact_last_name'  => ['required', 'string', 'max:255'],
+            ]);
+        }
+
+        // users.name = UI display name (customer => first_name, business => company_name)
+        $validated['name'] = $user->isBusiness()
+            ? ($validated['company_name'] ?? '')
+            : ($validated['first_name'] ?? '');
+
+        $user->fill($validated);
         $user->save();
 
         $this->dispatch('profile-updated', name: $user->name);
-    }
-
-    /**
-     * Send an email verification notification to the current user.
-     */
-    public function resendVerificationNotification(): void
-    {
-        $user = Auth::user();
-
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
-
-            return;
-        }
-
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
     }
 }; ?>
 
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your profile information')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            {{-- Email --}}
+            <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
 
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+            {{-- Phone --}}
+            <flux:input wire:model="phone" :label="__('Phone number')" type="tel" required autocomplete="tel" />
 
-                @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
-                        @endif
-                    </div>
-                @endif
+            {{-- Location (Livewire autocomplete) --}}
+            <div class="relative overflow-visible">
+                <livewire:location-autocomplete wire:model="location_id" />
+                @error('location_id')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
+            {{-- Customer fields --}}
+            @if(auth()->user()->isCustomer())
+                <flux:input wire:model="first_name" :label="__('First name')" type="text" required autocomplete="given-name" />
+                <flux:input wire:model="last_name" :label="__('Last name')" type="text" required autocomplete="family-name" />
+                <flux:input wire:model="date_of_birth" :label="__('Date of birth (optional)')" type="date" />
+            @endif
+
+            {{-- Business fields --}}
+            @if(auth()->user()->isBusiness())
+                <flux:input wire:model="contact_first_name" :label="__('Contact first name')" type="text" required />
+                <flux:input wire:model="contact_last_name" :label="__('Contact last name')" type="text" required />
+                <flux:input wire:model="company_name" :label="__('Company name')" type="text" required />
+                <flux:input wire:model="company_reg_no" :label="__('Company registration number')" type="text" required />
+            @endif
+
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
+                <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
+                    {{ __('Save') }}
+                </flux:button>
 
                 <x-action-message class="me-3" on="profile-updated">
                     {{ __('Saved.') }}
