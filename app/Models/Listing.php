@@ -3,6 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class Listing extends Model
 {
@@ -23,40 +27,52 @@ class Listing extends Model
     ];
 
     protected $casts = [
+        'user_id'      => 'integer',
+        'category_id'  => 'integer',
+        'location_id'  => 'integer',
+        'reviewed_by'  => 'integer',
         'price'        => 'decimal:2',
         'published_at' => 'datetime',
         'reviewed_at'  => 'datetime',
     ];
 
     // Seosed
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function location()
+    public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
     }
 
-    public function images()
+    public function images(): HasMany
     {
-        return $this->hasMany(ListingImage::class)->orderBy('sort_order');
+        return $this->hasMany(ListingImage::class)
+            ->orderBy('sort_order');
     }
 
-    public function auction()
+    public function auction(): HasOne
     {
         return $this->hasOne(Auction::class);
     }
 
-    // Kasulik “helper”: peapilt
+    // Helper: peapilt (esimene sort_order järgi)
     public function coverImage(): ?ListingImage
     {
-        return $this->images()->orderBy('sort_order')->first();
+        return $this->images()->first();
+    }
+
+    // Helper: peapildi URL (mugav Blade'is)
+    public function coverImageUrl(): ?string
+    {
+        $img = $this->coverImage();
+        return $img ? Storage::url($img->path) : null;
     }
 }

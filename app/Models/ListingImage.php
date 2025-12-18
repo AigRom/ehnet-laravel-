@@ -3,30 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
-class Auction extends Model
+class ListingImage extends Model
 {
+    protected $table = 'listing_images';
+
     protected $fillable = [
         'listing_id',
-        'start_price',
-        'min_increment',
-        'starts_at',
-        'ends_at',
-        'reserve_price',
-        'buy_now_price',
+        'path',
+        'sort_order',
     ];
 
     protected $casts = [
-        'start_price'    => 'decimal:2',
-        'min_increment'  => 'decimal:2',
-        'reserve_price'  => 'decimal:2',
-        'buy_now_price'  => 'decimal:2',
-        'starts_at'      => 'datetime',
-        'ends_at'        => 'datetime',
+        'listing_id' => 'integer',
+        'sort_order' => 'integer',
     ];
 
-    public function listing()
+    /**
+     * Kuulutus, millele pilt kuulub
+     */
+    public function listing(): BelongsTo
     {
         return $this->belongsTo(Listing::class);
+    }
+
+    /**
+     * Täielik URL pildile (storage / CDN)
+     * Kasutamiseks Blade'is: {{ $image->url() }}
+     */
+    public function url(): string
+    {
+        return Storage::url($this->path);
     }
 }

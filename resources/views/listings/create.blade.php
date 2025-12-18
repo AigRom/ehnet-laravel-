@@ -4,16 +4,20 @@
             <div class="space-y-2">
                 <flux:heading size="xl">{{ __('Add listing') }}</flux:heading>
                 <flux:text variant="subtle">
-                    {{ __('Fill in the details. Location autocomplete and image upload will be added next.') }}
+                    {{ __('Fill in the details, add images and preview the listing before publishing.') }}
                 </flux:text>
             </div>
 
-            <form method="POST" action="{{ route('listings.store') }}" class="space-y-6">
+            <form method="POST"
+                  action="{{ route('listings.store') }}"
+                  class="space-y-6"
+                  enctype="multipart/form-data">
                 @csrf
 
                 {{-- Title --}}
                 <div>
                     <flux:input
+                        id="title"
                         name="title"
                         :label="__('Title')"
                         :value="old('title')"
@@ -29,9 +33,11 @@
                 {{-- Description --}}
                 <div>
                     <flux:textarea
+                        id="description"
                         name="description"
                         :label="__('Description')"
                         required
+                        minlength="20"
                         rows="6"
                         placeholder="Kirjelda kogust, mõõte, seisukorda ja kättesaamise tingimusi."
                     >{{ old('description') }}</flux:textarea>
@@ -48,6 +54,7 @@
                     </label>
 
                     <select
+                        id="category_id"
                         name="category_id"
                         required
                         class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3"
@@ -78,7 +85,6 @@
                         myLocationId: {{ $userLocationId ? (int) $userLocationId : 'null' }},
                         initId: {{ $initialLocationId ? (int) $initialLocationId : 'null' }},
                         init() {
-                            // Kui old('location_id') puudub ja useril on location, siis setime vaikimisi.
                             if (!{{ old('location_id') ? 'true' : 'false' }} && this.myLocationId) {
                                 this.$nextTick(() => Livewire.dispatch('loc:set', { id: this.myLocationId }));
                             }
@@ -112,6 +118,7 @@
                 {{-- Price --}}
                 <div>
                     <flux:input
+                        id="price"
                         name="price"
                         :label="__('Price (EUR)')"
                         :value="old('price')"
@@ -125,10 +132,67 @@
                     @enderror
                 </div>
 
-                <flux:button type="submit" variant="primary" class="w-full">
-                    {{ __('Publish listing') }}
+                {{-- Images --}}
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
+                        {{ __('Images') }}
+                        <span class="text-xs text-zinc-500">{{ __('(drag to reorder, click to view)') }}</span>
+                    </label>
+
+                    <input
+                        id="images"
+                        type="file"
+                        name="images[]"
+                        multiple
+                        accept="image/*"
+                        class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3"
+                    />
+
+                    <input type="hidden" name="images_order" id="images_order" value="[]">
+
+                    @error('images')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                    @error('images.*')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+
+                    <div id="imagePreview" class="mt-3 grid grid-cols-3 gap-3"></div>
+
+                    <p class="mt-2 text-xs text-zinc-500">
+                        {{ __('Up to 10 images. The first image will be used as the cover image.') }}
+                    </p>
+                </div>
+
+                {{-- Eelvaate nupp (MITTE submit) --}}
+                <flux:button type="button" variant="primary" class="w-full" id="openListingPreview">
+                    {{ __('Kuulutuse eelvaade') }}
                 </flux:button>
+
+                {{-- Preview modal (komponent) peab olema vormi sees, et "Lisa kuulutus" saaks submitida --}}
+                <x-listings.preview />
             </form>
+
+            {{-- Image modal (suur pilt + rotate) - kui sul see juba mujal on, ära dubleeri --}}
+            <div id="imageModal" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/70 p-4">
+                <div class="relative max-w-3xl w-full">
+                    <div class="absolute -top-10 right-0 flex gap-2">
+                        <button type="button" id="imageModalRotate"
+                                class="text-white text-sm px-3 py-2 rounded-lg bg-black/40">
+                            Rotate
+                        </button>
+                        <button type="button" id="imageModalClose"
+                                class="text-white text-sm px-3 py-2 rounded-lg bg-black/40">
+                            Close
+                        </button>
+                    </div>
+
+                    <img id="imageModalImg"
+                         class="w-full max-h-[80vh] object-contain rounded-xl"
+                         alt="">
+                </div>
+            </div>
+
         </div>
     </flux:main>
 </x-layouts.app.sidebar>
