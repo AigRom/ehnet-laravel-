@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initListingPreview() {
   const openBtn = document.getElementById('openListingPreview');
   const modal = document.getElementById('listingPreviewModal');
   const closeBtn = document.getElementById('closeListingPreview');
@@ -6,21 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!openBtn || !modal || !closeBtn || !editBtn) return;
 
-  // Form fields (need ids in Blade)
+  // ✅ ära init'i mitu korda sama elemendi peal (wire:navigate)
+  if (openBtn.dataset.previewInit === '1') return;
+  openBtn.dataset.previewInit = '1';
+
   const titleEl = document.getElementById('title');
   const descEl = document.getElementById('description');
   const catEl = document.getElementById('category_id');
   const priceEl = document.getElementById('price');
 
-  // Preview targets (modal elements)
   const pTitle = document.getElementById('previewTitle');
   const pDesc = document.getElementById('previewDescription');
   const pCat = document.getElementById('previewCategory');
   const pLoc = document.getElementById('previewLocation');
   const pPrice = document.getElementById('previewPrice');
-  const pImages = document.getElementById('previewImages');
-
-  const thumbs = document.getElementById('imagePreview'); // existing thumbs on form
 
   function show() {
     modal.classList.remove('hidden');
@@ -44,56 +43,37 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getLocationLabel() {
-    // If you add a hidden input 'location_label', preview shows actual label
     const locLabel = document.querySelector('input[name="location_label"]')?.value?.trim();
     if (locLabel) return locLabel;
 
-    // Otherwise fallback:
     const locId = document.querySelector('input[name="location_id"]')?.value?.trim();
     return locId ? 'Asukoht valitud' : '—';
   }
 
-  function cloneThumbs() {
-    if (!pImages) return;
-    pImages.innerHTML = '';
-
-    if (!thumbs || thumbs.children.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'text-sm text-zinc-500';
-      empty.textContent = 'Pilte pole lisatud';
-      pImages.appendChild(empty);
-      return;
-    }
-
-    [...thumbs.children].forEach((node) => {
-      const clone = node.cloneNode(true);
-
-      // remove any buttons (X / Rotate) from the preview clone
-      clone.querySelectorAll('button').forEach((b) => b.remove());
-
-      // remove drag behaviors/attributes
-      clone.removeAttribute('draggable');
-      clone.classList.remove('ring-2', 'ring-zinc-400');
-
-      // make it non-interactive in preview
-      clone.style.pointerEvents = 'none';
-
-      pImages.appendChild(clone);
-    });
-  }
-
-  function fillPreview() {
+  function fillTextPreview() {
     if (pTitle) pTitle.textContent = (titleEl?.value || '').trim() || '—';
     if (pDesc) pDesc.textContent = (descEl?.value || '').trim() || '—';
     if (pCat) pCat.textContent = getCategoryLabel();
     if (pLoc) pLoc.textContent = getLocationLabel();
     if (pPrice) pPrice.textContent = getPriceLabel();
+  }
 
-    cloneThumbs();
+  function sendImagesToAlpineGallery() {
+    const formPreview = document.getElementById('imagePreview');
+    const imgs = formPreview ? Array.from(formPreview.querySelectorAll('img')) : [];
+
+    const sources = imgs
+      .map(img => img?.src)
+      .filter(Boolean);
+
+    window.dispatchEvent(new CustomEvent('listing-preview-images', {
+      detail: { images: sources }
+    }));
   }
 
   openBtn.addEventListener('click', () => {
-    fillPreview();
+    fillTextPreview();
+    sendImagesToAlpineGallery();
     show();
   });
 
@@ -105,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hide();
+    if (e.key === 'Escape' && modal.classList.contains('flex')) hide();
   });
-});
+}
+
+document.addEventListener('DOMContentLoaded', initListingPreview);
+document.addEventListener('livewire:navigated', initListingPreview);

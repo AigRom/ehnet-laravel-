@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 
-// Controllers
+// Kontrollerid
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\ListingController;
 
@@ -12,9 +12,7 @@ use App\Http\Controllers\ListingController;
 |--------------------------------------------------------------------------
 | Avalikud lehed
 |--------------------------------------------------------------------------
-|
-| Lehed, mis on kättesaadavad ilma sisselogimiseta.
-|
+| Lehed, mis on kättesaadavad ka ilma sisselogimiseta.
 */
 Route::get('/', function () {
     return view('welcome');
@@ -22,25 +20,20 @@ Route::get('/', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Dashboard
+| Kasutaja dashboard (vajab autentimist)
 |--------------------------------------------------------------------------
-|
-| Peale sisselogimist kuvatav kasutaja avaleht.
-|
 */
-Route::view('dashboard', 'dashboard')
+Route::view('/dashboard', 'dashboard')
     ->middleware(['auth'])
     ->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
-| EHNET: Kahe-sammuline registreerimine (email → vorm)
+| EHNET: kaheastmeline registreerimine (email → vorm)
 |--------------------------------------------------------------------------
-|
-| 1. Kasutaja sisestab e-posti ja nõustub tingimustega
-| 2. Saadame e-kirjaga kinnituse lingi
-| 3. Link viib "päris" registreerimisvormile
-|
+| 1. Kasutaja sisestab e-posti
+| 2. Saadame kinnituskirja
+| 3. Link viib registreerimisvormile
 */
 Route::post('/register', [EmailRegistrationController::class, 'store'])
     ->name('register.store');
@@ -53,11 +46,9 @@ Route::post('/register/complete/{token}', [EmailRegistrationController::class, '
 
 /*
 |--------------------------------------------------------------------------
-| Autenditud kasutaja alad
+| Autenditud kasutaja ala
 |--------------------------------------------------------------------------
-|
-| Kõik allolevad teed on kättesaadavad ainult sisselogitud kasutajale.
-|
+| Kõik allolevad teed eeldavad sisselogimist.
 */
 Route::middleware(['auth'])->group(function () {
 
@@ -66,24 +57,25 @@ Route::middleware(['auth'])->group(function () {
     | Kasutaja seaded (Livewire / Volt)
     |--------------------------------------------------------------------------
     */
-    Route::redirect('settings', 'settings/profile');
+    Route::redirect('/settings', '/settings/profile');
 
-    Volt::route('settings/profile', 'settings.profile')
+    Volt::route('/settings/profile', 'settings.profile')
         ->name('profile.edit');
 
-    Volt::route('settings/password', 'settings.password')
+    Volt::route('/settings/password', 'settings.password')
         ->name('user-password.edit');
 
-    Volt::route('settings/appearance', 'settings.appearance')
+    Volt::route('/settings/appearance', 'settings.appearance')
         ->name('appearance.edit');
 
     /*
     |--------------------------------------------------------------------------
-    | Kuulutused (Listingud)
+    | Kuulutused (Listings)
     |--------------------------------------------------------------------------
-    |
-    | Kuulutuste lisamine (hiljem ka muutmine, kustutamine jne).
-    |
+    */
+
+    /*
+    | Kuulutuse lisamine
     */
     Route::get('/listings/create', [ListingController::class, 'create'])
         ->name('listings.create');
@@ -93,10 +85,56 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Kahefaktoriline autentimine (valikuline / edasiarendus)
+    | Minu kuulutused
+    |--------------------------------------------------------------------------
+    | Kasutaja enda kuulutuste haldus:
+    | - vaatamine
+    | - muutmine
+    | - peatamine / aktiveerimine
+    | - müüduks märkimine
+    | - kustutamine
+    */
+    Route::prefix('/my-listings')->group(function () {
+
+        // Minu kuulutuste loend
+        Route::get('/', [ListingController::class, 'mine'])
+            ->name('listings.mine');
+
+        // Ühe kuulutuse detailvaade (minu vaade)
+        Route::get('/{listing}', [ListingController::class, 'showMine'])
+            ->name('listings.mine.show');
+
+        // Kuulutuse muutmise vorm
+        Route::get('/{listing}/edit', [ListingController::class, 'editMine'])
+            ->name('listings.mine.edit');
+
+        // Kuulutuse salvestamine pärast muutmist
+        Route::patch('/{listing}', [ListingController::class, 'updateMine'])
+            ->name('listings.mine.update');
+
+        // Kuulutuse peatamine / aktiveerimine
+        Route::patch('/{listing}/toggle', [ListingController::class, 'toggleMine'])
+            ->name('listings.mine.toggle');
+
+        // Kuulutuse kustutamine
+        Route::delete('/{listing}', [ListingController::class, 'destroyMine'])
+            ->name('listings.mine.destroy');
+
+        // Märgi müüduks
+        Route::patch('/{listing}/sold', [ListingController::class, 'markSold'])
+            ->name('listings.mine.sold');
+
+        // Taasta müük (müüdud → aktiivne)
+        Route::patch('/{listing}/unsold', [ListingController::class, 'markUnsold'])
+            ->name('listings.mine.unsold');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kahefaktoriline autentimine (edasiarendus)
     |--------------------------------------------------------------------------
     */
-    Volt::route('settings/two-factor', 'settings.two-factor')
+    Volt::route('/settings/two-factor', 'settings.two-factor')
         ->middleware(
             when(
                 Features::canManageTwoFactorAuthentication()

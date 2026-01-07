@@ -21,6 +21,7 @@ class Listing extends Model
         'listing_type',   // sale|auction
         'status',         // draft|pending|published|rejected|archived
         'published_at',
+        'expires_at',
         'reviewed_by',
         'reviewed_at',
         'rejected_reason',
@@ -33,6 +34,7 @@ class Listing extends Model
         'reviewed_by'  => 'integer',
         'price'        => 'decimal:2',
         'published_at' => 'datetime',
+        'expires_at'   => 'datetime',
         'reviewed_at'  => 'datetime',
     ];
 
@@ -75,4 +77,30 @@ class Listing extends Model
         $img = $this->coverImage();
         return $img ? Storage::url($img->path) : null;
     }
+
+    // Helper: Kuulutuse aegumine
+    public function isExpired(): bool
+    {
+        return $this->status === 'published'
+            && $this->expires_at
+            && $this->expires_at->isPast();
+    }
+
+    // Helper: Staatuste eestikeelsed nimetused
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            'draft'     => 'Mustand',
+            'pending'   => 'Ootel',
+            'published' => $this->isExpired() ? 'Aegunud' : 'Aktiivne',
+            'rejected'  => 'Tagasi lükatud',
+            'archived'  => 'Peatatud',
+            'sold'      => 'Müüdud',
+            default     => '—',
+        };
+    }
+
+
+
+
 }

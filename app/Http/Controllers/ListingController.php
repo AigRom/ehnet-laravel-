@@ -57,6 +57,8 @@ class ListingController extends Controller
                 'listing_type' => 'sale',
                 'status'       => 'published',
                 'published_at' => now(),
+                'expires_at' => now()->addDays(30),
+
             ]);
 
             // --- Salvesta pildid, kui neid on ---
@@ -101,4 +103,147 @@ class ListingController extends Controller
             ->route('dashboard')
             ->with('status', 'Kuulutus lisatud!');
     }
+    // Minu kuulutused
+    public function mine(Request $request)
+    {
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $hasAnyListings = Listing::query()
+        ->where('user_id', $request->user()->id)
+        ->exists();
+
+
+        $listingsQuery = Listing::query()
+            ->where('user_id', $request->user()->id);
+
+        $status = (string) $request->get('status', 'all');
+
+        if ($status === 'active') {
+            $listingsQuery->where('status', 'published')
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now());
+                });
+
+        } elseif ($status === 'expired') {
+            $listingsQuery->where('status', 'published')
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<', now());
+
+        } elseif ($status === 'archived') {
+            $listingsQuery->where('status', 'archived');
+
+        } elseif ($status === 'sold') {
+            $listingsQuery->where('status', 'sold');
+
+        } elseif ($status === 'pending') {
+            $listingsQuery->where('status', 'pending');
+
+        } elseif ($status === 'all') {
+            // ei filtreeri staatuse järgi
+        } else {
+            // safety: kui tuleb mingi tundmatu status, näita kõiki
+        }
+
+        $q = trim((string) $request->get('q', ''));
+        if ($q !== '') {
+            $listingsQuery->where(function ($sub) use ($q) {
+                $sub->where('title', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            });
+        }
+
+        $categoryId = $request->integer('category_id');
+        if ($categoryId) {
+            $listingsQuery->where('category_id', $categoryId);
+        }
+
+        $listings = $listingsQuery->latest('id')->get();
+
+        return view('listings.mine', compact('listings', 'categories', 'hasAnyListings'));
+    }
+
+    public function showMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        $listing->load(['category', 'location', 'images']);
+
+        return view('listings.mine-show', compact('listing'));
+    }
+
+    public function toggleMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // kui on archived -> aktiveeri tagasi
+        if ($listing->status === 'archived') {
+            $listing->status = 'published';
+            $listing->published_at = $listing->published_at ?? now();
+
+            // kui aegunud või tühi, anna uus 30p
+            if (!$listing->expires_at || $listing->expires_at->isPast()) {
+                $listing->expires_at = now()->addDays(30);
+            }
+
+            $listing->save();
+
+            return back()->with('status', 'Kuulutus aktiveeritud!');
+        }
+
+        // muul juhul -> peata (mitteaktiivne)
+        $listing->status = 'archived';
+        $listing->save();
+
+        return back()->with('status', 'Kuulutus peatatud (mitteaktiivne).');
+    }
+
+    public function destroyMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // TODO: järgmises sammus kustutame ka pildifailid Storage'ist
+        $listing->images()->delete();
+        $listing->delete();
+
+        return redirect()
+            ->route('listings.mine')
+            ->with('status', 'Kuulutus kustutatud.');
+    }
+
+    public function markSold(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // Müüdud -> peida avalikust + ajalugu alles
+        $listing->update([
+            'status' => 'sold',
+        ]);
+
+        return back()->with('status', 'Kuulutus märgitud müüduks.');
+    }
+
+    public function markUnsold(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // Taasta müüki
+        $listing->update([
+            'status' => 'published',
+            'published_at' => $listing->published_at ?? now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        return back()->with('status', 'Kuulutus taastatud müüki.');
+    }
+
+
+
+
+
+
+
 }

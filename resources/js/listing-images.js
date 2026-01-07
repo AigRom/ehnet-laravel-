@@ -1,6 +1,10 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initListingImages() {
   const input = document.getElementById('images');
   if (!input) return;
+
+  // ✅ ära init'i mitu korda sama elemendi peal (wire:navigate puhul)
+  if (input.dataset.imagesInit === '1') return;
+  input.dataset.imagesInit = '1';
 
   const preview = document.getElementById('imagePreview');
   const orderField = document.getElementById('images_order');
@@ -9,13 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = input.closest('form');
   const description = form?.querySelector('[name="description"]');
 
-  // Modal elemendid (olemas create.blade.php-s)
+  const MAX_IMAGES = 10;
+
+  // Modal elemendid (uues markupis)
   const modal = document.getElementById('imageModal');
   const modalImg = document.getElementById('imageModalImg');
   const modalClose = document.getElementById('imageModalClose');
-  const modalRotate = document.getElementById('imageModalRotate');
+  const modalPrev = document.getElementById('imageModalPrev');
+  const modalNext = document.getElementById('imageModalNext');
+  const modalCounter = document.getElementById('imageModalCounter');
 
-  // items: { file: File, rotation: 0|90|180|270 }
+  // items: { file: File, rotation: number } (rotation ainult thumbs'i jaoks)
   let items = [];
   let activeModalIndex = null;
 
@@ -26,30 +34,55 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function syncOrderField() {
-    // Kuna me ehitame input.files alati ümber täpselt samas järjekorras nagu items,
-    // on kõige kindlam saata lihtsalt [0..n-1].
     orderField.value = JSON.stringify(items.map((_, i) => i));
+  }
+
+  function isDuplicate(file) {
+    return items.some(it =>
+      it.file.name === file.name &&
+      it.file.size === file.size &&
+      it.file.lastModified === file.lastModified
+    );
+  }
+
+  function isModalOpen() {
+    return !!(modal && modal.classList.contains('flex') && !modal.classList.contains('hidden'));
+  }
+
+  function showModalIndex(index) {
+    if (!modal || !modalImg) return;
+    if (!items.length) return;
+
+    // wrap-around
+    if (index < 0) index = items.length - 1;
+    if (index >= items.length) index = 0;
+
+    activeModalIndex = index;
+    const item = items[activeModalIndex];
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      modalImg.src = ev.target.result;
+      modalImg.alt = item.file.name;
+
+      // ✅ modalis rotate't EI ole
+      modalImg.style.transform = 'rotate(0deg)';
+
+      if (modalCounter) {
+        modalCounter.textContent = `${activeModalIndex + 1} / ${items.length}`;
+      }
+    };
+    reader.readAsDataURL(item.file);
   }
 
   function openModalFromItem(index) {
     if (!modal || !modalImg) return;
     if (!items[index]) return;
 
-    activeModalIndex = index;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 
-    const item = items[index];
-    const reader = new FileReader();
-
-    reader.onload = (ev) => {
-      modalImg.src = ev.target.result;
-      modalImg.alt = item.file.name;
-      modalImg.style.transform = `rotate(${item.rotation}deg)`;
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    };
-
-    reader.readAsDataURL(item.file);
+    showModalIndex(index);
   }
 
   function closeModal() {
@@ -61,40 +94,80 @@ document.addEventListener('DOMContentLoaded', () => {
     modalImg.src = '';
     modalImg.style.transform = 'rotate(0deg)';
     activeModalIndex = null;
+
+    if (modalCounter) modalCounter.textContent = '';
   }
 
-  if (modalClose) modalClose.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeModal();
-  });
+  if (modalClose) {
+    modalClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeModal();
+    });
+  }
+
+  if (modalPrev) {
+    modalPrev.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex - 1);
+    });
+  }
+
+  if (modalNext) {
+    modalNext.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex + 1);
+    });
+  }
 
   if (modal) {
     modal.addEventListener('click', (e) => {
-      // sulge ainult taustal klikates, mitte pildil
       if (e.target === modal) closeModal();
     });
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      closeModal();
+      return;
+    }
+
+    if (!isModalOpen()) return;
+
+    if (e.key === 'ArrowLeft') {
+      if (activeModalIndex !== null) showModalIndex(activeModalIndex - 1);
+    }
+
+    if (e.key === 'ArrowRight') {
+      if (activeModalIndex !== null) showModalIndex(activeModalIndex + 1);
+    }
   });
 
-  if (modalRotate) {
-    modalRotate.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      if (!items[activeModalIndex]) return;
+  function addPlusTile() {
+    if (items.length >= MAX_IMAGES) return;
 
-      items[activeModalIndex].rotation = (items[activeModalIndex].rotation + 90) % 360;
+    const addTile = document.createElement('button');
+    addTile.type = 'button';
 
-      // uuenda modal
-      if (modalImg) {
-        modalImg.style.transform = `rotate(${items[activeModalIndex].rotation}deg)`;
-      }
+    addTile.className =
+      'flex aspect-square items-center justify-center rounded-xl border-2 border-dashed ' +
+      'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 ' +
+      'hover:text-zinc-700 dark:hover:text-zinc-200';
 
-      // uuenda eelvaade
-      render();
+    addTile.innerHTML = `
+      <div class="flex flex-col items-center gap-1">
+        <div class="text-3xl leading-none">+</div>
+        <div class="text-xs">Lisa</div>
+      </div>
+    `;
+
+    addTile.addEventListener('click', () => {
+      input.value = null; // lubab valida sama faili uuesti
+      input.click();
     });
+
+    preview.appendChild(addTile);
   }
 
   function render() {
@@ -103,13 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach((item, index) => {
       const wrap = document.createElement('div');
       wrap.className =
-        'relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900';
+        'relative aspect-square rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900';
+
       wrap.draggable = true;
       wrap.dataset.index = String(index);
 
       const img = document.createElement('img');
-      img.className = 'w-full h-24 object-cover cursor-zoom-in';
+      img.className = 'w-full h-full object-cover cursor-zoom-in';
       img.alt = item.file.name;
+
+      // rotate ainult thumbil
       img.style.transform = `rotate(${item.rotation}deg)`;
 
       const badge = document.createElement('div');
@@ -129,6 +205,19 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
 
         items.splice(index, 1);
+
+        // modal indeks turvaliseks
+        if (activeModalIndex !== null) {
+          if (items.length === 0) {
+            closeModal();
+          } else if (activeModalIndex >= items.length) {
+            activeModalIndex = items.length - 1;
+            if (isModalOpen()) showModalIndex(activeModalIndex);
+          } else if (index === activeModalIndex) {
+            if (isModalOpen()) showModalIndex(activeModalIndex);
+          }
+        }
+
         rebuildInputFilesFromItems();
         syncOrderField();
         render();
@@ -146,16 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
 
         item.rotation = (item.rotation + 90) % 360;
-
-        // kui sama pilt on modalis avatud, uuenda ka modal
-        if (activeModalIndex === index && modalImg) {
-          modalImg.style.transform = `rotate(${item.rotation}deg)`;
-        }
-
         render();
       });
 
-      // klikiga suur vaade
       img.addEventListener('click', (e) => {
         e.preventDefault();
         openModalFromItem(index);
@@ -187,15 +269,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const moved = items.splice(from, 1)[0];
         items.splice(to, 0, moved);
 
-        // kui modal oli lahti, kohenda activeModalIndex
+        // modal index korrigeerimine
         if (activeModalIndex !== null) {
-          if (activeModalIndex === from) {
-            activeModalIndex = to;
-          } else if (from < activeModalIndex && to >= activeModalIndex) {
-            activeModalIndex -= 1;
-          } else if (from > activeModalIndex && to <= activeModalIndex) {
-            activeModalIndex += 1;
-          }
+          if (activeModalIndex === from) activeModalIndex = to;
+          else if (from < activeModalIndex && to >= activeModalIndex) activeModalIndex -= 1;
+          else if (from > activeModalIndex && to <= activeModalIndex) activeModalIndex += 1;
+
+          if (isModalOpen()) showModalIndex(activeModalIndex);
         }
 
         rebuildInputFilesFromItems();
@@ -203,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
       });
 
-      // Eelvaate pildi laadimine
+      // Load thumb
       const reader = new FileReader();
       reader.onload = (e) => { img.src = e.target.result; };
       reader.readAsDataURL(item.file);
@@ -214,36 +294,44 @@ document.addEventListener('DOMContentLoaded', () => {
       wrap.appendChild(rotateBtn);
       preview.appendChild(wrap);
     });
+
+    addPlusTile();
   }
 
-  function isDuplicate(file) {
-    return items.some(it =>
-      it.file.name === file.name &&
-      it.file.size === file.size &&
-      it.file.lastModified === file.lastModified
-    );
-  }
-
-  // ⬇️ SIIN on “add more images” lahendus: ei kirjuta üle, vaid lisab juurde
+  // Add more images (max 10)
   input.addEventListener('change', () => {
     const newlySelected = Array.from(input.files || []);
     if (newlySelected.length === 0) return;
 
+    const freeSlots = MAX_IMAGES - items.length;
+    if (freeSlots <= 0) {
+      alert(`Maksimaalselt ${MAX_IMAGES} pilti.`);
+      rebuildInputFilesFromItems();
+      syncOrderField();
+      render();
+      return;
+    }
+
+    let added = 0;
+
     for (const file of newlySelected) {
+      if (items.length >= MAX_IMAGES) break;
       if (!isDuplicate(file)) {
         items.push({ file, rotation: 0 });
+        added += 1;
       }
+    }
+
+    if (added < newlySelected.length) {
+      alert(`Lisati ${added} pilti. Maksimaalne lubatud on ${MAX_IMAGES}. Ülejäänud jäeti välja.`);
     }
 
     rebuildInputFilesFromItems();
     syncOrderField();
     render();
-
-    // oluline: võimaldab valida sama faili uuesti (muidu change ei pruugi käivituda)
-    //input.value = '';
   });
 
-  // Klientpoolne guard: väldi submit'i, kui description liiga lühike (pildid ei kao)
+  // Klientpoolne guard: väldi submit'i, kui description liiga lühike
   if (form && description) {
     form.addEventListener('submit', (e) => {
       const text = (description.value || '').trim();
@@ -257,4 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // init
   syncOrderField();
-});
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', initListingImages);
+document.addEventListener('livewire:navigated', initListingImages);

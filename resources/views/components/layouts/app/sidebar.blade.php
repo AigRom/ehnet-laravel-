@@ -30,13 +30,17 @@
                         {{ __('Minu avaleht') }}
                     </flux:navlist.item>
 
-                    {{-- Siia saame hiljem lisada:
-                        - Minu kuulutused
-                        - Lisa kuulutus
-                        - Oksjonid jne
-                    --}}
+                    <flux:navlist.item
+                        icon="layout-grid"
+                        :href="route('listings.mine')"
+                        :current="request()->routeIs('listings.mine')"
+                        wire:navigate
+                    >
+                        {{ __('Minu kuulutused') }}
+                    </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+
 
             <flux:spacer />
 

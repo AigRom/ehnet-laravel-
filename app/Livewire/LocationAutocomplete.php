@@ -89,13 +89,22 @@ class LocationAutocomplete extends Component
     {
         $this->applyLocationId($id);
 
-        // anna parentile märku (checkbox loogika jaoks)
-        $this->dispatch('loc:selected', id: $this->selectedId);
+        // ✅ anna parentile märku (checkbox loogika + location_label täitmine)
+        $this->dispatch('loc:selected',
+            id: (int) $this->selectedId,
+            label: (string) $this->search
+        );
     }
 
     public function setLocation(int $id): void
     {
         $this->applyLocationId($id);
+
+        // ✅ ka "Use my location" puhul saadame labeli (et location_label täituks)
+        $this->dispatch('loc:selected',
+            id: (int) $this->selectedId,
+            label: (string) $this->search
+        );
     }
 
     public function clearSelection(): void
@@ -104,6 +113,9 @@ class LocationAutocomplete extends Component
         $this->location_id = null;
         $this->search = '';
         $this->results = [];
+
+        // (valikuline) kui tahad ka labelit nullida frontis:
+        $this->dispatch('loc:selected', id: null, label: '');
     }
 
     private function applyLocationId(int $id): void

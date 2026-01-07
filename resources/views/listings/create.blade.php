@@ -76,6 +76,7 @@
                 @php
                     $userLocationId = auth()->user()->location_id ?? null;
                     $initialLocationId = old('location_id') ?? $userLocationId;
+                    $userLocationLabel = auth()->user()->location?->full_label_et ?? null;
                 @endphp
 
                 <div
@@ -83,15 +84,26 @@
                     x-data="{
                         useMyLocation: {{ $userLocationId ? 'true' : 'false' }},
                         myLocationId: {{ $userLocationId ? (int) $userLocationId : 'null' }},
-                        initId: {{ $initialLocationId ? (int) $initialLocationId : 'null' }},
+                        myLocationLabel: @js($userLocationLabel),
                         init() {
-                            if (!{{ old('location_id') ? 'true' : 'false' }} && this.myLocationId) {
+                            const hasOld = {{ old('location_id') ? 'true' : 'false' }};
+                            if (!hasOld && this.myLocationId) {
                                 this.$nextTick(() => Livewire.dispatch('loc:set', { id: this.myLocationId }));
+                                if (this.myLocationLabel) {
+                                    const el = document.getElementById('location_label');
+                                    if (el) el.value = this.myLocationLabel;
+                                }
                             }
                         }
                     }"
                     x-init="init()"
-                    @loc:selected.window="useMyLocation = false"
+                    @loc:selected.window="
+                        useMyLocation = false;
+                        const el = document.getElementById('location_label');
+                        if (el && $event.detail && $event.detail.label !== undefined) {
+                            el.value = $event.detail.label || '';
+                        }
+                    "
                 >
                     @if($userLocationId)
                         <label class="mt-1 mb-2 inline-flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
@@ -102,6 +114,8 @@
                                 @change="
                                     if (useMyLocation && myLocationId) {
                                         Livewire.dispatch('loc:set', { id: myLocationId });
+                                        const el = document.getElementById('location_label');
+                                        if (el && myLocationLabel) el.value = myLocationLabel;
                                     }
                                 "
                             >
@@ -113,6 +127,13 @@
                         :initial-id="$initialLocationId"
                         :wire:key="'loc-'.($initialLocationId ?? 'new')"
                     />
+
+                    <input
+                        type="hidden"
+                        name="location_label"
+                        id="location_label"
+                        value="{{ old('location_label', $userLocationLabel ?? '') }}"
+                    >
                 </div>
 
                 {{-- Price --}}
@@ -139,13 +160,14 @@
                         <span class="text-xs text-zinc-500">{{ __('(drag to reorder, click to view)') }}</span>
                     </label>
 
+                    {{-- Hidden native input; images are added via "+" tile --}}
                     <input
                         id="images"
                         type="file"
                         name="images[]"
                         multiple
                         accept="image/*"
-                        class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3"
+                        class="hidden"
                     />
 
                     <input type="hidden" name="images_order" id="images_order" value="[]">
@@ -173,23 +195,33 @@
                 <x-listings.preview />
             </form>
 
-            {{-- Image modal (suur pilt + rotate) - kui sul see juba mujal on, ära dubleeri --}}
-            <div id="imageModal" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/70 p-4">
-                <div class="relative max-w-3xl w-full">
-                    <div class="absolute -top-10 right-0 flex gap-2">
-                        <button type="button" id="imageModalRotate"
-                                class="text-white text-sm px-3 py-2 rounded-lg bg-black/40">
-                            Rotate
-                        </button>
-                        <button type="button" id="imageModalClose"
-                                class="text-white text-sm px-3 py-2 rounded-lg bg-black/40">
-                            Close
-                        </button>
+            {{-- Image modal (suur pilt + next/prev) --}}
+            <div id="imageModal" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/80 p-4">
+                <div class="relative w-full max-w-5xl">
+                    <button type="button" id="imageModalClose"
+                            class="absolute -top-12 right-0 text-white text-sm px-3 py-2 rounded-lg bg-black/40 hover:bg-black/60">
+                        Close
+                    </button>
+
+                    <button type="button" id="imageModalPrev"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-10
+                                   text-white w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center">
+                        ‹
+                    </button>
+
+                    <button type="button" id="imageModalNext"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-10
+                                   text-white w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center">
+                        ›
+                    </button>
+
+                    <div class="rounded-2xl overflow-hidden bg-black/20 border border-white/10">
+                        <img id="imageModalImg"
+                             class="w-full h-[75vh] object-contain"
+                             alt="">
                     </div>
 
-                    <img id="imageModalImg"
-                         class="w-full max-h-[80vh] object-contain rounded-xl"
-                         alt="">
+                    <div id="imageModalCounter" class="mt-3 text-center text-sm text-white/80"></div>
                 </div>
             </div>
 
