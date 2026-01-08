@@ -267,4 +267,45 @@ class ListingController extends Controller
 
         return back()->with('status', 'Kuulutus taastatud müüki.');
     }
+
+    public function editMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $listing->load(['category', 'location', 'images']);
+
+        return view('listings.edit', compact('listing', 'categories'));
+    }
+
+    public function updateMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // NB! praegu veel ilma piltideta (lisame järgmises sammus)
+        $validated = $request->validate([
+            'title'       => ['required', 'string', 'max:140'],
+            'description' => ['required', 'string', 'min:20'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'location_id' => ['required', 'exists:locations,id'],
+            'price'       => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $listing->update([
+            'title'       => $validated['title'],
+            'description' => $validated['description'],
+            'category_id' => $validated['category_id'],
+            'location_id' => $validated['location_id'],
+            'price'       => $validated['price'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('listings.mine.show', $listing)
+            ->with('status', 'Kuulutus muudetud!');
+    }
+
 }

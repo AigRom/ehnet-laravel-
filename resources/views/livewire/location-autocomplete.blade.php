@@ -1,15 +1,31 @@
 <div class="relative overflow-visible" wire:key="loc-autocomplete-root">
     <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
-        {{ __('Location') }}
+        {{ __('Asukoht') }}
     </label>
 
-    <input
-        type="text"
-        wire:model.live="search"
-        autocomplete="off"
-        placeholder="Alusta trükkimist (nt Haabersti, Valtu...)"
-        class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3"
-    />
+    <div class="relative">
+        <input
+            type="text"
+            wire:model.live="search"
+            autocomplete="off"
+            placeholder="Alusta trükkimist (nt Haabersti, Valtu...)"
+            class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 pr-10"
+        />
+
+        {{-- ✅ väike rist paremal (tooltip: Tühjenda) --}}
+        @if(trim($search) !== '' || $selectedId || $location_id)
+            <button
+                type="button"
+                wire:click="clearSelection"
+                class="absolute right-3 top-1/2 -translate-y-1/2
+                       text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+                       focus:outline-none"
+                title="{{ __('Tühjenda') }}"
+            >
+                ✕
+            </button>
+        @endif
+    </div>
 
     {{-- hidden field, mis läheb formiga kaasa (POST) --}}
     <input type="hidden" name="location_id" value="{{ $selectedId ?? $location_id ?? '' }}">
@@ -35,19 +51,6 @@
                     {{ __('No results') }}
                 </div>
             @endif
-        </div>
-    @endif
-
-    {{-- Clear nupp --}}
-    @if($selectedId || $location_id)
-        <div class="mt-2">
-            <button
-                type="button"
-                wire:click="clearSelection"
-                class="px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-sm"
-            >
-                {{ __('Clear location') }}
-            </button>
         </div>
     @endif
 

@@ -1,15 +1,19 @@
-<x-layouts.app.sidebar :title="__('Lisa kuulutus')">
+<x-layouts.app.sidebar :title="__('Muuda kuulutust')">
     <flux:main>
         <div class="max-w-2xl space-y-6">
             <div class="space-y-2">
-                <flux:heading size="xl">{{ __('Lisa kuulutus') }}</flux:heading>
+                <flux:heading size="xl">{{ __('Muuda kuulutust') }}</flux:heading>
+                <flux:text variant="subtle">
+                    {{ __('Uuenda kuulutuse andmeid ja salvesta muudatused.') }}
+                </flux:text>
             </div>
 
             <form method="POST"
-                  action="{{ route('listings.store') }}"
+                  action="{{ route('listings.mine.update', $listing) }}"
                   class="space-y-6"
                   enctype="multipart/form-data">
                 @csrf
+                @method('PATCH')
 
                 {{-- Title --}}
                 <div>
@@ -17,10 +21,9 @@
                         id="title"
                         name="title"
                         :label="__('Pealkiri')"
-                        :value="old('title')"
+                        :value="old('title', $listing->title)"
                         required
                         maxlength="140"
-                        placeholder="Nt. Kipsplaatide jäägid"
                     />
                     @error('title')
                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -36,8 +39,7 @@
                         required
                         minlength="20"
                         rows="6"
-                        placeholder="Kirjelda kogust, mõõte, seisukorda ja kättesaamise tingimusi."
-                    >{{ old('description') }}</flux:textarea>
+                    >{{ old('description', $listing->description) }}</flux:textarea>
 
                     @error('description')
                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -58,7 +60,7 @@
                     >
                         <option value="">{{ __('Vali kategooria') }}</option>
                         @foreach ($categories as $cat)
-                            <option value="{{ $cat->id }}" @selected(old('category_id') == $cat->id)>
+                            <option value="{{ $cat->id }}" @selected(old('category_id', $listing->category_id) == $cat->id)>
                                 {{ $cat->name_et }}
                             </option>
                         @endforeach
@@ -72,12 +74,10 @@
                 {{-- Location (Livewire autocomplete + "Kasuta minu asukohta") --}}
                 @php
                     $userLocationId = auth()->user()->location_id ?? null;
-
-                    // ✅ ära vali vaikimisi kohe, kasutaja otsustab
-                    $initialLocationId = old('location_id') ?? null;
-
-                    // Vajalik "Kasuta minu asukohta" jaoks (võtab kasutaja profiilist)
                     $userLocationLabel = auth()->user()->location?->full_label_et ?? null;
+
+                    $currentLocationId = old('location_id', $listing->location_id);
+                    $currentLocationLabel = old('location_label', $listing->location?->full_label_et ?? '');
                 @endphp
 
                 <div
@@ -106,16 +106,16 @@
                     "
                 >
                     <livewire:location-autocomplete
-                        :initial-id="$initialLocationId"
-                        :wire:key="'loc-'.($initialLocationId ?? 'new')"
+                        :initial-id="$currentLocationId"
+                        :wire:key="'loc-edit-'.$listing->id.'-'.($currentLocationId ?? 'new')"
                     />
 
-                    {{-- Location label for preview --}}
+                    {{-- label preview / (hiljem saad kasutada ka avalikus detailis vms) --}}
                     <input
                         type="hidden"
                         name="location_label"
                         id="location_label"
-                        value="{{ old('location_label', '') }}"
+                        value="{{ $currentLocationLabel }}"
                     >
 
                     @if($userLocationId)
@@ -132,6 +132,10 @@
                             {{ __('Kasuta minu asukohta') }}
                         </flux:button>
                     @endif
+
+                    @error('location_id')
+                        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Price --}}
@@ -140,89 +144,31 @@
                         id="price"
                         name="price"
                         :label="__('Hind (EUR)')"
-                        :value="old('price')"
+                        :value="old('price', $listing->price)"
                         type="number"
                         step="0.01"
                         min="0"
-                        placeholder="0 = tasuta, tühjaks = kokkuleppel"
                     />
                     @error('price')
                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Images --}}
-                <div>
-                    <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
-                        {{ __('Pildid') }}
-                        <span class="text-xs text-zinc-500">{{ __('(Järjekorra muutmiseks lohista.)') }}</span>
-                    </label>
-
-                    {{-- Hidden native input; images are added via "+" tile --}}
-                    <input
-                        id="images"
-                        type="file"
-                        name="images[]"
-                        multiple
-                        accept="image/*"
-                        class="hidden"
-                    />
-
-                    <input type="hidden" name="images_order" id="images_order" value="[]">
-
-                    @error('images')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
-                    @error('images.*')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
-
-                    <div id="imagePreview" class="mt-3 grid grid-cols-3 gap-3"></div>
-
-                    <p class="mt-2 text-xs text-zinc-500">
-                        {{ __('Kuni 10 pilti. Esimest pilti kasutatakse kaanepildina.') }}
-                    </p>
+                {{-- Images: jätame 1. sammus välja, lisame järgmises --}}
+                <div class="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-4 text-sm text-zinc-600 dark:text-zinc-300">
+                    {{ __('Piltide muutmine lisame järgmises sammus.') }}
                 </div>
 
-                {{-- Eelvaade (MITTE submit) --}}
-                <flux:button type="button" variant="primary" class="w-full" id="openListingPreview">
-                    {{ __('Kuulutuse eelvaade') }}
-                </flux:button>
+                <div class="flex gap-3 justify-end">
+                    <flux:button variant="outline" :href="route('listings.mine.show', $listing)" wire:navigate>
+                        {{ __('Tühista') }}
+                    </flux:button>
 
-                {{-- Preview modal (komponent) peab olema vormi sees --}}
-                <x-listings.preview />
+                    <flux:button type="submit" variant="primary">
+                        {{ __('Salvesta muudatused') }}
+                    </flux:button>
+                </div>
             </form>
-
-            {{-- Image modal (suur pilt + next/prev) --}}
-            <div id="imageModal" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/80 p-4">
-                <div class="relative w-full max-w-5xl">
-                    <button type="button" id="imageModalClose"
-                            class="absolute -top-12 right-0 text-white text-sm px-3 py-2 rounded-lg bg-black/40 hover:bg-black/60">
-                        Close
-                    </button>
-
-                    <button type="button" id="imageModalPrev"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-10
-                                   text-white w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center">
-                        ‹
-                    </button>
-
-                    <button type="button" id="imageModalNext"
-                            class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-10
-                                   text-white w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center">
-                        ›
-                    </button>
-
-                    <div class="rounded-2xl overflow-hidden bg-black/20 border border-white/10">
-                        <img id="imageModalImg"
-                             class="w-full h-[75vh] object-contain"
-                             alt="">
-                    </div>
-
-                    <div id="imageModalCounter" class="mt-3 text-center text-sm text-white/80"></div>
-                </div>
-            </div>
-
         </div>
     </flux:main>
 </x-layouts.app.sidebar>
