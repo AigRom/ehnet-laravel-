@@ -32,6 +32,9 @@ class ListingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            // ✅ uus: action (publish/draft)
+            'action'      => ['nullable', 'in:publish,draft'],
+
             'title'       => ['required', 'string', 'max:140'],
             'description' => ['required', 'string', 'min:20'],
             'category_id' => ['required', 'exists:categories,id'],
@@ -39,12 +42,15 @@ class ListingController extends Controller
             'price'       => ['nullable', 'numeric', 'min:0'],
 
             // PILDID
-            'images'      => ['nullable', 'array', 'max:10'],
-            'images.*'    => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // 5MB
-            'images_order'=> ['nullable', 'string'], // JSON (järjekord)
+            'images'       => ['nullable', 'array', 'max:10'],
+            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // 5MB
+            'images_order' => ['nullable', 'string'], // JSON (järjekord)
         ]);
 
-        DB::transaction(function () use ($request, $validated) {
+        $action = $validated['action'] ?? 'publish';
+        $isDraft = $action === 'draft';
+
+        DB::transaction(function () use ($request, $validated, $isDraft) {
 
             $listing = Listing::create([
                 'user_id'      => $request->user()->id,
@@ -55,17 +61,17 @@ class ListingController extends Controller
                 'price'        => $validated['price'] ?? null,
                 'currency'     => 'EUR',
                 'listing_type' => 'sale',
-                'status'       => 'published',
-                'published_at' => now(),
-                'expires_at' => now()->addDays(30),
 
+                // ✅ mustand vs avaldamine
+                'status'       => $isDraft ? 'draft' : 'published',
+                'published_at' => $isDraft ? null : now(),
+                'expires_at'   => $isDraft ? null : now()->addDays(30),
             ]);
 
             // --- Salvesta pildid, kui neid on ---
             $files = $request->file('images', []);
 
             if (!empty($files)) {
-                // Ootame, et JS saadab indeksite järjekorra, nt: [2,0,1]
                 $order = [];
                 if ($request->filled('images_order')) {
                     $decoded = json_decode($request->input('images_order'), true);
@@ -74,7 +80,6 @@ class ListingController extends Controller
                     }
                 }
 
-                // Kui order puudub/vigane, kasuta vaikimisi 0..n-1
                 if (count($order) !== count($files)) {
                     $order = range(0, count($files) - 1);
                 }
@@ -85,7 +90,6 @@ class ListingController extends Controller
                         continue;
                     }
 
-                    // Salvestab: storage/app/public/listings/...
                     $path = $files[$fileIndex]->store('listings', 'public');
 
                     ListingImage::create([
@@ -100,9 +104,10 @@ class ListingController extends Controller
         });
 
         return redirect()
-            ->route('dashboard')
-            ->with('status', 'Kuulutus lisatud!');
+            ->route('listings.mine')
+            ->with('status', $isDraft ? 'Mustand salvestatud!' : 'Kuulutus avaldatud!');
     }
+
     // Minu kuulutused
     public function mine(Request $request)
     {
@@ -112,9 +117,8 @@ class ListingController extends Controller
             ->get();
 
         $hasAnyListings = Listing::query()
-        ->where('user_id', $request->user()->id)
-        ->exists();
-
+            ->where('user_id', $request->user()->id)
+            ->exists();
 
         $listingsQuery = Listing::query()
             ->where('user_id', $request->user()->id);
@@ -125,7 +129,7 @@ class ListingController extends Controller
             $listingsQuery->where('status', 'published')
                 ->where(function ($q) {
                     $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+                      ->orWhere('expires_at', '>=', now());
                 });
 
         } elseif ($status === 'expired') {
@@ -141,6 +145,10 @@ class ListingController extends Controller
 
         } elseif ($status === 'pending') {
             $listingsQuery->where('status', 'pending');
+
+        } elseif ($status === 'draft') {
+            // ✅ uus filter
+            $listingsQuery->where('status', 'draft');
 
         } elseif ($status === 'all') {
             // ei filtreeri staatuse järgi
@@ -201,11 +209,33 @@ class ListingController extends Controller
         return back()->with('status', 'Kuulutus peatatud (mitteaktiivne).');
     }
 
+    public function publishMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        // Ainult mustandit lubame "aktiveerida"
+        if ($listing->status !== 'draft') {
+            return back();
+        }
+
+        $listing->status = 'published';
+        $listing->published_at = now();
+
+        // anna aegumine kui puudu või juba minevikus
+        if (!$listing->expires_at || $listing->expires_at->isPast()) {
+            $listing->expires_at = now()->addDays(30);
+        }
+
+        $listing->save();
+
+        return back()->with('status', 'Mustand avaldati (aktiveeriti).');
+    }
+
+
     public function destroyMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // TODO: järgmises sammus kustutame ka pildifailid Storage'ist
         $listing->images()->delete();
         $listing->delete();
 
@@ -218,7 +248,6 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // Müüdud -> peida avalikust + ajalugu alles
         $listing->update([
             'status' => 'sold',
         ]);
@@ -230,20 +259,12 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // Taasta müüki
         $listing->update([
-            'status' => 'published',
+            'status'       => 'published',
             'published_at' => $listing->published_at ?? now(),
-            'expires_at' => now()->addDays(30),
+            'expires_at'   => now()->addDays(30),
         ]);
 
         return back()->with('status', 'Kuulutus taastatud müüki.');
     }
-
-
-
-
-
-
-
 }

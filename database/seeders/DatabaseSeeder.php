@@ -3,25 +3,26 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1) Locations PEAB tulema enne kasutajaid
+        $this->call(LocationSeeder::class);
 
+        // 2) Testkasutaja (ainult dev jaoks)
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
-                'password' => 'password',
+                'password' => bcrypt('password'),
                 'email_verified_at' => now(),
             ]
         );
+
+        //kategooriad
+        $this->call(CategorySeeder::class);
     }
 }

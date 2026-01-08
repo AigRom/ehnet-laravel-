@@ -14,7 +14,7 @@
 
             <div class="mt-6 flex flex-wrap gap-3 justify-end">
 
-                {{-- MUUDA (soovitus: minu-route) --}}
+                {{-- MUUDA --}}
                 <flux:button
                     variant="outline"
                     :href="route('listings.mine.edit', $listing)"
@@ -23,10 +23,22 @@
                     {{ __('Muuda') }}
                 </flux:button>
 
-                {{-- PEATA / AKTIVEERI --}}
+                {{-- MUSTAND: Aktiveeri (publish) --}}
+                @if($listing->status === 'draft')
+                    <form method="POST" action="{{ route('listings.mine.publish', $listing) }}">
+                        @csrf
+                        @method('PATCH')
+                        <flux:button type="submit" variant="primary">
+                            {{ __('Aktiveeri') }}
+                        </flux:button>
+                    </form>
+                @endif
+
+                {{-- PEATA / AKTIVEERI (published <-> archived) --}}
                 @if($listing->status === 'archived')
                     <form method="POST" action="{{ route('listings.mine.toggle', $listing) }}">
                         @csrf
+                        @method('PATCH')
                         <flux:button type="submit" variant="primary">
                             {{ __('Aktiveeri') }}
                         </flux:button>
@@ -34,23 +46,26 @@
                 @elseif($listing->status === 'published')
                     <form method="POST" action="{{ route('listings.mine.toggle', $listing) }}">
                         @csrf
+                        @method('PATCH')
                         <flux:button type="submit" variant="outline">
                             {{ __('Peata') }}
                         </flux:button>
                     </form>
                 @endif
 
-                {{-- MÜÜDUD --}}
-                @if($listing->status !== 'sold')
+                {{-- MÜÜDUD / TAASTA MÜÜKI (ainult published <-> sold) --}}
+                @if($listing->status === 'published')
                     <form method="POST" action="{{ route('listings.mine.sold', $listing) }}">
                         @csrf
+                        @method('PATCH')
                         <flux:button type="submit" variant="outline">
                             {{ __('Märgi müüduks') }}
                         </flux:button>
                     </form>
-                @else
+                @elseif($listing->status === 'sold')
                     <form method="POST" action="{{ route('listings.mine.unsold', $listing) }}">
                         @csrf
+                        @method('PATCH')
                         <flux:button type="submit" variant="outline">
                             {{ __('Taasta müüki') }}
                         </flux:button>

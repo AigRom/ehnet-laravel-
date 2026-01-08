@@ -19,11 +19,13 @@
                             class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3"
                         >
                             <option value="all" @selected(request('status', 'all') === 'all')>{{ __('Kõik kuulutused') }}</option>
-                            <option value="active" @selected(request('status') === 'active')>{{ __('Aktiivsed kuulutused') }}</option>
-                            <option value="archived" @selected(request('status') === 'archived')>{{ __('Peatatud kuulutused') }}</option>
-                            <option value="pending" @selected(request('status') === 'pending')>{{ __('Ootel kuulutused') }}</option>
-                            <option value="expired" @selected(request('status') === 'expired')>{{ __('Aegunud kuulutused') }}</option>
-                            <option value="sold" @selected(request('status') === 'sold')>{{ __('Müüdud kuulutused') }}</option>
+                            <option value="active" @selected(request('status') === 'active')>{{ __('Aktiivsed') }}</option>
+                            <option value="archived" @selected(request('status') === 'archived')>{{ __('Peatatud') }}</option>
+                            <option value="draft" @selected(request('status') === 'draft')>{{ __('Mustandid') }}</option>
+                            {{-- OOTEL KUULUTUSED TEHAKSE ADMIN/MODEREERIMISEGA  --}}
+                            {{-- <option value="pending" @selected(request('status') === 'pending')>{{ __('Ootel kuulutused') }}</option> --}}
+                            <option value="expired" @selected(request('status') === 'expired')>{{ __('Aegunud') }}</option>
+                            <option value="sold" @selected(request('status') === 'sold')>{{ __('Müüdud') }}</option>
 
 
                         </select>

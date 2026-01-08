@@ -127,6 +127,11 @@ Route::middleware(['auth'])->group(function () {
         // Taasta müük (müüdud → aktiivne)
         Route::patch('/{listing}/unsold', [ListingController::class, 'markUnsold'])
             ->name('listings.mine.unsold');
+
+        // Mustand -> avalda (Aktiveeri)
+        Route::patch('/{listing}/publish', [ListingController::class, 'publishMine'])
+            ->name('listings.mine.publish');
+
     });
 
     /*

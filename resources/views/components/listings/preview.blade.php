@@ -14,15 +14,32 @@
             <x-listings.detail mode="preview" />
         </div>
 
-        <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-3 justify-end">
-            <button type="button" id="editListing"
-                    class="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800">
-                {{ __('Muuda') }}
+        <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-3 justify-end">
+    <button type="button" id="editListing"
+            class="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800">
+        {{ __('Muuda') }}
             </button>
 
-            <flux:button type="submit" variant="primary">
+            {{-- Mustand --}}
+            <button
+                type="submit"
+                name="action"
+                value="draft"
+                class="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+            >
+                {{ __('Salvesta mustandina') }}
+            </button>
+
+            {{-- Avalda --}}
+            <flux:button
+                type="submit"
+                variant="primary"
+                name="action"
+                value="publish"
+            >
                 {{ __('Lisa kuulutus') }}
             </flux:button>
         </div>
+
     </div>
 </div>
