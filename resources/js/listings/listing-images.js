@@ -1,3 +1,10 @@
+/**
+ * listings-images.js (create)
+ * - töötab nii DOMContentLoaded kui Livewire wire:navigate (livewire:navigated)
+ * - väldib topelt-init'i (input dataset)
+ * - väldib topelt evente (modal + document keydown bind once)
+ */
+
 function initListingImages() {
   const input = document.getElementById('images');
   if (!input) return;
@@ -15,7 +22,7 @@ function initListingImages() {
 
   const MAX_IMAGES = 10;
 
-  // Modal elemendid (uues markupis)
+  // Modal elemendid
   const modal = document.getElementById('imageModal');
   const modalImg = document.getElementById('imageModalImg');
   const modalClose = document.getElementById('imageModalClose');
@@ -29,7 +36,7 @@ function initListingImages() {
 
   function rebuildInputFilesFromItems() {
     const dt = new DataTransfer();
-    items.forEach(it => dt.items.add(it.file));
+    items.forEach((it) => dt.items.add(it.file));
     input.files = dt.files;
   }
 
@@ -38,10 +45,11 @@ function initListingImages() {
   }
 
   function isDuplicate(file) {
-    return items.some(it =>
-      it.file.name === file.name &&
-      it.file.size === file.size &&
-      it.file.lastModified === file.lastModified
+    return items.some(
+      (it) =>
+        it.file.name === file.name &&
+        it.file.size === file.size &&
+        it.file.lastModified === file.lastModified
     );
   }
 
@@ -98,51 +106,74 @@ function initListingImages() {
     if (modalCounter) modalCounter.textContent = '';
   }
 
-  if (modalClose) {
-    modalClose.addEventListener('click', (e) => {
-      e.preventDefault();
-      closeModal();
-    });
-  }
+  // ✅ BIND MODAL EVENTS ONLY ONCE (vältida topeltklikke wire:navigate korral)
+  if (modal && modal.dataset.bound !== '1') {
+    modal.dataset.bound = '1';
 
-  if (modalPrev) {
-    modalPrev.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex - 1);
-    });
-  }
+    if (modalClose) {
+      modalClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeModal();
+      });
+    }
 
-  if (modalNext) {
-    modalNext.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex + 1);
-    });
-  }
+    if (modalPrev) {
+      modalPrev.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (activeModalIndex === null) return;
+        showModalIndex(activeModalIndex - 1);
+      });
+    }
 
-  if (modal) {
+    if (modalNext) {
+      modalNext.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (activeModalIndex === null) return;
+        showModalIndex(activeModalIndex + 1);
+      });
+    }
+
+    // click outside closes
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeModal();
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeModal();
-      return;
-    }
+  // ✅ DOCUMENT KEYDOWN: bind only once
+  // NB! kasutab "current active create instance" viiteid body peal,
+  // et nooled/esc töötaksid õigel lehel pärast navigate.
+  if (!document.body.dataset.imagesKeydownInit) {
+    document.body.dataset.imagesKeydownInit = '1';
 
-    if (!isModalOpen()) return;
+    document.addEventListener('keydown', (e) => {
+      const api = window.__EHNET_CREATE_IMAGES_API;
+      if (!api) return;
 
-    if (e.key === 'ArrowLeft') {
-      if (activeModalIndex !== null) showModalIndex(activeModalIndex - 1);
-    }
+      if (e.key === 'Escape') {
+        api.closeModal();
+        return;
+      }
 
-    if (e.key === 'ArrowRight') {
-      if (activeModalIndex !== null) showModalIndex(activeModalIndex + 1);
-    }
-  });
+      if (!api.isModalOpen()) return;
+
+      if (e.key === 'ArrowLeft') api.prev();
+      if (e.key === 'ArrowRight') api.next();
+    });
+  }
+
+  // expose API for the global keydown handler (updated on each init)
+  window.__EHNET_CREATE_IMAGES_API = {
+    isModalOpen,
+    closeModal,
+    prev: () => {
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex - 1);
+    },
+    next: () => {
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex + 1);
+    },
+  };
 
   function addPlusTile() {
     if (items.length >= MAX_IMAGES) return;
@@ -285,7 +316,9 @@ function initListingImages() {
 
       // Load thumb
       const reader = new FileReader();
-      reader.onload = (e) => { img.src = e.target.result; };
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
       reader.readAsDataURL(item.file);
 
       wrap.appendChild(img);
@@ -333,14 +366,18 @@ function initListingImages() {
 
   // Klientpoolne guard: väldi submit'i, kui description liiga lühike
   if (form && description) {
-    form.addEventListener('submit', (e) => {
-      const text = (description.value || '').trim();
-      if (text.length < 20) {
-        e.preventDefault();
-        alert('Kirjeldus peab olema vähemalt 20 tähemärki.');
-        description.focus();
-      }
-    });
+    if (form.dataset.descGuard !== '1') {
+      form.dataset.descGuard = '1';
+
+      form.addEventListener('submit', (e) => {
+        const text = (description.value || '').trim();
+        if (text.length < 20) {
+          e.preventDefault();
+          alert('Kirjeldus peab olema vähemalt 20 tähemärki.');
+          description.focus();
+        }
+      });
+    }
   }
 
   // init

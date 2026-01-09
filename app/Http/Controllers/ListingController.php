@@ -8,6 +8,7 @@ use App\Models\ListingImage;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ListingController extends Controller
 {
@@ -282,30 +283,167 @@ class ListingController extends Controller
         return view('listings.edit', compact('listing', 'categories'));
     }
 
+
+
     public function updateMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // NB! praegu veel ilma piltideta (lisame järgmises sammus)
         $validated = $request->validate([
             'title'       => ['required', 'string', 'max:140'],
             'description' => ['required', 'string', 'min:20'],
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
             'price'       => ['nullable', 'numeric', 'min:0'],
+
+            // PILDID (edit)
+            'new_images'        => ['nullable', 'array', 'max:10'],
+            'new_images.*'      => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+
+            // JSONid
+            'deleted_image_ids' => ['nullable', 'string'], // JSON: [1,2,3]
+            'images_mix_order'  => ['nullable', 'string'], // JSON: ["e:12","n:0",...]
         ]);
 
-        $listing->update([
-            'title'       => $validated['title'],
-            'description' => $validated['description'],
-            'category_id' => $validated['category_id'],
-            'location_id' => $validated['location_id'],
-            'price'       => $validated['price'] ?? null,
-        ]);
+        DB::transaction(function () use ($request, $listing, $validated) {
+
+            // 1) uuenda kuulutuse põhiandmed
+            $listing->update([
+                'title'       => $validated['title'],
+                'description' => $validated['description'],
+                'category_id' => $validated['category_id'],
+                'location_id' => $validated['location_id'],
+                'price'       => $validated['price'] ?? null,
+            ]);
+
+            // lae pildid
+            $listing->load('images');
+
+            // 2) parse deleted ids
+            $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
+            $deletedIds = array_values(array_filter(array_map('intval', $deletedIds)));
+
+            if (!empty($deletedIds)) {
+                // kustuta ainult selle listinguga seotud pildid
+                $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
+
+                foreach ($toDelete as $img) {
+                    // kustuta fail
+                    if ($img->path) {
+                        Storage::disk('public')->delete($img->path);
+                    }
+                    // kustuta DB rida
+                    $img->delete();
+                }
+            }
+
+            // 3) salvesta uued pildid
+            $files = $request->file('new_images', []);
+            $createdNew = []; // index -> ListingImage
+
+            if (!empty($files)) {
+                foreach ($files as $file) {
+                    $path = $file->store('listings', 'public');
+
+                    $createdNew[] = ListingImage::create([
+                        'listing_id' => $listing->id,
+                        'path'       => $path,
+                        'sort_order' => 9999, // ajutine, paneme hiljem õigeks
+                    ]);
+                }
+            }
+
+            // 4) kontroll: max 10 kokku (allesjäänud existing + new)
+            $remainingExistingCount = $listing->images()
+                ->whereNotIn('id', $deletedIds ?: [-1])
+                ->count();
+
+            $total = $remainingExistingCount + count($createdNew);
+            if ($total > 10) {
+                // rollback by throwing
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'new_images' => 'Maksimaalselt 10 pilti kokku (olemasolevad + uued).',
+                ]);
+            }
+
+            // 5) sort_order salvesta segatud järjekorra alusel
+            $mix = $this->safeJsonArray($request->input('images_mix_order'));
+
+            // Reload pildid (pärast delete/create)
+            $currentExisting = $listing->images()->orderBy('sort_order')->get()->keyBy('id');
+
+            if (!empty($mix)) {
+                $sort = 0;
+
+                foreach ($mix as $token) {
+                    $token = (string) $token;
+
+                    // existing: e:ID
+                    if (str_starts_with($token, 'e:')) {
+                        $id = (int) substr($token, 2);
+                        if ($id && $currentExisting->has($id)) {
+                            $currentExisting[$id]->update(['sort_order' => $sort]);
+                            $sort++;
+                        }
+                        continue;
+                    }
+
+                    // new: n:INDEX (index createdNew sees)
+                    if (str_starts_with($token, 'n:')) {
+                        $idx = (int) substr($token, 2);
+                        if (isset($createdNew[$idx])) {
+                            $createdNew[$idx]->update(['sort_order' => $sort]);
+                            $sort++;
+                        }
+                        continue;
+                    }
+                }
+
+                // safety: kui mõni pilt jäi mixist välja, pane lõppu
+                $usedExistingIds = collect($mix)
+                    ->filter(fn($t) => str_starts_with((string)$t, 'e:'))
+                    ->map(fn($t) => (int) substr((string)$t, 2))
+                    ->all();
+
+                foreach ($currentExisting as $img) {
+                    if (!in_array($img->id, $usedExistingIds, true)) {
+                        $img->update(['sort_order' => $sort++]);
+                    }
+                }
+
+                // uued, mis jäid välja
+                $usedNewIdx = collect($mix)
+                    ->filter(fn($t) => str_starts_with((string)$t, 'n:'))
+                    ->map(fn($t) => (int) substr((string)$t, 2))
+                    ->all();
+
+                foreach ($createdNew as $i => $img) {
+                    if (!in_array($i, $usedNewIdx, true)) {
+                        $img->update(['sort_order' => $sort++]);
+                    }
+                }
+            } else {
+                // fallback: jäta olemasolevad nii nagu on, lisa uued lõppu
+                $maxSort = (int) ($listing->images()->max('sort_order') ?? 0);
+                foreach ($createdNew as $img) {
+                    $maxSort++;
+                    $img->update(['sort_order' => $maxSort]);
+                }
+            }
+        });
 
         return redirect()
             ->route('listings.mine.show', $listing)
             ->with('status', 'Kuulutus muudetud!');
     }
 
+    /**
+     * JSON safe parse -> array
+     */
+    private function safeJsonArray(?string $raw): array
+    {
+        if (!$raw) return [];
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
 }

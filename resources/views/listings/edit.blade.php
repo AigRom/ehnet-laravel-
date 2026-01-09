@@ -1,3 +1,18 @@
+@php
+    use Illuminate\Support\Facades\Storage;
+
+    // olemasolevad pildid JSON-ina JS-ile (järjekord sort_order järgi)
+    $existingImages = $listing->images
+        ->sortBy('sort_order')
+        ->values()
+        ->map(fn ($img) => [
+            'id' => $img->id,
+            'src' => Storage::url($img->path),
+            'rotation' => (int) ($img->rotation ?? 0), // kui veergu pole, jääb 0
+            'name' => basename($img->path),
+        ]);
+@endphp
+
 <x-layouts.app.sidebar :title="__('Muuda kuulutust')">
     <flux:main>
         <div class="max-w-2xl space-y-6">
@@ -110,7 +125,6 @@
                         :wire:key="'loc-edit-'.$listing->id.'-'.($currentLocationId ?? 'new')"
                     />
 
-                    {{-- label preview / (hiljem saad kasutada ka avalikus detailis vms) --}}
                     <input
                         type="hidden"
                         name="location_label"
@@ -154,9 +168,41 @@
                     @enderror
                 </div>
 
-                {{-- Images: jätame 1. sammus välja, lisame järgmises --}}
-                <div class="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-4 text-sm text-zinc-600 dark:text-zinc-300">
-                    {{ __('Piltide muutmine lisame järgmises sammus.') }}
+                {{-- ✅ PILDID: 1 grid, 1 input, sama UX nagu create --}}
+                <div class="space-y-3" data-listing-edit-images data-existing='@json($existingImages)'>
+                    <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
+                        {{ __('Pildid') }}
+                        <span class="text-xs text-zinc-500">{{ __('(Järjekorra muutmiseks lohista.)') }}</span>
+                    </label>
+
+                    {{-- ÜKS file input (JS teeb + tile) --}}
+                    <input
+                        id="images"
+                        type="file"
+                        name="new_images[]"
+                        multiple
+                        accept="image/*"
+                        class="hidden"
+                    />
+
+                    {{-- Hidden väljad JS -> backend --}}
+                    <input type="hidden" name="images_order" id="images_order" value="[]">
+                    <input type="hidden" name="deleted_image_ids" id="deleted_image_ids" value="[]">
+                    <input type="hidden" name="existing_rotations" id="existing_rotations" value="{}">
+
+                    @error('new_images')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                    @error('new_images.*')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Sama id nagu create --}}
+                    <div id="imagePreview" class="mt-3 grid grid-cols-3 gap-3"></div>
+
+                    <p class="mt-2 text-xs text-zinc-500">
+                        {{ __('Kokku kuni 10 pilti (olemasolevad + uued). Esimene on cover.') }}
+                    </p>
                 </div>
 
                 <div class="flex gap-3 justify-end">
