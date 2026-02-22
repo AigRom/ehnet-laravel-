@@ -38,11 +38,21 @@
                     >
                         {{ __('Minu kuulutused') }}
                     </flux:navlist.item>
+
+                    {{-- ✅ UUS --}}
+                    <flux:navlist.item
+                        icon="plus-circle"
+                        :href="route('listings.create')"
+                        :current="request()->routeIs('listings.create.*')"
+                        wire:navigate
+                    >
+                        {{ __('Lisa kuulutus') }}
+                    </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
-
             <flux:spacer />
+
 
             {{-- Allosas lingid (hetkel jätame alles, neid saab hiljem eemaldada või muuta) --}}
             <flux:navlist variant="outline">

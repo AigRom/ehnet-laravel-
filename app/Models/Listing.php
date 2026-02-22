@@ -18,6 +18,8 @@ class Listing extends Model
         'description',
         'price',
         'currency',
+        'intent',
+        'condition',
         'listing_type',   // sale|auction
         'status',         // draft|pending|published|rejected|archived
         'published_at',
@@ -25,6 +27,7 @@ class Listing extends Model
         'reviewed_by',
         'reviewed_at',
         'rejected_reason',
+        'delivery_options',
     ];
 
     protected $casts = [
@@ -36,6 +39,9 @@ class Listing extends Model
         'published_at' => 'datetime',
         'expires_at'   => 'datetime',
         'reviewed_at'  => 'datetime',
+        'delivery_options' => 'array',
+
+
     ];
 
     // Seosed
@@ -99,6 +105,38 @@ class Listing extends Model
             default     => '—',
         };
     }
+
+    //Helper: Tarne valikud
+    public function deliveryOptionsLabels(): array
+    {
+        $map = [
+            'pickup'          => 'Järeletulemine',
+            'seller_delivery' => 'Transpordi võimalus',
+            'courier'         => 'Saadan kulleriga või pakiautomaati',
+            'agreement'       => 'Lepime kokku',
+        ];
+
+        $opts = is_array($this->delivery_options) ? $this->delivery_options : [];
+        $opts = array_values(array_unique(array_filter($opts)));
+
+        return array_values(array_filter(array_map(
+            fn ($v) => $map[$v] ?? $v,
+            $opts
+        )));
+    }
+
+
+    //Helper seisukord
+    public function conditionLabel(): string
+    {
+        return match ($this->condition) {
+            'new'      => 'Uus',
+            'used'     => 'Kasutatud',
+            'leftover' => 'Jääk',
+            default    => '—',
+        };
+    }
+
 
 
 

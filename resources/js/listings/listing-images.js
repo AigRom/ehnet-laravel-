@@ -17,12 +17,9 @@ function initListingImages() {
   const orderField = document.getElementById('images_order');
   if (!preview || !orderField) return;
 
-  const form = input.closest('form');
-  const description = form?.querySelector('[name="description"]');
-
   const MAX_IMAGES = 10;
 
-  // Modal elemendid
+  // Modal elemendid (võivad olla null, kui markup puudub)
   const modal = document.getElementById('imageModal');
   const modalImg = document.getElementById('imageModalImg');
   const modalClose = document.getElementById('imageModalClose');
@@ -30,7 +27,7 @@ function initListingImages() {
   const modalNext = document.getElementById('imageModalNext');
   const modalCounter = document.getElementById('imageModalCounter');
 
-  // items: { file: File, rotation: number } (rotation ainult thumbs'i jaoks)
+  // items: { file: File }
   let items = [];
   let activeModalIndex = null;
 
@@ -61,7 +58,6 @@ function initListingImages() {
     if (!modal || !modalImg) return;
     if (!items.length) return;
 
-    // wrap-around
     if (index < 0) index = items.length - 1;
     if (index >= items.length) index = 0;
 
@@ -73,12 +69,7 @@ function initListingImages() {
       modalImg.src = ev.target.result;
       modalImg.alt = item.file.name;
 
-      // ✅ modalis rotate't EI ole
-      modalImg.style.transform = 'rotate(0deg)';
-
-      if (modalCounter) {
-        modalCounter.textContent = `${activeModalIndex + 1} / ${items.length}`;
-      }
+      if (modalCounter) modalCounter.textContent = `${activeModalIndex + 1} / ${items.length}`;
     };
     reader.readAsDataURL(item.file);
   }
@@ -100,48 +91,38 @@ function initListingImages() {
     modal.classList.remove('flex');
 
     modalImg.src = '';
-    modalImg.style.transform = 'rotate(0deg)';
     activeModalIndex = null;
 
     if (modalCounter) modalCounter.textContent = '';
   }
 
-  // ✅ BIND MODAL EVENTS ONLY ONCE (vältida topeltklikke wire:navigate korral)
+  // BIND MODAL EVENTS ONLY ONCE
   if (modal && modal.dataset.bound !== '1') {
     modal.dataset.bound = '1';
 
-    if (modalClose) {
-      modalClose.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeModal();
-      });
-    }
+    modalClose?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeModal();
+    });
 
-    if (modalPrev) {
-      modalPrev.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (activeModalIndex === null) return;
-        showModalIndex(activeModalIndex - 1);
-      });
-    }
+    modalPrev?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex - 1);
+    });
 
-    if (modalNext) {
-      modalNext.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (activeModalIndex === null) return;
-        showModalIndex(activeModalIndex + 1);
-      });
-    }
+    modalNext?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (activeModalIndex === null) return;
+      showModalIndex(activeModalIndex + 1);
+    });
 
-    // click outside closes
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeModal();
     });
   }
 
-  // ✅ DOCUMENT KEYDOWN: bind only once
-  // NB! kasutab "current active create instance" viiteid body peal,
-  // et nooled/esc töötaksid õigel lehel pärast navigate.
+  // DOCUMENT KEYDOWN: bind only once
   if (!document.body.dataset.imagesKeydownInit) {
     document.body.dataset.imagesKeydownInit = '1';
 
@@ -161,7 +142,7 @@ function initListingImages() {
     });
   }
 
-  // expose API for the global keydown handler (updated on each init)
+  // expose API
   window.__EHNET_CREATE_IMAGES_API = {
     isModalOpen,
     closeModal,
@@ -180,7 +161,6 @@ function initListingImages() {
 
     const addTile = document.createElement('button');
     addTile.type = 'button';
-
     addTile.className =
       'flex aspect-square items-center justify-center rounded-xl border-2 border-dashed ' +
       'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 ' +
@@ -194,7 +174,7 @@ function initListingImages() {
     `;
 
     addTile.addEventListener('click', () => {
-      input.value = null; // lubab valida sama faili uuesti
+      input.value = null; // ✅ lubab valida sama faili uuesti
       input.click();
     });
 
@@ -208,16 +188,11 @@ function initListingImages() {
       const wrap = document.createElement('div');
       wrap.className =
         'relative aspect-square rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900';
-
       wrap.draggable = true;
-      wrap.dataset.index = String(index);
 
       const img = document.createElement('img');
       img.className = 'w-full h-full object-cover cursor-zoom-in';
       img.alt = item.file.name;
-
-      // rotate ainult thumbil
-      img.style.transform = `rotate(${item.rotation}deg)`;
 
       const badge = document.createElement('div');
       badge.className =
@@ -237,35 +212,15 @@ function initListingImages() {
 
         items.splice(index, 1);
 
-        // modal indeks turvaliseks
         if (activeModalIndex !== null) {
-          if (items.length === 0) {
-            closeModal();
-          } else if (activeModalIndex >= items.length) {
-            activeModalIndex = items.length - 1;
-            if (isModalOpen()) showModalIndex(activeModalIndex);
-          } else if (index === activeModalIndex) {
-            if (isModalOpen()) showModalIndex(activeModalIndex);
-          }
+          if (items.length === 0) closeModal();
+          else if (activeModalIndex >= items.length) activeModalIndex = items.length - 1;
+
+          if (isModalOpen() && activeModalIndex !== null) showModalIndex(activeModalIndex);
         }
 
         rebuildInputFilesFromItems();
         syncOrderField();
-        render();
-      });
-
-      const rotateBtn = document.createElement('button');
-      rotateBtn.type = 'button';
-      rotateBtn.className =
-        'absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-lg bg-black/60 text-white';
-      rotateBtn.textContent = 'Rotate';
-      rotateBtn.title = 'Rotate 90°';
-
-      rotateBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        item.rotation = (item.rotation + 90) % 360;
         render();
       });
 
@@ -300,7 +255,6 @@ function initListingImages() {
         const moved = items.splice(from, 1)[0];
         items.splice(to, 0, moved);
 
-        // modal index korrigeerimine
         if (activeModalIndex !== null) {
           if (activeModalIndex === from) activeModalIndex = to;
           else if (from < activeModalIndex && to >= activeModalIndex) activeModalIndex -= 1;
@@ -314,27 +268,24 @@ function initListingImages() {
         render();
       });
 
-      // Load thumb
+      // Thumb
       const reader = new FileReader();
-      reader.onload = (e) => {
-        img.src = e.target.result;
-      };
+      reader.onload = (e) => { img.src = e.target.result; };
       reader.readAsDataURL(item.file);
 
       wrap.appendChild(img);
       wrap.appendChild(badge);
       wrap.appendChild(removeBtn);
-      wrap.appendChild(rotateBtn);
       preview.appendChild(wrap);
     });
 
     addPlusTile();
   }
 
-  // Add more images (max 10)
+  // Add more images
   input.addEventListener('change', () => {
     const newlySelected = Array.from(input.files || []);
-    if (newlySelected.length === 0) return;
+    if (!newlySelected.length) return;
 
     const freeSlots = MAX_IMAGES - items.length;
     if (freeSlots <= 0) {
@@ -349,10 +300,10 @@ function initListingImages() {
 
     for (const file of newlySelected) {
       if (items.length >= MAX_IMAGES) break;
-      if (!isDuplicate(file)) {
-        items.push({ file, rotation: 0 });
-        added += 1;
-      }
+      if (isDuplicate(file)) continue;
+
+      items.push({ file });
+      added++;
     }
 
     if (added < newlySelected.length) {
@@ -362,23 +313,8 @@ function initListingImages() {
     rebuildInputFilesFromItems();
     syncOrderField();
     render();
+
   });
-
-  // Klientpoolne guard: väldi submit'i, kui description liiga lühike
-  if (form && description) {
-    if (form.dataset.descGuard !== '1') {
-      form.dataset.descGuard = '1';
-
-      form.addEventListener('submit', (e) => {
-        const text = (description.value || '').trim();
-        if (text.length < 20) {
-          e.preventDefault();
-          alert('Kirjeldus peab olema vähemalt 20 tähemärki.');
-          description.focus();
-        }
-      });
-    }
-  }
 
   // init
   syncOrderField();

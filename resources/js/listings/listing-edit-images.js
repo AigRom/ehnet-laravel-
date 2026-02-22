@@ -13,20 +13,18 @@ function initListingEditImages() {
 
   const orderField = root.querySelector('#images_order');
   const deletedField = root.querySelector('#deleted_image_ids');
-  const rotationsField = root.querySelector('#existing_rotations');
 
-  if (!input || !preview || !orderField || !deletedField || !rotationsField) return;
+  if (!input || !preview || !orderField || !deletedField) return;
 
   const MAX_IMAGES = 10;
 
   /**
    * items:
-   *  existing: { kind:'existing', id:number, src:string, rotation:number, name?:string }
-   *  new:      { kind:'new', file:File, rotation:number }
+   *  existing: { kind:'existing', id:number, src:string, name?:string }
+   *  new:      { kind:'new', file:File }
    */
   let items = [];
   let deletedExistingIds = new Set(); // existing ids marked for delete
-  let existingRotations = {}; // { [id]: deg }
   let activeModalIndex = null;
 
   // --- Modal (kui sul on sama markup nagu create lehel)
@@ -41,6 +39,10 @@ function initListingEditImages() {
     return !!(modal && modal.classList.contains('flex') && !modal.classList.contains('hidden'));
   }
 
+  function getVisibleItems() {
+    return items.filter((it) => it.kind === 'new' || !deletedExistingIds.has(it.id));
+  }
+
   function showModalIndex(index) {
     if (!modal || !modalImg) return;
     const visible = getVisibleItems();
@@ -53,7 +55,6 @@ function initListingEditImages() {
     activeModalIndex = index;
     const it = visible[activeModalIndex];
 
-    // modal EI rota (nagu create)
     modalImg.style.transform = 'rotate(0deg)';
 
     if (it.kind === 'existing') {
@@ -145,23 +146,14 @@ function initListingEditImages() {
 
     arr.forEach((x) => {
       if (!x || !x.id || !x.src) return;
-      const rot = Number(x.rotation || 0) || 0;
 
       items.push({
         kind: 'existing',
         id: Number(x.id),
         src: String(x.src),
-        rotation: rot,
         name: x.name ? String(x.name) : '',
       });
-
-      existingRotations[String(x.id)] = rot;
     });
-  }
-
-  // --- Helpers
-  function getVisibleItems() {
-    return items.filter((it) => it.kind === 'new' || !deletedExistingIds.has(it.id));
   }
 
   function countTotalVisible() {
@@ -179,7 +171,7 @@ function initListingEditImages() {
   }
 
   function rebuildInputFilesFromItems() {
-    // input.files sisaldab ainult NEW faile sellises järjekorras nagu items-is new-itemid
+    // input.files sisaldab ainult NEW faile järjekorras nagu items-is (new itemid)
     const dt = new DataTransfer();
     items.forEach((it) => {
       if (it.kind === 'new') dt.items.add(it.file);
@@ -187,23 +179,25 @@ function initListingEditImages() {
     input.files = dt.files;
   }
 
+  /**
+   * ✅ OLULINE: edit backend ootab images_order JSON-i segajärjekorras:
+   * ["e:12","n:0","e:15","n:1", ...]
+   * kus n: indeks viitab uute piltide järjekorrale (0..)
+   */
   function syncHiddenFields() {
     // deleted existing ids
     deletedField.value = JSON.stringify(Array.from(deletedExistingIds));
 
-    // existing rotations (ainult nende jaoks, mis alles)
-    const rot = {};
-    items.forEach((it) => {
-      if (it.kind === 'existing' && !deletedExistingIds.has(it.id)) {
-        rot[String(it.id)] = Number(it.rotation || 0) || 0;
-      }
-    });
-    rotationsField.value = JSON.stringify(rot);
+    const visible = getVisibleItems();
 
-    // new order: kuna rebuildInputFilesFromItems teeb input.files samas järjekorras,
-    // siis backendile piisab 0..n-1
-    const newCount = items.filter((it) => it.kind === 'new').length;
-    orderField.value = JSON.stringify(Array.from({ length: newCount }, (_, i) => i));
+    // anna uutele nähtavatele piltidele n-indeksid nende nähtavas järjekorras
+    let nIdx = 0;
+    const orderTokens = visible.map((it) => {
+      if (it.kind === 'existing') return `e:${it.id}`;
+      return `n:${nIdx++}`;
+    });
+
+    orderField.value = JSON.stringify(orderTokens);
   }
 
   function addPlusTile() {
@@ -231,6 +225,12 @@ function initListingEditImages() {
     preview.appendChild(addTile);
   }
 
+  function sameItem(a, b) {
+    if (a.kind !== b.kind) return false;
+    if (a.kind === 'existing') return a.id === b.id;
+    return a.file === b.file;
+  }
+
   function render() {
     preview.innerHTML = '';
 
@@ -246,9 +246,7 @@ function initListingEditImages() {
       const img = document.createElement('img');
       img.className = 'w-full h-full object-cover cursor-zoom-in';
       img.alt = item.kind === 'existing' ? (item.name || '') : (item.file?.name || '');
-
-      // rotate thumbil (nii create kui edit)
-      img.style.transform = `rotate(${item.rotation || 0}deg)`;
+      img.style.transform = 'rotate(0deg)';
 
       if (item.kind === 'existing') {
         img.src = item.src;
@@ -260,7 +258,6 @@ function initListingEditImages() {
 
       img.addEventListener('click', (e) => {
         e.preventDefault();
-        // kui modal markup olemas, avame; muidu ei tee midagi
         if (modal && modalImg) openModalFromItemIndex(visibleIndex);
       });
 
@@ -286,12 +283,10 @@ function initListingEditImages() {
         if (it.kind === 'existing') {
           deletedExistingIds.add(it.id);
         } else {
-          // eemalda items-ist new file
           const realIdx = items.findIndex((x) => x.kind === 'new' && x.file === it.file);
           if (realIdx >= 0) items.splice(realIdx, 1);
         }
 
-        // modal index safety
         if (activeModalIndex !== null && isModalOpen()) {
           const newVisible = getVisibleItems();
           if (newVisible.length === 0) closeModal();
@@ -304,29 +299,7 @@ function initListingEditImages() {
         render();
       });
 
-      const rotateBtn = document.createElement('button');
-      rotateBtn.type = 'button';
-      rotateBtn.className =
-        'absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-lg bg-black/60 text-white';
-      rotateBtn.textContent = 'Rotate';
-      rotateBtn.title = 'Pööra 90°';
-
-      rotateBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        item.rotation = ((Number(item.rotation || 0) || 0) + 90) % 360;
-
-        // kui existing, hoia mapis ka
-        if (item.kind === 'existing') {
-          existingRotations[String(item.id)] = item.rotation;
-        }
-
-        syncHiddenFields();
-        render();
-      });
-
-      // Drag & drop reorder (visibleIndex põhine)
+      // Drag & drop reorder
       wrap.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/plain', String(visibleIndex));
         e.dataTransfer.effectAllowed = 'move';
@@ -354,7 +327,6 @@ function initListingEditImages() {
         const toItem = visibleNow[toVisible];
         if (!fromItem || !toItem) return;
 
-        // leia from/to items massiivis
         const fromReal = items.findIndex((x) => sameItem(x, fromItem));
         const toReal = items.findIndex((x) => sameItem(x, toItem));
         if (fromReal < 0 || toReal < 0) return;
@@ -362,9 +334,7 @@ function initListingEditImages() {
         const moved = items.splice(fromReal, 1)[0];
         items.splice(toReal, 0, moved);
 
-        // modal index korrigeerimine
         if (activeModalIndex !== null && isModalOpen()) {
-          // lihtne: näita sama visibleIndex positsiooni uuesti
           const newVisible = getVisibleItems();
           if (newVisible.length) {
             activeModalIndex = Math.min(activeModalIndex, newVisible.length - 1);
@@ -380,7 +350,6 @@ function initListingEditImages() {
       wrap.appendChild(img);
       wrap.appendChild(badge);
       wrap.appendChild(removeBtn);
-      wrap.appendChild(rotateBtn);
 
       preview.appendChild(wrap);
     });
@@ -388,20 +357,16 @@ function initListingEditImages() {
     addPlusTile();
   }
 
-  function sameItem(a, b) {
-    if (a.kind !== b.kind) return false;
-    if (a.kind === 'existing') return a.id === b.id;
-    return a.file === b.file;
-  }
-
   // --- NEW file add
   input.addEventListener('change', () => {
     const selected = Array.from(input.files || []);
     if (!selected.length) return;
 
-    const freeSlots = MAX_IMAGES - countTotalVisible();
+    let freeSlots = MAX_IMAGES - countTotalVisible();
+
     if (freeSlots <= 0) {
       alert(`Maksimaalselt ${MAX_IMAGES} pilti (olemasolevad + uued kokku).`);
+      input.value = null;
       rebuildInputFilesFromItems();
       syncHiddenFields();
       render();
@@ -409,21 +374,26 @@ function initListingEditImages() {
     }
 
     let added = 0;
+
     for (const file of selected) {
-      if (countTotalVisible() >= MAX_IMAGES) break;
-      if (!isDuplicateNew(file)) {
-        items.push({ kind: 'new', file, rotation: 0 });
-        added += 1;
-      }
+      if (freeSlots <= 0) break;
+      if (isDuplicateNew(file)) continue;
+
+      items.push({ kind: 'new', file });
+      freeSlots--;
+      added++;
     }
 
     if (added < selected.length) {
-      alert(`Lisati ${added} pilti. Ülejäänud jäeti välja (duplikaat / max piirang).`);
+      alert(`Lisati ${added} pilti. Ülejäänud jäeti välja (max piirang / duplikaat).`);
     }
 
     rebuildInputFilesFromItems();
     syncHiddenFields();
     render();
+
+    // allow selecting same file again
+    //input.value = null; //See praegu ei lase uutel piltidel salvestuda vist
   });
 
   // --- INIT

@@ -23,7 +23,13 @@
                     {{ __('Muuda') }}
                 </flux:button>
 
-                {{-- MUSTAND: Aktiveeri (publish) --}}
+                @php
+                    $isExpired = $listing->status === 'published'
+                        && $listing->expires_at
+                        && $listing->expires_at->isPast();
+                @endphp
+
+                {{-- MUSTAND: Aktiveeri --}}
                 @if($listing->status === 'draft')
                     <form method="POST" action="{{ route('listings.mine.publish', $listing) }}">
                         @csrf
@@ -34,7 +40,7 @@
                     </form>
                 @endif
 
-                {{-- PEATA / AKTIVEERI (published <-> archived) --}}
+                {{-- ARCHIVED: Aktiveeri --}}
                 @if($listing->status === 'archived')
                     <form method="POST" action="{{ route('listings.mine.toggle', $listing) }}">
                         @csrf
@@ -43,26 +49,39 @@
                             {{ __('Aktiveeri') }}
                         </flux:button>
                     </form>
-                @elseif($listing->status === 'published')
-                    <form method="POST" action="{{ route('listings.mine.toggle', $listing) }}">
-                        @csrf
-                        @method('PATCH')
-                        <flux:button type="submit" variant="outline">
-                            {{ __('Peata') }}
-                        </flux:button>
-                    </form>
                 @endif
 
-                {{-- MÜÜDUD / TAASTA MÜÜKI (ainult published <-> sold) --}}
+                {{-- PUBLISHED: aegunud -> Pane uuesti müüki, muidu -> Peata --}}
                 @if($listing->status === 'published')
-                    <form method="POST" action="{{ route('listings.mine.sold', $listing) }}">
-                        @csrf
-                        @method('PATCH')
-                        <flux:button type="submit" variant="outline">
-                            {{ __('Märgi müüduks') }}
-                        </flux:button>
-                    </form>
-                @elseif($listing->status === 'sold')
+                    @if($isExpired)
+                        <form method="POST" action="{{ route('listings.mine.relist', $listing) }}">
+                            @csrf
+                            @method('PATCH')
+                            <flux:button type="submit" variant="primary">
+                                {{ __('Pane uuesti müüki') }}
+                            </flux:button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('listings.mine.toggle', $listing) }}">
+                            @csrf
+                            @method('PATCH')
+                            <flux:button type="submit" variant="outline">
+                                {{ __('Peata') }}
+                            </flux:button>
+                        </form>
+
+                        <form method="POST" action="{{ route('listings.mine.sold', $listing) }}">
+                            @csrf
+                            @method('PATCH')
+                            <flux:button type="submit" variant="outline">
+                                {{ __('Märgi müüduks') }}
+                            </flux:button>
+                        </form>
+                    @endif
+                @endif
+
+                {{-- SOLD: Taasta müüki --}}
+                @if($listing->status === 'sold')
                     <form method="POST" action="{{ route('listings.mine.unsold', $listing) }}">
                         @csrf
                         @method('PATCH')

@@ -7,6 +7,7 @@ use Livewire\Volt\Volt;
 // Kontrollerid
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\ListingQuickController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,7 +74,7 @@ Route::middleware(['auth'])->group(function () {
     | Kuulutused (Listings)
     |--------------------------------------------------------------------------
     */
-
+    
     /*
     | Kuulutuse lisamine
     */
@@ -131,6 +132,9 @@ Route::middleware(['auth'])->group(function () {
         // Mustand -> avalda (Aktiveeri)
         Route::patch('/{listing}/publish', [ListingController::class, 'publishMine'])
             ->name('listings.mine.publish');
+
+        Route::patch('/listings/mine/{listing}/relist', [ListingController::class, 'relistMine'])
+            ->name('listings.mine.relist');
 
     });
 

@@ -9,6 +9,7 @@ use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ListingController extends Controller
 {
@@ -19,7 +20,7 @@ class ListingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // MVP: võtame alguses ainult level 2 ja 3 (vald/linn + asula/linnaosa)
+        // MVP: level 2 ja 3 (vald/linn + asula/linnaosa)
         $locations = Location::query()
             ->where('is_valid', true)
             ->whereIn('level', [2, 3])
@@ -32,54 +33,109 @@ class ListingController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            // ✅ uus: action (publish/draft)
+        $action  = (string) $request->input('action', 'publish');
+        $isDraft = $action === 'draft';
+
+        // price_mode -> price normaliseerimine enne validate
+        $this->normalizePriceMode($request);
+
+        $rulesDraft = [
             'action'      => ['nullable', 'in:publish,draft'],
 
+            // draft: kõik võivad puududa
+            'title'       => ['nullable', 'string', 'max:140'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'location_id' => ['nullable', 'exists:locations,id'],
+            'price'       => ['nullable', 'numeric', 'min:0'],
+            'price_mode'  => ['nullable', 'in:deal,free,price'],
+
+            // ✅ Seisukord
+            'condition'   => ['nullable', 'in:new,used,leftover'],
+
+            // ✅ Kättesaamine
+            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
+
+            // Pildid (create)
+            'images'       => ['nullable', 'array', 'max:10'],
+            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images_order' => ['nullable', 'string'],
+        ];
+
+        $rulesPublish = [
+            'action'      => ['nullable', 'in:publish,draft'],
+
+            // publish: tuumik
             'title'       => ['required', 'string', 'max:140'],
-            'description' => ['required', 'string', 'min:20'],
+            'description' => ['nullable', 'string', 'max:5000'], // ✅ valikuline
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
             'price'       => ['nullable', 'numeric', 'min:0'],
+            'price_mode'  => ['nullable', 'in:deal,free,price'],
 
-            // PILDID
+            'condition'   => ['nullable', 'in:new,used,leftover'],
+
+            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
+
             'images'       => ['nullable', 'array', 'max:10'],
-            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], // 5MB
-            'images_order' => ['nullable', 'string'], // JSON (järjekord)
-        ]);
+            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images_order' => ['nullable', 'string'],
+        ];
 
-        $action = $validated['action'] ?? 'publish';
-        $isDraft = $action === 'draft';
+        $validated = $request->validate($isDraft ? $rulesDraft : $rulesPublish);
+
+        // STOP: ära loo täiesti tühja mustandit
+        if ($isDraft) {
+            $hasAny =
+                filled($validated['title'] ?? null) ||
+                filled($validated['description'] ?? null) ||
+                filled($validated['category_id'] ?? null) ||
+                filled($validated['location_id'] ?? null) ||
+                filled($validated['condition'] ?? null) ||
+                !empty($validated['delivery_options'] ?? []) ||
+                ($request->filled('price') && $request->input('price') !== null) ||
+                !empty($request->file('images', []));
+
+            if (!$hasAny) {
+                throw ValidationException::withMessages([
+                    'title' => 'Täiesti tühja mustandit ei salvestata. Lisa vähemalt pealkiri, kategooria, asukoht, hind, seisukord, kättesaamine või pilt.',
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($request, $validated, $isDraft) {
+            $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
             $listing = Listing::create([
                 'user_id'      => $request->user()->id,
-                'category_id'  => $validated['category_id'],
-                'location_id'  => $validated['location_id'],
-                'title'        => $validated['title'],
-                'description'  => $validated['description'],
-                'price'        => $validated['price'] ?? null,
+                'category_id'  => $validated['category_id'] ?? null,
+                'location_id'  => $validated['location_id'] ?? null,
+                'title'        => $validated['title'] ?? null,
+                'description'  => $validated['description'] ?? null,
+                'price'        => array_key_exists('price', $validated) ? $validated['price'] : null,
                 'currency'     => 'EUR',
                 'listing_type' => 'sale',
 
-                // ✅ mustand vs avaldamine
+                // ✅ sama loogika nagu condition: salvestame väärtuse otse
+                'condition'       => $validated['condition'] ?? null,
+                'delivery_options'=> $delivery, // ✅ array, cast teeb JSONiks
+
                 'status'       => $isDraft ? 'draft' : 'published',
                 'published_at' => $isDraft ? null : now(),
                 'expires_at'   => $isDraft ? null : now()->addDays(30),
             ]);
 
-            // --- Salvesta pildid, kui neid on ---
+            // --- Pildid (create) ---
             $files = $request->file('images', []);
-
             if (!empty($files)) {
-                $order = [];
-                if ($request->filled('images_order')) {
-                    $decoded = json_decode($request->input('images_order'), true);
-                    if (is_array($decoded)) {
-                        $order = $decoded;
-                    }
-                }
+                $order = $this->safeJsonArray($request->input('images_order'));
+
+                $order = array_values(array_filter(array_map(
+                    fn ($x) => is_numeric($x) ? (int) $x : null,
+                    $order
+                ), fn ($x) => $x !== null));
 
                 if (count($order) !== count($files)) {
                     $order = range(0, count($files) - 1);
@@ -87,19 +143,15 @@ class ListingController extends Controller
 
                 $sort = 0;
                 foreach ($order as $fileIndex) {
-                    if (!isset($files[$fileIndex])) {
-                        continue;
-                    }
+                    if (!isset($files[$fileIndex])) continue;
 
                     $path = $files[$fileIndex]->store('listings', 'public');
 
                     ListingImage::create([
                         'listing_id' => $listing->id,
                         'path'       => $path,
-                        'sort_order' => $sort,
+                        'sort_order' => $sort++,
                     ]);
-
-                    $sort++;
                 }
             }
         });
@@ -130,31 +182,20 @@ class ListingController extends Controller
             $listingsQuery->where('status', 'published')
                 ->where(function ($q) {
                     $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>=', now());
+                        ->orWhere('expires_at', '>=', now());
                 });
-
         } elseif ($status === 'expired') {
             $listingsQuery->where('status', 'published')
                 ->whereNotNull('expires_at')
                 ->where('expires_at', '<', now());
-
         } elseif ($status === 'archived') {
             $listingsQuery->where('status', 'archived');
-
         } elseif ($status === 'sold') {
             $listingsQuery->where('status', 'sold');
-
         } elseif ($status === 'pending') {
             $listingsQuery->where('status', 'pending');
-
         } elseif ($status === 'draft') {
-            // ✅ uus filter
             $listingsQuery->where('status', 'draft');
-
-        } elseif ($status === 'all') {
-            // ei filtreeri staatuse järgi
-        } else {
-            // safety: kui tuleb mingi tundmatu status, näita kõiki
         }
 
         $q = trim((string) $request->get('q', ''));
@@ -184,26 +225,180 @@ class ListingController extends Controller
         return view('listings.mine-show', compact('listing'));
     }
 
+    public function editMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $listing->load(['category', 'location', 'images']);
+
+        return view('listings.edit', compact('listing', 'categories'));
+    }
+
+    public function updateMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
+
+        $this->normalizePriceMode($request);
+
+        $validated = $request->validate([
+            'title'       => ['required', 'string', 'max:140'],
+            'description' => ['nullable', 'string', 'max:5000'], // ✅ valikuline
+            'category_id' => ['required', 'exists:categories,id'],
+            'location_id' => ['required', 'exists:locations,id'],
+            'price'       => ['nullable', 'numeric', 'min:0'],
+            'price_mode'  => ['nullable', 'in:deal,free,price'],
+
+            'condition'   => ['nullable', 'in:new,used,leftover'],
+
+            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
+
+            // PILDID (edit)
+            'new_images'   => ['nullable', 'array', 'max:10'],
+            'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+
+            'deleted_image_ids' => ['nullable', 'string'],
+            'images_order'      => ['nullable', 'string'], // JSON: ["e:12","n:0",...]
+        ]);
+
+        DB::transaction(function () use ($request, $listing, $validated) {
+
+            $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
+
+            // 1) põhiandmed
+            $listing->update([
+                'title'          => $validated['title'],
+                'description'    => $validated['description'] ?? null,
+                'category_id'    => $validated['category_id'],
+                'location_id'    => $validated['location_id'],
+                'price'          => array_key_exists('price', $validated) ? $validated['price'] : null,
+
+                'condition'       => $validated['condition'] ?? null,
+                'delivery_options'=> $delivery, // ✅ array
+            ]);
+
+            // 2) JSON parse
+            $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
+            $deletedIds = array_values(array_filter(array_map('intval', $deletedIds)));
+
+            $mixOrder = $this->safeJsonArray($request->input('images_order')); // ["e:..","n:.."]
+
+            // 3) delete existing images
+            if (!empty($deletedIds)) {
+                $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
+
+                foreach ($toDelete as $img) {
+                    if ($img->path) Storage::disk('public')->delete($img->path);
+                    $img->delete();
+                }
+            }
+
+            // 4) save new images
+            $files = $request->file('new_images', []);
+            $createdNew = []; // index => ListingImage
+
+            if (!empty($files)) {
+                foreach ($files as $file) {
+                    $path = $file->store('listings', 'public');
+
+                    $createdNew[] = ListingImage::create([
+                        'listing_id' => $listing->id,
+                        'path'       => $path,
+                        'sort_order' => 9999,
+                    ]);
+                }
+            }
+
+            // 5) max 10 after delete+add
+            $total = $listing->images()->count();
+            if ($total > 10) {
+                throw ValidationException::withMessages([
+                    'new_images' => 'Maksimaalselt 10 pilti kokku (olemasolevad + uued).',
+                ]);
+            }
+
+            // 6) reorder mixed tokens
+            if (!empty($mixOrder)) {
+                $sort = 0;
+                $existingMap = $listing->images()->get()->keyBy('id');
+
+                foreach ($mixOrder as $token) {
+                    $token = (string) $token;
+
+                    if (str_starts_with($token, 'e:')) {
+                        $id = (int) substr($token, 2);
+                        if ($id && $existingMap->has($id)) {
+                            $existingMap[$id]->update(['sort_order' => $sort++]);
+                        }
+                        continue;
+                    }
+
+                    if (str_starts_with($token, 'n:')) {
+                        $idx = (int) substr($token, 2);
+                        if (isset($createdNew[$idx])) {
+                            $createdNew[$idx]->update(['sort_order' => $sort++]);
+                        }
+                        continue;
+                    }
+                }
+
+                // safety: pane ülejäänud lõppu
+                $usedExisting = collect($mixOrder)
+                    ->filter(fn ($t) => str_starts_with((string) $t, 'e:'))
+                    ->map(fn ($t) => (int) substr((string) $t, 2))
+                    ->all();
+
+                foreach ($existingMap as $img) {
+                    if (!in_array($img->id, $usedExisting, true)) {
+                        $img->update(['sort_order' => $sort++]);
+                    }
+                }
+
+                $usedNew = collect($mixOrder)
+                    ->filter(fn ($t) => str_starts_with((string) $t, 'n:'))
+                    ->map(fn ($t) => (int) substr((string) $t, 2))
+                    ->all();
+
+                foreach ($createdNew as $i => $img) {
+                    if (!in_array($i, $usedNew, true)) {
+                        $img->update(['sort_order' => $sort++]);
+                    }
+                }
+            } else {
+                // fallback: uued lõppu
+                $maxSort = (int) ($listing->images()->max('sort_order') ?? 0);
+                foreach ($createdNew as $img) {
+                    $img->update(['sort_order' => ++$maxSort]);
+                }
+            }
+        });
+
+        return redirect()
+            ->route('listings.mine.show', $listing)
+            ->with('status', 'Kuulutus muudetud!');
+    }
+
     public function toggleMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // kui on archived -> aktiveeri tagasi
         if ($listing->status === 'archived') {
             $listing->status = 'published';
             $listing->published_at = $listing->published_at ?? now();
 
-            // kui aegunud või tühi, anna uus 30p
             if (!$listing->expires_at || $listing->expires_at->isPast()) {
                 $listing->expires_at = now()->addDays(30);
             }
 
             $listing->save();
-
             return back()->with('status', 'Kuulutus aktiveeritud!');
         }
 
-        // muul juhul -> peata (mitteaktiivne)
         $listing->status = 'archived';
         $listing->save();
 
@@ -213,16 +408,19 @@ class ListingController extends Controller
     public function publishMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
+        if ($listing->status !== 'draft') return back();
 
-        // Ainult mustandit lubame "aktiveerida"
-        if ($listing->status !== 'draft') {
-            return back();
-        }
+        $errors = [];
+
+        if (!$listing->title) $errors['title'] = 'Pealkiri on puudu.';
+        if (!$listing->category_id) $errors['category_id'] = 'Kategooria on puudu.';
+        if (!$listing->location_id) $errors['location_id'] = 'Asukoht on puudu.';
+
+        if (!empty($errors)) return back()->withErrors($errors);
 
         $listing->status = 'published';
         $listing->published_at = now();
 
-        // anna aegumine kui puudu või juba minevikus
         if (!$listing->expires_at || $listing->expires_at->isPast()) {
             $listing->expires_at = now()->addDays(30);
         }
@@ -231,13 +429,38 @@ class ListingController extends Controller
 
         return back()->with('status', 'Mustand avaldati (aktiveeriti).');
     }
+    public function relistMine(Request $request, Listing $listing)
+    {
+        abort_unless($listing->user_id === $request->user()->id, 403);
 
+        // lubame relist’i siis, kui kuulutus on published ja aegunud
+        // (või kui tahad, võid lubada ka archived->published sama nupuga)
+        $isExpired = $listing->status === 'published'
+            && $listing->expires_at
+            && $listing->expires_at->isPast();
+
+        if (!$isExpired) {
+            return back();
+        }
+
+        $listing->status = 'published';
+        $listing->published_at = $listing->published_at ?? now();
+        $listing->expires_at = now()->addDays(30);
+        $listing->save();
+
+        return back()->with('status', 'Kuulutus pandi uuesti müüki (aktiveeriti).');
+    }
 
     public function destroyMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        $listing->images()->delete();
+        $images = $listing->images()->get();
+        foreach ($images as $img) {
+            if ($img->path) Storage::disk('public')->delete($img->path);
+            $img->delete();
+        }
+
         $listing->delete();
 
         return redirect()
@@ -248,11 +471,7 @@ class ListingController extends Controller
     public function markSold(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
-
-        $listing->update([
-            'status' => 'sold',
-        ]);
-
+        $listing->update(['status' => 'sold']);
         return back()->with('status', 'Kuulutus märgitud müüduks.');
     }
 
@@ -269,181 +488,26 @@ class ListingController extends Controller
         return back()->with('status', 'Kuulutus taastatud müüki.');
     }
 
-    public function editMine(Request $request, Listing $listing)
-    {
-        abort_unless($listing->user_id === $request->user()->id, 403);
-
-        $categories = Category::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
-
-        $listing->load(['category', 'location', 'images']);
-
-        return view('listings.edit', compact('listing', 'categories'));
-    }
-
-
-
-    public function updateMine(Request $request, Listing $listing)
-    {
-        abort_unless($listing->user_id === $request->user()->id, 403);
-
-        $validated = $request->validate([
-            'title'       => ['required', 'string', 'max:140'],
-            'description' => ['required', 'string', 'min:20'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'location_id' => ['required', 'exists:locations,id'],
-            'price'       => ['nullable', 'numeric', 'min:0'],
-
-            // PILDID (edit)
-            'new_images'        => ['nullable', 'array', 'max:10'],
-            'new_images.*'      => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-
-            // JSONid
-            'deleted_image_ids' => ['nullable', 'string'], // JSON: [1,2,3]
-            'images_mix_order'  => ['nullable', 'string'], // JSON: ["e:12","n:0",...]
-        ]);
-
-        DB::transaction(function () use ($request, $listing, $validated) {
-
-            // 1) uuenda kuulutuse põhiandmed
-            $listing->update([
-                'title'       => $validated['title'],
-                'description' => $validated['description'],
-                'category_id' => $validated['category_id'],
-                'location_id' => $validated['location_id'],
-                'price'       => $validated['price'] ?? null,
-            ]);
-
-            // lae pildid
-            $listing->load('images');
-
-            // 2) parse deleted ids
-            $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
-            $deletedIds = array_values(array_filter(array_map('intval', $deletedIds)));
-
-            if (!empty($deletedIds)) {
-                // kustuta ainult selle listinguga seotud pildid
-                $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
-
-                foreach ($toDelete as $img) {
-                    // kustuta fail
-                    if ($img->path) {
-                        Storage::disk('public')->delete($img->path);
-                    }
-                    // kustuta DB rida
-                    $img->delete();
-                }
-            }
-
-            // 3) salvesta uued pildid
-            $files = $request->file('new_images', []);
-            $createdNew = []; // index -> ListingImage
-
-            if (!empty($files)) {
-                foreach ($files as $file) {
-                    $path = $file->store('listings', 'public');
-
-                    $createdNew[] = ListingImage::create([
-                        'listing_id' => $listing->id,
-                        'path'       => $path,
-                        'sort_order' => 9999, // ajutine, paneme hiljem õigeks
-                    ]);
-                }
-            }
-
-            // 4) kontroll: max 10 kokku (allesjäänud existing + new)
-            $remainingExistingCount = $listing->images()
-                ->whereNotIn('id', $deletedIds ?: [-1])
-                ->count();
-
-            $total = $remainingExistingCount + count($createdNew);
-            if ($total > 10) {
-                // rollback by throwing
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'new_images' => 'Maksimaalselt 10 pilti kokku (olemasolevad + uued).',
-                ]);
-            }
-
-            // 5) sort_order salvesta segatud järjekorra alusel
-            $mix = $this->safeJsonArray($request->input('images_mix_order'));
-
-            // Reload pildid (pärast delete/create)
-            $currentExisting = $listing->images()->orderBy('sort_order')->get()->keyBy('id');
-
-            if (!empty($mix)) {
-                $sort = 0;
-
-                foreach ($mix as $token) {
-                    $token = (string) $token;
-
-                    // existing: e:ID
-                    if (str_starts_with($token, 'e:')) {
-                        $id = (int) substr($token, 2);
-                        if ($id && $currentExisting->has($id)) {
-                            $currentExisting[$id]->update(['sort_order' => $sort]);
-                            $sort++;
-                        }
-                        continue;
-                    }
-
-                    // new: n:INDEX (index createdNew sees)
-                    if (str_starts_with($token, 'n:')) {
-                        $idx = (int) substr($token, 2);
-                        if (isset($createdNew[$idx])) {
-                            $createdNew[$idx]->update(['sort_order' => $sort]);
-                            $sort++;
-                        }
-                        continue;
-                    }
-                }
-
-                // safety: kui mõni pilt jäi mixist välja, pane lõppu
-                $usedExistingIds = collect($mix)
-                    ->filter(fn($t) => str_starts_with((string)$t, 'e:'))
-                    ->map(fn($t) => (int) substr((string)$t, 2))
-                    ->all();
-
-                foreach ($currentExisting as $img) {
-                    if (!in_array($img->id, $usedExistingIds, true)) {
-                        $img->update(['sort_order' => $sort++]);
-                    }
-                }
-
-                // uued, mis jäid välja
-                $usedNewIdx = collect($mix)
-                    ->filter(fn($t) => str_starts_with((string)$t, 'n:'))
-                    ->map(fn($t) => (int) substr((string)$t, 2))
-                    ->all();
-
-                foreach ($createdNew as $i => $img) {
-                    if (!in_array($i, $usedNewIdx, true)) {
-                        $img->update(['sort_order' => $sort++]);
-                    }
-                }
-            } else {
-                // fallback: jäta olemasolevad nii nagu on, lisa uued lõppu
-                $maxSort = (int) ($listing->images()->max('sort_order') ?? 0);
-                foreach ($createdNew as $img) {
-                    $maxSort++;
-                    $img->update(['sort_order' => $maxSort]);
-                }
-            }
-        });
-
-        return redirect()
-            ->route('listings.mine.show', $listing)
-            ->with('status', 'Kuulutus muudetud!');
-    }
-
-    /**
-     * JSON safe parse -> array
-     */
     private function safeJsonArray(?string $raw): array
     {
         if (!$raw) return [];
         $decoded = json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * deal => price null
+     * free => price 0
+     * price => jätab inputi
+     */
+    private function normalizePriceMode(Request $request): void
+    {
+        $priceMode = (string) $request->input('price_mode', 'deal');
+
+        if ($priceMode === 'deal') {
+            $request->merge(['price' => null]);
+        } elseif ($priceMode === 'free') {
+            $request->merge(['price' => 0]);
+        }
     }
 }
