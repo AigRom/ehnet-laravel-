@@ -8,16 +8,24 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\ListingQuickController;
+use App\Http\Controllers\HomeController;
 
 /*
 |--------------------------------------------------------------------------
 | Avalikud lehed
 |--------------------------------------------------------------------------
-| Lehed, mis on kättesaadavad ka ilma sisselogimiseta.
 */
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::prefix('listings')->group(function () {
+    // kõik kuulutused
+    Route::get('/', [ListingController::class, 'index'])->name('listings.index');
+
+    // detail (ainult number -> ei söö /listings/create ära)
+    Route::get('/{listing}', [ListingController::class, 'show'])
+        ->whereNumber('listing')
+        ->name('listings.show');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -32,9 +40,6 @@ Route::view('/dashboard', 'dashboard')
 |--------------------------------------------------------------------------
 | EHNET: kaheastmeline registreerimine (email → vorm)
 |--------------------------------------------------------------------------
-| 1. Kasutaja sisestab e-posti
-| 2. Saadame kinnituskirja
-| 3. Link viib registreerimisvormile
 */
 Route::post('/register', [EmailRegistrationController::class, 'store'])
     ->name('register.store');
@@ -49,7 +54,6 @@ Route::post('/register/complete/{token}', [EmailRegistrationController::class, '
 |--------------------------------------------------------------------------
 | Autenditud kasutaja ala
 |--------------------------------------------------------------------------
-| Kõik allolevad teed eeldavad sisselogimist.
 */
 Route::middleware(['auth'])->group(function () {
 
@@ -60,82 +64,47 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::redirect('/settings', '/settings/profile');
 
-    Volt::route('/settings/profile', 'settings.profile')
-        ->name('profile.edit');
-
-    Volt::route('/settings/password', 'settings.password')
-        ->name('user-password.edit');
-
-    Volt::route('/settings/appearance', 'settings.appearance')
-        ->name('appearance.edit');
+    Volt::route('/settings/profile', 'settings.profile')->name('profile.edit');
+    Volt::route('/settings/password', 'settings.password')->name('user-password.edit');
+    Volt::route('/settings/appearance', 'settings.appearance')->name('appearance.edit');
 
     /*
     |--------------------------------------------------------------------------
-    | Kuulutused (Listings)
+    | Kuulutuse lisamine (auth)
     |--------------------------------------------------------------------------
     */
-    
-    /*
-    | Kuulutuse lisamine
-    */
-    Route::get('/listings/create', [ListingController::class, 'create'])
-        ->name('listings.create');
-
-    Route::post('/listings', [ListingController::class, 'store'])
-        ->name('listings.store');
+    Route::prefix('listings')->group(function () {
+        Route::get('/create', [ListingController::class, 'create'])->name('listings.create');
+        Route::post('/', [ListingController::class, 'store'])->name('listings.store');
+    });
 
     /*
     |--------------------------------------------------------------------------
     | Minu kuulutused
     |--------------------------------------------------------------------------
-    | Kasutaja enda kuulutuste haldus:
-    | - vaatamine
-    | - muutmine
-    | - peatamine / aktiveerimine
-    | - müüduks märkimine
-    | - kustutamine
     */
-    Route::prefix('/my-listings')->group(function () {
+    Route::prefix('my-listings')->group(function () {
 
-        // Minu kuulutuste loend
-        Route::get('/', [ListingController::class, 'mine'])
-            ->name('listings.mine');
+        Route::get('/', [ListingController::class, 'mine'])->name('listings.mine');
 
-        // Ühe kuulutuse detailvaade (minu vaade)
-        Route::get('/{listing}', [ListingController::class, 'showMine'])
-            ->name('listings.mine.show');
+        Route::get('/{listing}', [ListingController::class, 'showMine'])->name('listings.mine.show');
 
-        // Kuulutuse muutmise vorm
-        Route::get('/{listing}/edit', [ListingController::class, 'editMine'])
-            ->name('listings.mine.edit');
+        Route::get('/{listing}/edit', [ListingController::class, 'editMine'])->name('listings.mine.edit');
 
-        // Kuulutuse salvestamine pärast muutmist
-        Route::patch('/{listing}', [ListingController::class, 'updateMine'])
-            ->name('listings.mine.update');
+        Route::patch('/{listing}', [ListingController::class, 'updateMine'])->name('listings.mine.update');
 
-        // Kuulutuse peatamine / aktiveerimine
-        Route::patch('/{listing}/toggle', [ListingController::class, 'toggleMine'])
-            ->name('listings.mine.toggle');
+        Route::patch('/{listing}/toggle', [ListingController::class, 'toggleMine'])->name('listings.mine.toggle');
 
-        // Kuulutuse kustutamine
-        Route::delete('/{listing}', [ListingController::class, 'destroyMine'])
-            ->name('listings.mine.destroy');
+        Route::delete('/{listing}', [ListingController::class, 'destroyMine'])->name('listings.mine.destroy');
 
-        // Märgi müüduks
-        Route::patch('/{listing}/sold', [ListingController::class, 'markSold'])
-            ->name('listings.mine.sold');
+        Route::patch('/{listing}/sold', [ListingController::class, 'markSold'])->name('listings.mine.sold');
 
-        // Taasta müük (müüdud → aktiivne)
-        Route::patch('/{listing}/unsold', [ListingController::class, 'markUnsold'])
-            ->name('listings.mine.unsold');
+        Route::patch('/{listing}/unsold', [ListingController::class, 'markUnsold'])->name('listings.mine.unsold');
 
-        // Mustand -> avalda (Aktiveeri)
-        Route::patch('/{listing}/publish', [ListingController::class, 'publishMine'])
-            ->name('listings.mine.publish');
+        Route::patch('/{listing}/publish', [ListingController::class, 'publishMine'])->name('listings.mine.publish');
 
-        Route::patch('/listings/mine/{listing}/relist', [ListingController::class, 'relistMine'])
-            ->name('listings.mine.relist');
-
+        // ✅ Parandus: relist loogiliselt my-listings alla
+        Route::patch('/{listing}/relist', [ListingController::class, 'relistMine'])->name('listings.mine.relist');
     });
 
     /*

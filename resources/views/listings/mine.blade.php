@@ -1,4 +1,4 @@
-<x-layouts.app.sidebar :title="__('Minu kuulutused')">
+<x-layouts.app.public :title="__('Minu kuulutused')">
     <flux:main>
         <div class="max-w-4xl space-y-6">
 
@@ -147,4 +147,4 @@
 
         </div>
     </flux:main>
-</x-layouts.app.sidebar>
+</x-layouts.app.public>

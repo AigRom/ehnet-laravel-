@@ -166,6 +166,14 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Listing::class);
     }
 
+    //Lemmik kuulutused
+
+    public function favorites()
+    {
+        return $this->belongsToMany(Listing::class, 'favorites')
+            ->withTimestamps();
+    }
+
 
 
 

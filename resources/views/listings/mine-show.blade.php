@@ -1,6 +1,6 @@
 @php use Illuminate\Support\Facades\Storage; @endphp
 
-<x-layouts.app.sidebar :title="$listing->title">
+<x-layouts.app.public :title="$listing->title">
     <flux:main>
         <div class="max-w-4xl space-y-4">
             <a href="{{ route('listings.mine') }}" class="text-sm text-zinc-600 dark:text-zinc-300 hover:underline">
@@ -9,7 +9,7 @@
 
             <x-listings.detail
                 :listing="$listing"
-                :image-urls="$listing->images->map(fn($i) => Storage::url($i->path))->toArray()"
+                
             />
 
             <div class="mt-6 flex flex-wrap gap-3 justify-end">
@@ -107,4 +107,4 @@
             </div>
         </div>
     </flux:main>
-</x-layouts.app.sidebar>
+</x-layouts.app.public>

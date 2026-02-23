@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder;
 
 class Listing extends Model
 {
@@ -135,6 +136,25 @@ class Listing extends Model
             'leftover' => 'Jääk',
             default    => '—',
         };
+    }
+
+    public function scopeHomeFeed(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->where(function (Builder $q) {
+                $q->whereNull('expires_at')
+                ->orWhere('expires_at', '>=', now());
+            })
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+    }
+
+    public function favoritedBy()
+    {
+        return $this->belongsToMany(User::class, 'favorites')
+            ->withTimestamps();
     }
 
 

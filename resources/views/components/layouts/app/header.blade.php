@@ -1,128 +1,176 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
-    <head>
-        @include('partials.head')
-        @livewireStyles
-    </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+@props([
+    'title' => null,
+])
 
-            <a href="{{ route('dashboard') }}" class="ms-2 me-5 flex items-center space-x-2 rtl:space-x-reverse lg:ms-0" wire:navigate>
+<header
+    x-data="{ mobileOpen: false, userOpen: false }"
+    class="sticky top-0 z-50 w-full border-b border-zinc-200/70 bg-white/80 backdrop-blur
+           dark:border-zinc-700/70 dark:bg-zinc-900/70"
+>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+            {{-- Logo + Brand --}}
+            <a href="{{ url('/') }}"
+               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600">
                 <x-app-logo />
+                <span class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    EHNET
+                </span>
             </a>
 
-            <flux:navbar class="-mb-px max-lg:hidden">
-                <flux:navbar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
-                </flux:navbar.item>
-            </flux:navbar>
+            {{-- Desktop nav --}}
+            <nav class="hidden md:flex items-center gap-1">
+                <a href="{{ url('/listings') }}"
+                   class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
+                          dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                    {{ __('Kõik kuulutused') }}
+                </a>
 
-            <flux:spacer />
+                @auth
+                    <a href="{{ url('/listings/create') }}"
+                       class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
+                              dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                        {{ __('Lisa kuulutus') }}
+                    </a>
 
-            <flux:navbar class="me-1.5 space-x-0.5 rtl:space-x-reverse py-0!">
-                <flux:tooltip :content="__('Search')" position="bottom">
-                    <flux:navbar.item class="!h-10 [&>div>svg]:size-5" icon="magnifying-glass" href="#" :label="__('Search')" />
-                </flux:tooltip>
-                <flux:tooltip :content="__('Repository')" position="bottom">
-                    <flux:navbar.item
-                        class="h-10 max-lg:hidden [&>div>svg]:size-5"
-                        icon="folder-git-2"
-                        href="https://github.com/laravel/livewire-starter-kit"
-                        target="_blank"
-                        :label="__('Repository')"
-                    />
-                </flux:tooltip>
-                <flux:tooltip :content="__('Documentation')" position="bottom">
-                    <flux:navbar.item
-                        class="h-10 max-lg:hidden [&>div>svg]:size-5"
-                        icon="book-open-text"
-                        href="https://laravel.com/docs/starter-kits#livewire"
-                        target="_blank"
-                        label="Documentation"
-                    />
-                </flux:tooltip>
-            </flux:navbar>
+                    <a href="{{ url('/my-listings') }}"
+                       class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
+                              dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                        {{ __('Minu kuulutused') }}
+                    </a>
 
-            <!-- Desktop User Menu -->
-            <flux:dropdown position="top" align="end">
-                <flux:profile
-                    class="cursor-pointer"
-                    :initials="auth()->user()->initials()"
-                />
+                    {{-- User dropdown --}}
+                    <div class="relative ml-2" @click.outside="userOpen=false" @keydown.escape.window="userOpen=false">
+                        <button type="button"
+                                @click="userOpen=!userOpen"
+                                class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
+                                       text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
+                                       dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+                                :aria-expanded="userOpen.toString()"
+                        >
+                            <span class="max-w-[160px] truncate">
+                                {{ auth()->user()->name ?? auth()->user()->email }}
+                            </span>
+                            <svg class="h-4 w-4 text-zinc-500 dark:text-zinc-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
 
-                <flux:menu>
-                    <flux:menu.radio.group>
-                        <div class="p-0 text-sm font-normal">
-                            <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                                <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-                                    <span
-                                        class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white"
-                                    >
-                                        {{ auth()->user()->initials() }}
-                                    </span>
-                                </span>
-
-                                <div class="grid flex-1 text-start text-sm leading-tight">
-                                    <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
-                                    <span class="truncate text-xs">{{ auth()->user()->email }}</span>
+                        <div x-cloak x-show="userOpen" x-transition.origin.top.right
+                             class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg
+                                    dark:border-zinc-800 dark:bg-zinc-900">
+                            <div class="px-4 py-3">
+                                <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                    {{ auth()->user()->name ?? __('Kasutaja') }}
+                                </div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                    {{ auth()->user()->email }}
                                 </div>
                             </div>
+
+                            <div class="h-px bg-zinc-200 dark:bg-zinc-800"></div>
+
+                            <a href="{{ url('/settings/profile') }}"
+                               class="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100
+                                      dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                {{ __('Seaded') }}
+                            </a>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100
+                                               dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                    {{ __('Logi välja') }}
+                                </button>
+                            </form>
                         </div>
-                    </flux:menu.radio.group>
+                    </div>
+                @else
+                    <div class="ml-2 flex items-center gap-2">
+                        <a href="{{ url('/login') }}"
+                           class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
+                                  dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                            {{ __('Logi sisse') }}
+                        </a>
 
-                    <flux:menu.separator />
+                        <a href="{{ url('/register') }}"
+                           class="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800
+                                  dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                            {{ __('Registreeru') }}
+                        </a>
+                    </div>
+                @endauth
+            </nav>
 
-                    <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
-                    </flux:menu.radio.group>
+            {{-- Mobile button --}}
+            <button type="button"
+                    class="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-zinc-700 hover:bg-zinc-100
+                           dark:text-zinc-200 dark:hover:bg-zinc-800/60"
+                    @click="mobileOpen=!mobileOpen"
+                    aria-label="{{ __('Ava menüü') }}"
+            >
+                <svg x-show="!mobileOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <svg x-cloak x-show="mobileOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 
-                    <flux:menu.separator />
-
-                    <form method="POST" action="{{ route('logout') }}" class="w-full">
-                        @csrf
-                        <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full" data-test="logout-button">
-                            {{ __('Log Out') }}
-                        </flux:menu.item>
-                    </form>
-                </flux:menu>
-            </flux:dropdown>
-        </flux:header>
-
-        <!-- Mobile Menu -->
-        <flux:sidebar stashable sticky class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
-
-            <a href="{{ route('dashboard') }}" class="ms-1 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
-                <x-app-logo />
+    {{-- Mobile panel --}}
+    <div x-cloak x-show="mobileOpen" x-transition class="md:hidden border-t border-zinc-200/70 dark:border-zinc-800/70">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 space-y-1">
+            <a href="{{ url('/listings') }}"
+               class="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                      dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                {{ __('Kõik kuulutused') }}
             </a>
 
-            <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('Platform')">
-                    <flux:navlist.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
-                    </flux:navlist.item>
-                </flux:navlist.group>
-            </flux:navlist>
+            @auth
+                <a href="{{ url('/listings/create') }}"
+                   class="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                          dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    {{ __('Lisa kuulutus') }}
+                </a>
 
-            <flux:spacer />
+                <a href="{{ url('/my-listings') }}"
+                   class="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                          dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    {{ __('Minu kuulutused') }}
+                </a>
 
-            <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
-                </flux:navlist.item>
+                <div class="my-2 h-px bg-zinc-200 dark:bg-zinc-800"></div>
 
-                <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                {{ __('Documentation') }}
-                </flux:navlist.item>
-            </flux:navlist>
-        </flux:sidebar>
+                <a href="{{ url('/settings/profile') }}"
+                   class="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                          dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    {{ __('Seaded') }}
+                </a>
 
-        {{ $slot }}
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit"
+                            class="w-full text-left rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                                   dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        {{ __('Logi välja') }}
+                    </button>
+                </form>
+            @else
+                <a href="{{ url('/login') }}"
+                   class="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100
+                          dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    {{ __('Logi sisse') }}
+                </a>
 
-        @livewireScripts
-        @fluxScripts
-
-        
-    </body>
-</html>
+                <a href="{{ url('/register') }}"
+                   class="block rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800
+                          dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    {{ __('Registreeru') }}
+                </a>
+            @endauth
+        </div>
+    </div>
+</header>

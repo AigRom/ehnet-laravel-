@@ -35,7 +35,7 @@
     );
 @endphp
 
-<x-layouts.app.sidebar :title="__('Muuda kuulutust')">
+<x-layouts.app.public :title="__('Muuda kuulutust')">
     <flux:main>
         <div class="max-w-3xl space-y-6">
 
@@ -384,4 +384,4 @@
 
         </div>
     </flux:main>
-</x-layouts.app.sidebar>
+</x-layouts.app.public>

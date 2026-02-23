@@ -13,6 +13,41 @@ use Illuminate\Validation\ValidationException;
 
 class ListingController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        $q = trim((string) $request->get('search', $request->get('q', '')));
+
+        $listings = Listing::query()
+            ->homeFeed()
+            ->with(['category', 'location', 'images'])
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('title', 'like', "%{$q}%")
+                        ->orWhere('description', 'like', "%{$q}%");
+                });
+            })
+            ->paginate(24)
+            ->withQueryString();
+
+        return view('listings.index', compact('listings', 'q'));
+    }
+
+    public function show(Listing $listing)
+    {
+        $listing->load(['category', 'location', 'images']);
+
+        abort_unless(
+            $listing->status === 'published' &&
+            (!$listing->expires_at || $listing->expires_at->isFuture()),
+            404
+        );
+
+        return view('listings.show', compact('listing'));
+    }
+
+
+
     public function create()
     {
         $categories = Category::query()
