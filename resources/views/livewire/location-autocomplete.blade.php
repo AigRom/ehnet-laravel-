@@ -12,7 +12,7 @@
             class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 pr-10"
         />
 
-        {{-- ✅ väike rist paremal (tooltip: Tühjenda) --}}
+        {{--  väike rist paremal (tooltip: Tühjenda) --}}
         @if(trim($search) !== '' || $selectedId || $location_id)
             <button
                 type="button"

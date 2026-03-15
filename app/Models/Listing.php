@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Listing extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
         'category_id',
@@ -22,7 +25,7 @@ class Listing extends Model
         'intent',
         'condition',
         'listing_type',   // sale|auction
-        'status',         // draft|pending|published|rejected|archived
+        'status',         // draft|pending|published|rejected|archived|sold
         'published_at',
         'expires_at',
         'reviewed_by',
@@ -32,17 +35,16 @@ class Listing extends Model
     ];
 
     protected $casts = [
-        'user_id'      => 'integer',
-        'category_id'  => 'integer',
-        'location_id'  => 'integer',
-        'reviewed_by'  => 'integer',
-        'price'        => 'decimal:2',
-        'published_at' => 'datetime',
-        'expires_at'   => 'datetime',
-        'reviewed_at'  => 'datetime',
+        'user_id'          => 'integer',
+        'category_id'      => 'integer',
+        'location_id'      => 'integer',
+        'reviewed_by'      => 'integer',
+        'price'            => 'decimal:2',
+        'published_at'     => 'datetime',
+        'expires_at'       => 'datetime',
+        'reviewed_at'      => 'datetime',
         'delivery_options' => 'array',
-
-
+        'deleted_at'       => 'datetime',
     ];
 
     // Seosed
@@ -63,13 +65,17 @@ class Listing extends Model
 
     public function images(): HasMany
     {
-        return $this->hasMany(ListingImage::class)
-            ->orderBy('sort_order');
+        return $this->hasMany(ListingImage::class)->orderBy('sort_order');
     }
 
     public function auction(): HasOne
     {
         return $this->hasOne(Auction::class);
+    }
+
+    public function favoritedBy()
+    {
+        return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
     }
 
     // Helper: peapilt (esimene sort_order järgi)
@@ -85,12 +91,24 @@ class Listing extends Model
         return $img ? Storage::url($img->path) : null;
     }
 
-    // Helper: Kuulutuse aegumine
+    /**
+     * Aegunud = published + expires_at on minevikus
+     */
     public function isExpired(): bool
     {
         return $this->status === 'published'
-            && $this->expires_at
+            && $this->expires_at !== null
             && $this->expires_at->isPast();
+    }
+
+    /**
+     * Public nähtav = published + published_at olemas + (expires_at puudub või pole aegunud)
+     */
+    public function isPublicVisible(): bool
+    {
+        return $this->status === 'published'
+            && $this->published_at !== null
+            && ($this->expires_at === null || $this->expires_at->isFuture() || $this->expires_at->isToday());
     }
 
     // Helper: Staatuste eestikeelsed nimetused
@@ -99,7 +117,7 @@ class Listing extends Model
         return match ($this->status) {
             'draft'     => 'Mustand',
             'pending'   => 'Ootel',
-            'published' => $this->isExpired() ? 'Aegunud' : 'Aktiivne',
+            'published' => $this->isPublicVisible() ? 'Aktiivne' : 'Aegunud',
             'rejected'  => 'Tagasi lükatud',
             'archived'  => 'Peatatud',
             'sold'      => 'Müüdud',
@@ -107,7 +125,7 @@ class Listing extends Model
         };
     }
 
-    //Helper: Tarne valikud
+    // Helper: Tarne valikud
     public function deliveryOptionsLabels(): array
     {
         $map = [
@@ -126,8 +144,7 @@ class Listing extends Model
         )));
     }
 
-
-    //Helper seisukord
+    // Helper: seisukord
     public function conditionLabel(): string
     {
         return match ($this->condition) {
@@ -138,27 +155,31 @@ class Listing extends Model
         };
     }
 
-    public function scopeHomeFeed(Builder $query): Builder
+    /**
+     * ÜHINE reegel PUBLIC vaadetele:
+     * - status = published
+     * - published_at olemas
+     * - expires_at NULL või >= now()
+     */
+    public function scopePublicVisible(Builder $query): Builder
     {
         return $query
             ->where('status', 'published')
             ->whereNotNull('published_at')
             ->where(function (Builder $q) {
                 $q->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now());
-            })
+                  ->orWhere('expires_at', '>=', now());
+            });
+    }
+
+    /**
+     * Avalehe feed: public visible + sort
+     */
+    public function scopeHomeFeed(Builder $query): Builder
+    {
+        return $query
+            ->publicVisible()
             ->orderByDesc('published_at')
             ->orderByDesc('id');
     }
-
-    public function favoritedBy()
-    {
-        return $this->belongsToMany(User::class, 'favorites')
-            ->withTimestamps();
-    }
-
-
-
-
-
 }

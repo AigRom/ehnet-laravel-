@@ -6,9 +6,11 @@ use Livewire\Volt\Volt;
 
 // Kontrollerid
 use App\Http\Controllers\Auth\EmailRegistrationController;
-use App\Http\Controllers\ListingController;
-use App\Http\Controllers\ListingQuickController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ListingQuickController;
+
+use App\Http\Controllers\Public\ListingController as PublicListingController;
+use App\Http\Controllers\User\ListingController as UserListingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,14 +20,17 @@ use App\Http\Controllers\HomeController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::prefix('listings')->group(function () {
-    // kõik kuulutused
-    Route::get('/', [ListingController::class, 'index'])->name('listings.index');
+    // kõik kuulutused (public)
+    Route::get('/', [PublicListingController::class, 'index'])->name('listings.index');
 
     // detail (ainult number -> ei söö /listings/create ära)
-    Route::get('/{listing}', [ListingController::class, 'show'])
+    Route::get('/{listing}', [PublicListingController::class, 'show'])
         ->whereNumber('listing')
         ->name('listings.show');
 });
+
+Route::view('/terms', 'legal.terms')->name('terms');
+Route::view('/privacy', 'legal.privacy')->name('privacy');
 
 /*
 |--------------------------------------------------------------------------
@@ -66,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
 
     Volt::route('/settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('/settings/password', 'settings.password')->name('user-password.edit');
-    Volt::route('/settings/appearance', 'settings.appearance')->name('appearance.edit');
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -74,8 +79,8 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('listings')->group(function () {
-        Route::get('/create', [ListingController::class, 'create'])->name('listings.create');
-        Route::post('/', [ListingController::class, 'store'])->name('listings.store');
+        Route::get('/create', [UserListingController::class, 'create'])->name('listings.create');
+        Route::post('/', [UserListingController::class, 'store'])->name('listings.store');
     });
 
     /*
@@ -85,27 +90,35 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::prefix('my-listings')->group(function () {
 
-        Route::get('/', [ListingController::class, 'mine'])->name('listings.mine');
+        Route::get('/', [UserListingController::class, 'mine'])->name('listings.mine');
 
-        Route::get('/{listing}', [ListingController::class, 'showMine'])->name('listings.mine.show');
+        Route::get('/{listing}', [UserListingController::class, 'showMine'])->name('listings.mine.show');
 
-        Route::get('/{listing}/edit', [ListingController::class, 'editMine'])->name('listings.mine.edit');
+        Route::get('/{listing}/edit', [UserListingController::class, 'editMine'])->name('listings.mine.edit');
 
-        Route::patch('/{listing}', [ListingController::class, 'updateMine'])->name('listings.mine.update');
+        Route::patch('/{listing}', [UserListingController::class, 'updateMine'])->name('listings.mine.update');
 
-        Route::patch('/{listing}/toggle', [ListingController::class, 'toggleMine'])->name('listings.mine.toggle');
+        Route::patch('/{listing}/toggle', [UserListingController::class, 'toggleMine'])->name('listings.mine.toggle');
 
-        Route::delete('/{listing}', [ListingController::class, 'destroyMine'])->name('listings.mine.destroy');
+        Route::delete('/{listing}', [UserListingController::class, 'destroyMine'])->name('listings.mine.destroy');
 
-        Route::patch('/{listing}/sold', [ListingController::class, 'markSold'])->name('listings.mine.sold');
+        Route::patch('/{listing}/sold', [UserListingController::class, 'markSold'])->name('listings.mine.sold');
 
-        Route::patch('/{listing}/unsold', [ListingController::class, 'markUnsold'])->name('listings.mine.unsold');
+        Route::patch('/{listing}/unsold', [UserListingController::class, 'markUnsold'])->name('listings.mine.unsold');
 
-        Route::patch('/{listing}/publish', [ListingController::class, 'publishMine'])->name('listings.mine.publish');
+        Route::patch('/{listing}/publish', [UserListingController::class, 'publishMine'])->name('listings.mine.publish');
 
-        // ✅ Parandus: relist loogiliselt my-listings alla
-        Route::patch('/{listing}/relist', [ListingController::class, 'relistMine'])->name('listings.mine.relist');
+        // relist loogiliselt my-listings alla
+        Route::patch('/{listing}/relist', [UserListingController::class, 'relistMine'])->name('listings.mine.relist');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lemmik kuulutused
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/favorites', [UserListingController::class, 'favorites'])
+        ->name('favorites.index');
 
     /*
     |--------------------------------------------------------------------------

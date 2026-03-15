@@ -6,21 +6,23 @@
 
     $priceText = 'Kokkuleppel';
     if ($listing->price !== null) {
-        $priceText = ((float)$listing->price == 0.0) ? 'Tasuta' : rtrim(rtrim(number_format((float)$listing->price, 2, '.', ''), '0'), '.') . ' ' . ($listing->currency ?? 'EUR');
+        $priceText = ((float) $listing->price == 0.0)
+            ? 'Tasuta'
+            : rtrim(rtrim(number_format((float) $listing->price, 2, '.', ''), '0'), '.') . ' ' . ($listing->currency ?? 'EUR');
     }
 
-    $category = $listing->category->name ?? $listing->category->name_et ?? null;
+    $category = $listing->category?->name_et
+        ?? $listing->category?->name
+        ?? null;
 
-    $location = $listing->location->full_label_et
-        ?? $listing->location->name
-        ?? $listing->location->name_et
+    $location = $listing->location?->full_label_et
+        ?? $listing->location?->name
+        ?? $listing->location?->name_et
         ?? null;
 @endphp
 
 <a href="{{ $href }}"
-   class="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition
-          hover:-translate-y-0.5 hover:shadow-md
-          dark:border-zinc-700 dark:bg-zinc-900">
+   class="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900">
 
     {{-- Image --}}
     <div class="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
@@ -33,7 +35,7 @@
             >
         @else
             <div class="flex h-full w-full items-center justify-center text-sm text-zinc-500">
-                Pilt puudub
+                {{ __('Pilt puudub') }}
             </div>
         @endif
 
@@ -53,14 +55,6 @@
             @if($location)
                 <span>{{ $location }}</span>
             @endif
-
-            @if($location && $category)
-                <span class="text-zinc-300 dark:text-zinc-600">•</span>
-            @endif
-
-            <!-- @if($category)
-                <span>{{ $category }}</span>
-            @endif -->
         </div>
 
         {{-- Alumine rida --}}
@@ -73,6 +67,5 @@
                 {{ $priceText }}
             </span>
         </div>
-    
     </div>
 </a>

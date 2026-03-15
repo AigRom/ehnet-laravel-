@@ -1,5 +1,6 @@
 <button
-    wire:click.stop="toggle"
+    type="button"
+    wire:click.stop.prevent="toggle"
     class="flex items-center justify-center rounded-full bg-white/90 p-2 shadow backdrop-blur
            transition hover:scale-110
            dark:bg-zinc-900/80"

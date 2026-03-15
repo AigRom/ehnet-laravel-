@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\User;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingImage;
@@ -13,40 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class ListingController extends Controller
 {
-
-    public function index(Request $request)
+    public function __construct()
     {
-        $q = trim((string) $request->get('search', $request->get('q', '')));
-
-        $listings = Listing::query()
-            ->homeFeed()
-            ->with(['category', 'location', 'images'])
-            ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($sub) use ($q) {
-                    $sub->where('title', 'like', "%{$q}%")
-                        ->orWhere('description', 'like', "%{$q}%");
-                });
-            })
-            ->paginate(24)
-            ->withQueryString();
-
-        return view('listings.index', compact('listings', 'q'));
+        $this->middleware('auth');
     }
-
-    public function show(Listing $listing)
-    {
-        $listing->load(['category', 'location', 'images']);
-
-        abort_unless(
-            $listing->status === 'published' &&
-            (!$listing->expires_at || $listing->expires_at->isFuture()),
-            404
-        );
-
-        return view('listings.show', compact('listing'));
-    }
-
-
 
     public function create()
     {
@@ -85,10 +56,10 @@ class ListingController extends Controller
             'price'       => ['nullable', 'numeric', 'min:0'],
             'price_mode'  => ['nullable', 'in:deal,free,price'],
 
-            // ✅ Seisukord
+            // Seisukord
             'condition'   => ['nullable', 'in:new,used,leftover'],
 
-            // ✅ Kättesaamine
+            // Kättesaamine
             'delivery_options'   => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
 
@@ -153,9 +124,8 @@ class ListingController extends Controller
                 'currency'     => 'EUR',
                 'listing_type' => 'sale',
 
-                // ✅ sama loogika nagu condition: salvestame väärtuse otse
-                'condition'       => $validated['condition'] ?? null,
-                'delivery_options'=> $delivery, // ✅ array, cast teeb JSONiks
+                'condition'        => $validated['condition'] ?? null,
+                'delivery_options' => $delivery,
 
                 'status'       => $isDraft ? 'draft' : 'published',
                 'published_at' => $isDraft ? null : now(),
@@ -204,6 +174,7 @@ class ListingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // SoftDeletes tõttu exists() ei arvesta trashed ridu (kui Listing mudelis on SoftDeletes)
         $hasAnyListings = Listing::query()
             ->where('user_id', $request->user()->id)
             ->exists();
@@ -282,7 +253,7 @@ class ListingController extends Controller
 
         $validated = $request->validate([
             'title'       => ['required', 'string', 'max:140'],
-            'description' => ['nullable', 'string', 'max:5000'], // ✅ valikuline
+            'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
             'price'       => ['nullable', 'numeric', 'min:0'],
@@ -293,37 +264,33 @@ class ListingController extends Controller
             'delivery_options'   => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
 
-            // PILDID (edit)
             'new_images'   => ['nullable', 'array', 'max:10'],
             'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
             'deleted_image_ids' => ['nullable', 'string'],
-            'images_order'      => ['nullable', 'string'], // JSON: ["e:12","n:0",...]
+            'images_order'      => ['nullable', 'string'],
         ]);
 
         DB::transaction(function () use ($request, $listing, $validated) {
 
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
-            // 1) põhiandmed
             $listing->update([
-                'title'          => $validated['title'],
-                'description'    => $validated['description'] ?? null,
-                'category_id'    => $validated['category_id'],
-                'location_id'    => $validated['location_id'],
-                'price'          => array_key_exists('price', $validated) ? $validated['price'] : null,
-
+                'title'           => $validated['title'],
+                'description'     => $validated['description'] ?? null,
+                'category_id'     => $validated['category_id'],
+                'location_id'     => $validated['location_id'],
+                'price'           => array_key_exists('price', $validated) ? $validated['price'] : null,
                 'condition'       => $validated['condition'] ?? null,
-                'delivery_options'=> $delivery, // ✅ array
+                'delivery_options'=> $delivery,
             ]);
 
-            // 2) JSON parse
             $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
             $deletedIds = array_values(array_filter(array_map('intval', $deletedIds)));
 
-            $mixOrder = $this->safeJsonArray($request->input('images_order')); // ["e:..","n:.."]
+            $mixOrder = $this->safeJsonArray($request->input('images_order'));
 
-            // 3) delete existing images
+            // delete existing images (user explicitly removed images)
             if (!empty($deletedIds)) {
                 $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
 
@@ -333,9 +300,9 @@ class ListingController extends Controller
                 }
             }
 
-            // 4) save new images
+            // save new images
             $files = $request->file('new_images', []);
-            $createdNew = []; // index => ListingImage
+            $createdNew = [];
 
             if (!empty($files)) {
                 foreach ($files as $file) {
@@ -349,7 +316,7 @@ class ListingController extends Controller
                 }
             }
 
-            // 5) max 10 after delete+add
+            // max 10 after delete+add
             $total = $listing->images()->count();
             if ($total > 10) {
                 throw ValidationException::withMessages([
@@ -357,7 +324,7 @@ class ListingController extends Controller
                 ]);
             }
 
-            // 6) reorder mixed tokens
+            // reorder mixed tokens
             if (!empty($mixOrder)) {
                 $sort = 0;
                 $existingMap = $listing->images()->get()->keyBy('id');
@@ -464,19 +431,16 @@ class ListingController extends Controller
 
         return back()->with('status', 'Mustand avaldati (aktiveeriti).');
     }
+
     public function relistMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // lubame relist’i siis, kui kuulutus on published ja aegunud
-        // (või kui tahad, võid lubada ka archived->published sama nupuga)
         $isExpired = $listing->status === 'published'
             && $listing->expires_at
             && $listing->expires_at->isPast();
 
-        if (!$isExpired) {
-            return back();
-        }
+        if (!$isExpired) return back();
 
         $listing->status = 'published';
         $listing->published_at = $listing->published_at ?? now();
@@ -490,12 +454,9 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        $images = $listing->images()->get();
-        foreach ($images as $img) {
-            if ($img->path) Storage::disk('public')->delete($img->path);
-            $img->delete();
-        }
-
+        // ✅ SOFT DELETE:
+        // - ei kustuta images ridu
+        // - ei kustuta faile storage'ist
         $listing->delete();
 
         return redirect()
@@ -544,5 +505,16 @@ class ListingController extends Controller
         } elseif ($priceMode === 'free') {
             $request->merge(['price' => 0]);
         }
+    }
+
+    public function favorites()
+    {
+        $user = auth()->user();
+
+        $listings = $user->favorites()
+            ->latest()
+            ->paginate(24);
+
+        return view('listings.favorites', compact('listings'));
     }
 }

@@ -4,9 +4,7 @@
     <div class="flex items-center justify-between">
         <h2 class="text-2xl font-semibold">Esiletõstetud</h2>
 
-        <a href="{{ route('listings.index') }}" class="text-sm text-blue-600 hover:underline">
-            Vaata kõiki →
-        </a>
+
     </div>
 
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
