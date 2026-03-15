@@ -4,16 +4,15 @@
 
 <header
     x-data="{ mobileOpen: false, userOpen: false }"
-    class="sticky top-0 z-50 w-full border-b border-zinc-200/70 bg-white/80 backdrop-blur
-           dark:border-zinc-700/70 dark:bg-zinc-900/70"
+    class="sticky top-0 z-50 w-full border-b border-zinc-200/70 bg-white/80 backdrop-blur"
 >
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
             {{-- Logo + Brand --}}
             <a href="{{ url('/') }}"
-               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600">
+               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400">
                 <x-app-logo />
-                <span class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                <span class="text-lg font-semibold tracking-tight text-zinc-900">
                     EHNET
                 </span>
             </a>
@@ -24,8 +23,7 @@
                 {{-- Kuulutused --}}
                 <a href="{{ url('/listings') }}"
                 class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                        dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                        text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
                     <x-icons.squares-2x2 class="w-5 h-5" />
                     <span>{{ __('Kõik kuulutused') }}</span>
                 </a>
@@ -35,8 +33,7 @@
                             ? url('/listings/create')
                             : url('/login?redirect=/listings/create&notice=create_listing') }}"
                 class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                        dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                        text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
                     <x-icons.plus-circle class="w-5 h-5" />
                     <span>{{ __('Lisa kuulutus') }}</span>
                 </a>
@@ -45,8 +42,7 @@
                     {{-- Märguanded (placeholder link) --}}
                     <a href="{{ url('/') }}"
                     class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                            text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                            dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                            text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
                         <x-icons.bell class="w-5 h-5" />
                         <span>{{ __('Märguanded') }}</span>
                     </a>
@@ -54,8 +50,7 @@
                     {{-- Sõnumid (placeholder link) --}}
                     <a href="{{ url('/') }}"
                     class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                            text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                            dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                            text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
                         <x-icons.chat-bubble class="w-5 h-5" />
                         <span>{{ __('Sõnumid') }}</span>
                     </a>
@@ -68,15 +63,14 @@
                     <button type="button"
                             @click="userOpen = !userOpen"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                                text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                                dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+                                text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                             :aria-expanded="userOpen.toString()">
                         <x-icons.user-circle class="w-5 h-5" />
                         <span class="max-w-[160px] truncate">
                             {{ auth()->user()->name ?? auth()->user()->email }}
                         </span>
 
-                        <svg class="h-4 w-4 text-zinc-500 dark:text-zinc-400"
+                        <svg class="h-4 w-4 text-zinc-500"
                             viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd"
                                 d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06z"
@@ -87,29 +81,28 @@
                     <div x-cloak
                         x-show="userOpen"
                         x-transition.origin.top.right
-                        class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg
-                                dark:border-zinc-800 dark:bg-zinc-900">
+                        class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
                         <div class="px-4 py-3">
-                            <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            <div class="text-sm font-medium text-zinc-900">
                                 {{ auth()->user()->name ?? __('Kasutaja') }}
                             </div>
-                            <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                            <div class="text-xs text-zinc-500">
                                 {{ auth()->user()->email }}
                             </div>
                         </div>
 
-                        <div class="h-px bg-zinc-200 dark:bg-zinc-800"></div>
+                        <div class="h-px bg-zinc-200"></div>
 
                         <a href="{{ url('/dashboard') }}"
                         class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100
-                                dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                dark:text-zinc-200">
                             <x-icons.user-circle class="w-5 h-5" />
                             <span>{{ __('Minu EHNET') }}</span>
                         </a>
 
                         <a href="{{ url('/settings/profile') }}"
                         class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100
-                                dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                dark:text-zinc-200">
                             <x-icons.cog-6-tooth class="w-5 h-5" />
                             <span>{{ __('Seaded') }}</span>
                         </a>
@@ -118,7 +111,7 @@
                             @csrf
                             <button type="submit"
                                     class="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100
-                                        dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                        dark:text-zinc-200">
                                 <x-icons.logout class="w-5 h-5" />
                                 <span>{{ __('Logi välja') }}</span>
                             </button>
@@ -130,7 +123,7 @@
                         <a href="{{ url('/login') }}"
                         class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
                                 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                                dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                                dark:text-zinc-200 dark:hover:bg-zinc-800/60">
                             <x-icons.login class="w-5 h-5" />
                             <span>{{ __('Logi sisse') }}</span>
                         </a>
@@ -138,7 +131,7 @@
                         <a href="{{ url('/register') }}"
                         class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
                                 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900
-                                dark:text-zinc-200 dark:hover:bg-zinc-800/60 dark:hover:text-white">
+                                dark:text-zinc-200 dark:hover:bg-zinc-800/60">
                             <x-icons.user-plus class="w-5 h-5" />
                             <span>{{ __('Registreeru') }}</span>
                         </a>
@@ -148,8 +141,7 @@
 
                         {{-- Mobile button --}}
                         <button type="button"
-                                class="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-zinc-700 hover:bg-zinc-100
-                                    dark:text-zinc-200 dark:hover:bg-zinc-800/60"
+                                class="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-zinc-700 hover:bg-zinc-100"
                                 @click="mobileOpen=!mobileOpen"
                                 aria-label="{{ __('Ava menüü') }}"
                         >
@@ -164,12 +156,12 @@
                 </div>
 
     {{-- Mobile panel --}}
-    <div x-cloak x-show="mobileOpen" x-transition class="md:hidden border-t border-zinc-200/70 dark:border-zinc-800/70">
+    <div x-cloak x-show="mobileOpen" x-transition class="md:hidden border-t border-zinc-200/70">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 space-y-1">
 
             <a href="{{ url('/listings') }}"
             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                    text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    text-zinc-700 hover:bg-zinc-100">
                 <x-icons.squares-2x2 class="w-5 h-5" />
                 <span>{{ __('Kõik kuulutused') }}</span>
             </a>
@@ -178,7 +170,7 @@
                         ? url('/listings/create')
                         : url('/login?redirect=/listings/create&notice=create_listing') }}"
             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                    text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                    text-zinc-700 hover:bg-zinc-100">
                 <x-icons.plus-circle class="w-5 h-5" />
                 <span>{{ __('Lisa kuulutus') }}</span>
             </a>
@@ -189,7 +181,7 @@
                 {{-- Link viib praegu avalehele. Kui Notifikatsioonide funktsionaalsus valmis, siis MUUDA LINKI --}}
                 <a href="{{ url('/') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.bell class="w-5 h-5" />
                     <span>{{ __('Märguanded') }}</span>
                 </a>
@@ -197,14 +189,14 @@
                 {{-- Link viib praegu avalehele. Kui sõnumite funktsionaalsus valmis, siis MUUDA LINKI --}}
                 <a href="{{ url('/') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.chat-bubble class="w-5 h-5" />
                     <span>{{ __('Sõnumid') }}</span>
                 </a>
 
                 <a href="{{ url('/dashboard') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.user-circle class="w-5 h-5" />
                     <span>{{ __('Minu EHNET') }}</span>
                 </a>
@@ -213,7 +205,7 @@
 
                 <a href="{{ url('/settings/profile') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.cog-6-tooth class="w-5 h-5" />
                     <span>{{ __('Seaded') }}</span>
                 </a>
@@ -222,7 +214,7 @@
                     @csrf
                     <button type="submit"
                             class="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                                text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                                text-zinc-700 hover:bg-zinc-100">
                         <x-icons.logout class="w-5 h-5" />
                         <span>{{ __('Logi välja') }}</span>
                     </button>
@@ -231,14 +223,14 @@
             @else
                 <a href="{{ url('/login') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.login class="w-5 h-5" />
                     <span>{{ __('Logi sisse') }}</span>
                 </a>
 
                 <a href="{{ url('/register') }}"
                 class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
-                        text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/60">
+                        text-zinc-700 hover:bg-zinc-100">
                     <x-icons.user-plus class="w-5 h-5" />
                     <span>{{ __('Registreeru') }}</span>
                 </a>

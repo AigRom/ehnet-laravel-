@@ -1,16 +1,16 @@
 @props(['title' => null, 'container' => true])
 
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('partials.head')
     @livewireStyles
 </head>
-<body class="min-h-screen bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+<body class="min-h-screen bg-white text-zinc-900">
     <x-layouts.app.header :title="$title" />
 
     @if($container)
-        <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             {{ $slot }}
         </main>
     @else
@@ -28,6 +28,5 @@
     </script>
 
     @livewireScripts
-    @fluxScripts
 </body>
 </html>
