@@ -34,7 +34,7 @@ class ListingController extends Controller
             ->limit(200)
             ->get();
 
-        return view('listings.create', compact('categories', 'locations'));
+        return view('user.listings.create', compact('categories', 'locations'));
     }
 
     public function store(Request $request)
@@ -219,7 +219,7 @@ class ListingController extends Controller
 
         $listings = $listingsQuery->latest('id')->get();
 
-        return view('listings.mine', compact('listings', 'categories', 'hasAnyListings'));
+        return view('user.listings.index', compact('listings', 'categories', 'hasAnyListings'));
     }
 
     public function showMine(Request $request, Listing $listing)
@@ -228,7 +228,7 @@ class ListingController extends Controller
 
         $listing->load(['category', 'location', 'images']);
 
-        return view('listings.mine-show', compact('listing'));
+        return view('user.listings.show', compact('listing'));
     }
 
     public function editMine(Request $request, Listing $listing)
@@ -242,7 +242,7 @@ class ListingController extends Controller
 
         $listing->load(['category', 'location', 'images']);
 
-        return view('listings.edit', compact('listing', 'categories'));
+        return view('user.listings.edit', compact('listing', 'categories'));
     }
 
     public function updateMine(Request $request, Listing $listing)
@@ -515,6 +515,6 @@ class ListingController extends Controller
             ->latest()
             ->paginate(24);
 
-        return view('listings.favorites', compact('listings'));
+        return view('user.favorites.index', compact('listings'));
     }
 }

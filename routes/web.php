@@ -8,7 +8,8 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ListingQuickController;
-
+use App\Http\Controllers\Messaging\MessageController;
+use App\Http\Controllers\Messaging\ConversationController;
 use App\Http\Controllers\Public\ListingController as PublicListingController;
 use App\Http\Controllers\User\ListingController as UserListingController;
 
@@ -37,7 +38,7 @@ Route::view('/privacy', 'legal.privacy')->name('privacy');
 | Kasutaja dashboard (vajab autentimist)
 |--------------------------------------------------------------------------
 */
-Route::view('/dashboard', 'dashboard')
+Route::view('/dashboard', 'user.dashboard')
     ->middleware(['auth'])
     ->name('dashboard');
 
@@ -81,8 +82,28 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('listings')->group(function () {
         Route::get('/create', [UserListingController::class, 'create'])->name('listings.create');
         Route::post('/', [UserListingController::class, 'store'])->name('listings.store');
+    
+
+    // UUS: sõnum müüjale kuulutuse detailist
+        Route::post('/{listing}/message', [MessageController::class, 'store'])
+            ->whereNumber('listing')
+            ->name('listings.message.store');
     });
 
+        /*
+    |--------------------------------------------------------------------------
+    | Sõnumid
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/messages', [ConversationController::class, 'index'])
+        ->name('messages.index');
+
+    Route::get('/messages/{conversation}', [ConversationController::class, 'show'])
+    ->name('messages.show');
+
+    Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
+    ->name('messages.store');
+    
     /*
     |--------------------------------------------------------------------------
     | Minu kuulutused

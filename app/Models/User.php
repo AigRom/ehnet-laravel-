@@ -7,6 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\Listing;
 
 class User extends Authenticatable
 {
@@ -168,10 +173,37 @@ class User extends Authenticatable
 
     //Lemmik kuulutused
 
-    public function favorites()
+    public function favorites(): BelongsToMany
     {
         return $this->belongsToMany(Listing::class, 'favorites')
             ->withTimestamps();
+    }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Vestlused
+    |--------------------------------------------------------------------------
+    */
+
+    public function buyerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'buyer_id');
+    }
+
+    public function sellerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'seller_id');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sõnumid
+    |--------------------------------------------------------------------------
+    */
+
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
     }
 
 
