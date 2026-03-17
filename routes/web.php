@@ -97,6 +97,8 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/messages', [ConversationController::class, 'index'])
         ->name('messages.index');
+    
+
 
     Route::get('/messages/{conversation}', [ConversationController::class, 'show'])
     ->name('messages.show');

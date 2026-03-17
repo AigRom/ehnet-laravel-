@@ -96,4 +96,6 @@ class MessageController extends Controller
             ->route('messages.show', $conversation)
             ->with('success', 'Sõnum saadeti edukalt.');
     }
+
+
 }
