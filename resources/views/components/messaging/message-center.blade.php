@@ -19,10 +19,10 @@
 @endphp
 
 <div class="mx-auto max-w-7xl px-4 py-6 md:py-8">
-    <div class="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+    <div class="grid gap-6 lg:h-[calc(100vh-8rem)] lg:grid-cols-[360px_minmax(0,1fr)] lg:min-h-0">
 
         {{-- Vasak veerg: vestluste list --}}
-        <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} lg:block">
+        <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} lg:block lg:h-full lg:min-h-0">
             <x-messaging.conversation-list
                 :conversations="$conversations"
                 :active-conversation="$activeConversation"
@@ -30,7 +30,7 @@
         </div>
 
         {{-- Parem veerg: aktiivne vestlus / placeholder --}}
-        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex min-h-[70vh] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] lg:h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
 
             @if($hasActiveConversation)
                 {{-- Päis + tagasi link mobiilis --}}
