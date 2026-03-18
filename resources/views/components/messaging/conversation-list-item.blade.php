@@ -19,7 +19,7 @@
     href="{{ route('messages.show', $conversation) }}"
     class="block rounded-2xl border p-2.5 sm:p-3 transition
         {{ $active
-            ? 'border-blue-500 bg-blue-50 shadow-sm dark:border-blue-600 dark:bg-blue-950/30'
+            ? 'border-emerald-500 bg-green-50 shadow-sm dark:border-blue-600 dark:bg-blue-950/30'
             : ($hasUnread
                 ? 'border-zinc-300 bg-zinc-50 hover:border-blue-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900'
                 : 'border-zinc-200 bg-white hover:border-blue-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700')

@@ -64,6 +64,7 @@ class ConversationController extends Controller
             'seller:id,name,created_at',
             'buyer:id,name,created_at',
             'messages.sender:id,name',
+            'messages.attachments',
         ]);
 
         $conversations = Conversation::query()

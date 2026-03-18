@@ -30,18 +30,18 @@
         </div>
 
         {{-- Parem veerg: aktiivne vestlus / placeholder --}}
-        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] lg:h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] lg:h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
 
             @if($hasActiveConversation)
                 {{-- Päis + tagasi link mobiilis --}}
-                <div class="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 md:px-6">
-                    <div class="mb-4 flex items-center justify-between gap-4 lg:hidden">
-                        <a
-                            href="{{ route('messages.index') }}"
-                            class="inline-flex items-center text-sm text-blue-600 hover:underline"
-                        >
-                            ← {{ __('Tagasi sõnumitesse') }}
-                        </a>
+                <div class="border-b border-zinc-200 px-4 py-4">
+                    <div class="mb-4 flex items-center lg:hidden">
+
+                        <x-ui.back-button
+                            :href="route('messages.index')"
+                            color="emerald"
+                        />
+
                     </div>
 
                     <x-users.profile-summary-card
@@ -53,7 +53,7 @@
                 </div>
 
                 {{-- Kuulutuse kaart --}}
-                <div class="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/30 md:px-6">
+                <div class="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4">
                     <x-listings.mini-card :listing="$listing" />
                 </div>
 
@@ -66,15 +66,15 @@
                 {{-- Desktop placeholder --}}
                 <div class="flex h-full flex-1 items-center justify-center p-8">
                     <div class="max-w-md text-center">
-                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
                             <x-icons.chat-bubble class="h-8 w-8" />
                         </div>
 
-                        <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                        <h2 class="text-lg font-semibold text-zinc-900">
                             {{ __('Vali vestlus') }}
                         </h2>
 
-                        <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                        <p class="mt-2 text-sm text-zinc-500">
                             {{ __('Vali vasakult vestlus, et näha sõnumeid ja vastata.') }}
                         </p>
                     </div>

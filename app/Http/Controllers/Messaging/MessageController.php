@@ -8,6 +8,7 @@ use App\Models\Listing;
 use App\Models\Message;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Models\MessageAttachment;
 
 class MessageController extends Controller
 {
@@ -66,9 +67,23 @@ class MessageController extends Controller
             403
         );
 
+        if (!$request->filled('body') && !$request->hasFile('attachments')) {
+            return back()->withErrors([
+                'body' => 'Lisa sõnum või manus.',
+            ]);
+        }
+
         $validated = $request->validate([
-            'body' => ['required', 'string', 'min:2', 'max:5000'],
+            'body' => ['nullable', 'string', 'max:5000'],
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => [
+                'file',
+                'max:10240',
+                'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,zip',
+            ],
         ]);
+
+        $body = trim((string) ($validated['body'] ?? ''));
 
         $lastMessage = $conversation->messages()
             ->where('sender_id', $user->id)
@@ -76,19 +91,39 @@ class MessageController extends Controller
             ->first();
 
         if (
+            $body !== '' &&
             $lastMessage &&
-            $lastMessage->body === trim($validated['body']) &&
+            $lastMessage->body === $body &&
             $lastMessage->created_at !== null &&
             $lastMessage->created_at->gt(now()->subSeconds(5))
         ) {
             return back()->with('error', 'Sama sõnum saadeti juba.');
         }
 
-        Message::create([
+        $message = Message::create([
             'conversation_id' => $conversation->id,
             'sender_id' => $user->id,
-            'body' => trim($validated['body']),
+            'body' => $body !== '' ? $body : null,
         ]);
+
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('messages/attachments', 'public');
+
+                $mimeType = $file->getMimeType();
+                $isImage = is_string($mimeType) && str_starts_with($mimeType, 'image/');
+
+                MessageAttachment::create([
+                    'message_id' => $message->id,
+                    'disk' => 'public',
+                    'path' => $path,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $mimeType,
+                    'size' => $file->getSize(),
+                    'type' => $isImage ? 'image' : 'file',
+                ]);
+            }
+        }
 
         $conversation->touch();
 
