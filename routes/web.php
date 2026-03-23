@@ -72,7 +72,6 @@ Route::middleware(['auth'])->group(function () {
 
     Volt::route('/settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('/settings/password', 'settings.password')->name('user-password.edit');
-    
 
     /*
     |--------------------------------------------------------------------------
@@ -82,37 +81,37 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('listings')->group(function () {
         Route::get('/create', [UserListingController::class, 'create'])->name('listings.create');
         Route::post('/', [UserListingController::class, 'store'])->name('listings.store');
-    
 
-    // UUS: sõnum müüjale kuulutuse detailist
-        Route::post('/{listing}/message', [MessageController::class, 'store'])
+        // Avab olemasoleva vestluse või loob uue kuulutuse detailvaatest
+        Route::post('/{listing}/open-conversation', [ConversationController::class, 'openFromListing'])
             ->whereNumber('listing')
-            ->name('listings.message.store');
+            ->name('listings.conversation.open');
     });
 
-        /*
+    /*
     |--------------------------------------------------------------------------
-    | Sõnumid
+    | Sõnumid / vestlused
     |--------------------------------------------------------------------------
     */
     Route::get('/messages', [ConversationController::class, 'index'])
         ->name('messages.index');
-    
-
 
     Route::get('/messages/{conversation}', [ConversationController::class, 'show'])
-    ->name('messages.show');
+        ->name('messages.show');
 
     Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
-    ->name('messages.store');
-    
+        ->name('messages.store');
+
+    // Peidab vestluse ainult текущise kasutaja vaatest
+    Route::delete('/messages/{conversation}', [ConversationController::class, 'destroy'])
+        ->name('messages.destroy');
+
     /*
     |--------------------------------------------------------------------------
     | Minu kuulutused
     |--------------------------------------------------------------------------
     */
     Route::prefix('my-listings')->group(function () {
-
         Route::get('/', [UserListingController::class, 'mine'])->name('listings.mine');
 
         Route::get('/{listing}', [UserListingController::class, 'showMine'])->name('listings.mine.show');

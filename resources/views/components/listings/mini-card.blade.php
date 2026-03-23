@@ -10,9 +10,9 @@
 
 <a
     href="{{ $link }}"
-    class="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-3 transition hover:border-blue-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    class="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-3 transition hover:border-green-300 hover:shadow-sm"
 >
-    <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800">
+    <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
         @if($coverImage)
             <img
                 src="{{ $coverImage }}"
@@ -27,11 +27,11 @@
     </div>
 
     <div class="min-w-0 flex-1">
-        <div class="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <div class="truncate text-sm font-semibold text-zinc-900">
             {{ $listing->title }}
         </div>
 
-        <div class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <div class="mt-1 text-sm text-zinc-500">
             @if(!is_null($listing->price))
                 {{ number_format((float) $listing->price, 2, ',', ' ') }} {{ $listing->currency ?? '€' }}
             @else

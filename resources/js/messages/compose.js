@@ -1,6 +1,7 @@
 export default function messageCompose() {
     return {
         files: [],
+        bodyText: "",
 
         onFilesSelected(event) {
             const selectedFiles = Array.from(event.target.files || []);
@@ -64,6 +65,10 @@ export default function messageCompose() {
 
             el.style.height = "auto";
             el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+        },
+
+        canSend() {
+            return this.bodyText.trim().length > 0 || this.files.length > 0;
         },
 
         formatSize(bytes) {

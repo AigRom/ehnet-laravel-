@@ -32,7 +32,7 @@
         />
 
         {{-- ==========================================================
-            TEST – sõnum müüjale
+            Sõnum müüjale
         ========================================================== --}}
         <div class="max-w-xl">
 
@@ -40,7 +40,35 @@
                 {{ __('Küsi müüjalt') }}
             </h2>
 
-            <x-messaging.message-form :listing="$listing" />
+            @guest
+                <div class="text-sm text-zinc-600">
+                    {{ __('Sõnumi saatmiseks') }}
+                    <a href="{{ route('login') }}" class="text-emerald-600 hover:underline">
+                        {{ __('logi sisse') }}
+                    </a>.
+                </div>
+            @endguest
+
+            @auth
+                @if(auth()->id() !== $listing->user_id)
+
+                    <form method="POST" action="{{ route('listings.conversation.open', $listing) }}">
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                            {{ __('Saada sõnum') }}
+                        </button>
+                    </form>
+
+                @else
+                    <div class="text-sm text-zinc-500">
+                        {{ __('See on sinu kuulutus.') }}
+                    </div>
+                @endif
+            @endauth
 
         </div>
 

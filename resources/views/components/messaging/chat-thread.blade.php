@@ -2,7 +2,12 @@
     'conversation',
 ])
 
-<div class="flex-1 overflow-y-auto bg-zinc-50/70 px-4 py-5">
+<div
+    x-data="chatScroll()"
+    x-init="init()"
+    @scroll="onScroll"
+    class="flex-1 overflow-y-auto bg-zinc-50/70 px-4 py-5"
+>
     <div class="space-y-4">
         @forelse($conversation->messages as $message)
             @php
@@ -111,5 +116,7 @@
                 </div>
             </div>
         @endforelse
+
+        <div x-ref="bottom"></div>
     </div>
 </div>

@@ -44,12 +44,13 @@
 
                     </div>
 
-                    <x-users.profile-summary-card
-                        :user="$otherUser"
-                        :role-label="$isSeller ? __('Ostja') : __('Müüja')"
-                        :score="9.8"
-                        :reviews-count="20"
-                    />
+                <x-users.profile-summary-card
+                    :user="$otherUser"
+                    :role-label="$isSeller ? __('Ostja') : __('Müüja')"
+                    :score="9.8"
+                    :reviews-count="20"
+                    :hide-conversation-action="route('messages.destroy', $activeConversation)"
+                />
                 </div>
 
                 {{-- Kuulutuse kaart --}}

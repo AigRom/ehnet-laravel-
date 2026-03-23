@@ -4,87 +4,63 @@ namespace App\Http\Controllers\Messaging;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
-use App\Models\Listing;
 use App\Models\Message;
+use App\Models\MessageAttachment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\MessageAttachment;
 
 class MessageController extends Controller
 {
-    public function store(Request $request, Listing $listing): RedirectResponse
-    {
-        $user = $request->user();
-
-        // Ei luba kirjutada iseenda kuulutusele
-        if ($user->id === $listing->user_id) {
-            return back()->with('error', 'Enda kuulutusele ei saa sõnumit saata.');
-        }
-
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'min:2', 'max:5000'],
-        ]);
-
-        $conversation = Conversation::firstOrCreate([
-            'listing_id' => $listing->id,
-            'seller_id' => $listing->user_id,
-            'buyer_id' => $user->id,
-        ]);
-
-        $lastMessage = $conversation->messages()
-            ->where('sender_id', $user->id)
-            ->latest('id')
-            ->first();
-
-        if (
-            $lastMessage &&
-            $lastMessage->body === $validated['body'] &&
-            $lastMessage->created_at !== null &&
-            $lastMessage->created_at->gt(now()->subSeconds(5))
-        ) {
-            return back()->with('error', 'Sama sõnum saadeti juba.');
-        }
-
-        Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'body' => trim($validated['body']),
-        ]);
-
-        $conversation->touch();
-
-        return back()->with('success', 'Sõnum saadeti edukalt.');
-
-        
-    }
-
+    /**
+     * Salvestab uue sõnumi olemasolevasse vestlusesse.
+     *
+     * Lubatud variandid:
+     * - ainult tekst
+     * - tekst + manused
+     * - ainult manused
+     *
+     * Kui vestlus oli peidetud, siis uue sõnumi saatmine muudab selle
+     * uuesti nähtavaks mõlemale osapoolele.
+     */
     public function storeInConversation(Request $request, Conversation $conversation): RedirectResponse
     {
         $user = $request->user();
 
+        // Kontrollime, et kasutaja kuulub sellesse vestlusesse
         abort_unless(
-            $conversation->seller_id === $user->id || $conversation->buyer_id === $user->id,
-            403
+            $conversation->hasParticipant($user),
+            404
         );
 
+        // Väldime tühja sõnumi saatmist:
+        // vähemalt tekst või vähemalt üks manus peab olemas olema
         if (!$request->filled('body') && !$request->hasFile('attachments')) {
             return back()->withErrors([
                 'body' => 'Lisa sõnum või manus.',
             ]);
         }
 
+        // Valideerime sisendi:
+        // - body võib olla tühi/null
+        // - manuseid võib olla kuni 5
+        // - üksiku faili max suurus 10 MB
+        // - lubatud faililaiendid on piiratud
         $validated = $request->validate([
             'body' => ['nullable', 'string', 'max:5000'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => [
                 'file',
                 'max:10240',
-                'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,zip',
+                'extensions:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,zip',
             ],
         ]);
 
+        // Eemaldame body ümbert tühikud
         $body = trim((string) ($validated['body'] ?? ''));
 
+        // Väike kaitse topeltkliki / topeltsaatmise vastu:
+        // kui sama kasutaja saatis viimase 5 sekundi jooksul täpselt sama body,
+        // siis uut sõnumit ei loo
         $lastMessage = $conversation->messages()
             ->where('sender_id', $user->id)
             ->latest('id')
@@ -100,12 +76,16 @@ class MessageController extends Controller
             return back()->with('error', 'Sama sõnum saadeti juba.');
         }
 
+        // Loome sõnumi.
+        // Kui body jäi tühjaks, salvestame nulli,
+        // et toetada "ainult manused" kasutusjuhtu.
         $message = Message::create([
             'conversation_id' => $conversation->id,
             'sender_id' => $user->id,
             'body' => $body !== '' ? $body : null,
         ]);
 
+        // Salvestame manused, kui need on kaasa pandud
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 $path = $file->store('messages/attachments', 'public');
@@ -125,12 +105,18 @@ class MessageController extends Controller
             }
         }
 
+        // Uus sõnum muudab vestluse uuesti aktiivseks mõlemale poolele:
+        // - seller_hidden_at = null
+        // - buyer_hidden_at = null
+        // - fully_hidden_at = null
+        $conversation->unhideForBoth();
+
+        // Uuendame vestluse updated_at välja,
+        // et vestlus liiguks nimekirjas ettepoole
         $conversation->touch();
 
         return redirect()
             ->route('messages.show', $conversation)
             ->with('success', 'Sõnum saadeti edukalt.');
     }
-
-
 }
