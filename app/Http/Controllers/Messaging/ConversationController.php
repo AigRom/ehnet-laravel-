@@ -144,6 +144,8 @@ class ConversationController extends Controller
      *
      * Kui vestlus juba eksisteerib, kasutame sama vestlust edasi.
      * Kui kasutaja oli selle vestluse varem peitnud, taastame nähtavuse talle uuesti.
+     *
+     * Kui kasutajate vahel on sõnumiblokk, siis vestlust avada ega luua ei saa.
      */
     public function openFromListing(Request $request, Listing $listing): RedirectResponse
     {
@@ -154,6 +156,12 @@ class ConversationController extends Controller
         // Omaenda kuulutusele ei saa sõnumit saata
         if ($user->id === $listing->user_id) {
             return back()->with('error', 'Enda kuulutusele ei saa sõnumit saata.');
+        }
+
+        // Kontrollime, kas müüja ja ostja vahel on sõnumiblokk.
+        // Kui jah, siis ei luba uut vestlust avada ega olemasolevat taastada.
+        if ($user->hasMessagingBlockWith($listing->user)) {
+            return back()->with('error', 'Selle kasutajaga ei saa enam sõnumeid vahetada.');
         }
 
         // Leiame olemasoleva vestluse või loome uue

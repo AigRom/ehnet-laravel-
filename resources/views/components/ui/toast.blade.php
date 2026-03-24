@@ -1,0 +1,78 @@
+@props([
+    // Session võtmed, mida toast kuulab
+    'successKey' => 'success',
+    'errorKey' => 'error',
+
+    // Kui kaua toast nähtav on (ms)
+    'duration' => 4000,
+])
+
+@php
+    $successMessage = session($successKey);
+    $errorMessage = session($errorKey);
+
+    $message = $successMessage ?: $errorMessage;
+    $type = $successMessage ? 'success' : ($errorMessage ? 'error' : null);
+@endphp
+
+@if($message && $type)
+    <div
+        x-data="{
+            open: true,
+            duration: {{ (int) $duration }},
+            init() {
+                setTimeout(() => this.open = false, this.duration);
+            }
+        }"
+        x-init="init()"
+        x-show="open"
+        x-transition.opacity.scale.duration.200ms
+        class="pointer-events-none fixed inset-x-0 top-4 z-[100] flex justify-center px-4"
+    >
+        <div
+            class="pointer-events-auto w-full max-w-md rounded-2xl border px-4 py-3 shadow-lg"
+            @class([
+                'bg-white' => true,
+                'border-emerald-200 text-emerald-800' => $type === 'success',
+                'border-red-200 text-red-800' => $type === 'error',
+            ])
+        >
+            <div class="flex items-start gap-3">
+                <div
+                    class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                    @class([
+                        'bg-emerald-50 text-emerald-600' => $type === 'success',
+                        'bg-red-50 text-red-600' => $type === 'error',
+                    ])
+                >
+                    @if($type === 'success')
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-8 8a1 1 0 0 1-1.42-.004l-4-4a1 1 0 1 1 1.414-1.414l3.294 3.293 7.296-7.289a1 1 0 0 1 1.41 0Z" clip-rule="evenodd" />
+                        </svg>
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                        </svg>
+                    @endif
+                </div>
+
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium">
+                        {{ $message }}
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    @click="open = false"
+                    class="rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
+                    title="{{ __('Sulge') }}"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+@endif

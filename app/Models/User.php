@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Listing;
+use App\Models\UserBlock;
 
 class User extends Authenticatable
 {
@@ -204,6 +205,51 @@ class User extends Authenticatable
     public function sentMessages(): HasMany
     {
         return $this->hasMany(Message::class, 'sender_id');
+    }
+
+
+    /**
+     * Blokeerimised, mille see kasutaja on ise teinud
+     */
+    public function blocksInitiated(): HasMany
+    {
+        return $this->hasMany(UserBlock::class, 'blocker_id');
+    }
+
+    /**
+     * Blokeerimised, kus see kasutaja on blokeeritud osapool
+     */
+    public function blocksReceived(): HasMany
+    {
+        return $this->hasMany(UserBlock::class, 'blocked_user_id');
+    }
+
+    /**
+     * Kas see kasutaja on blokeerinud teise kasutaja
+     */
+    public function hasBlocked(User $otherUser): bool
+    {
+        return $this->blocksInitiated()
+            ->where('blocked_user_id', $otherUser->id)
+            ->exists();
+    }
+
+    /**
+     * Kas see kasutaja on teise kasutaja poolt blokeeritud
+     */
+    public function isBlockedBy(User $otherUser): bool
+    {
+        return $this->blocksReceived()
+            ->where('blocker_id', $otherUser->id)
+            ->exists();
+    }
+
+    /**
+     * Kas kahe kasutaja vahel on blokk ükskõik kummas suunas
+     */
+    public function hasMessagingBlockWith(User $otherUser): bool
+    {
+        return $this->hasBlocked($otherUser) || $this->isBlockedBy($otherUser);
     }
 
 

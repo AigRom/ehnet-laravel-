@@ -1,21 +1,72 @@
 @props([
+    // Kõik kasutaja nähtavad vestlused vasaku veeru jaoks
     'conversations' => collect(),
+
+    // Hetkel avatud aktiivne vestlus
     'activeConversation' => null,
 ])
 
 @php
+    // Kas aktiivne vestlus on üldse olemas
     $hasActiveConversation = !is_null($activeConversation);
+
+    // Kas oleme vestluste listi vaates või konkreetse vestluse vaates
     $isMessagesIndex = request()->routeIs('messages.index');
     $isMessagesShow = request()->routeIs('messages.show');
 
+    // Mobiilis:
+    // - index vaates näitame ainult listi
+    // - show vaates näitame ainult vestlust
     $showListOnMobile = $isMessagesIndex;
     $showConversationOnMobile = $isMessagesShow && $hasActiveConversation;
 
+    // Kontrollime, kas praegune kasutaja on aktiivses vestluses müüja
     $isSeller = $hasActiveConversation && auth()->id() === $activeConversation->seller_id;
+
+    // Leiame vestluse teise osapoole
     $otherUser = $hasActiveConversation
         ? ($isSeller ? $activeConversation->buyer : $activeConversation->seller)
         : null;
+
+    // Kuulutus, mille kohta vestlus käib
     $listing = $hasActiveConversation ? $activeConversation->listing : null;
+
+    // Kas mina olen selle teise kasutaja blokeerinud
+    $isBlockedByMe = $hasActiveConversation && $otherUser
+        ? auth()->user()->hasBlocked($otherUser)
+        : false;
+
+    // Kas kasutajate vahel on üldse aktiivne sõnumiblokk ükskõik kummas suunas
+    $hasMessagingBlock = $hasActiveConversation
+        ? $activeConversation->hasMessagingBlock(auth()->user())
+        : false;
+
+    // Route kasutaja blokeerimiseks:
+    // ainult siis, kui mina ei ole teda juba blokeerinud
+    $blockUserAction = $hasActiveConversation && $otherUser && !$isBlockedByMe
+        ? route('user-blocks.store', $otherUser)
+        : null;
+
+    // Route blokeeringu eemaldamiseks:
+    // ainult siis, kui mina olen selle kasutaja blokeerinud
+    $unblockUserAction = $hasActiveConversation && $otherUser && $isBlockedByMe
+        ? route('user-blocks.destroy', $otherUser)
+        : null;
+
+    // Route vestluse eemaldamiseks kasutaja vaatest
+    $hideConversationAction = $hasActiveConversation
+        ? route('messages.destroy', $activeConversation)
+        : null;
+
+    // Route kasutajast teatamiseks
+    $reportUserAction = $hasActiveConversation
+        ? route('user-reports.store')
+        : null;
+
+    // Aktiivse vestluse id reporti sidumiseks
+    $conversationId = $hasActiveConversation
+        ? $activeConversation->id
+        : null;
 @endphp
 
 <div class="mx-auto max-w-7xl px-4 py-6 md:py-8">
@@ -29,42 +80,54 @@
             />
         </div>
 
-        {{-- Parem veerg: aktiivne vestlus / placeholder --}}
+        {{-- Parem veerg: aktiivne vestlus või placeholder --}}
         <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] lg:h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
 
             @if($hasActiveConversation)
-                {{-- Päis + tagasi link mobiilis --}}
+                {{-- Päis koos mobiili tagasi-nupuga --}}
                 <div class="border-b border-zinc-200 px-4 py-4">
                     <div class="mb-4 flex items-center lg:hidden">
-
                         <x-ui.back-button
                             :href="route('messages.index')"
                             color="emerald"
                         />
-
                     </div>
 
-                <x-users.profile-summary-card
-                    :user="$otherUser"
-                    :role-label="$isSeller ? __('Ostja') : __('Müüja')"
-                    :score="9.8"
-                    :reviews-count="20"
-                    :hide-conversation-action="route('messages.destroy', $activeConversation)"
-                />
+                    {{-- Vestluse teise osapoole kaart koos menüü ja blokeerimise olekuga --}}
+                    <x-users.profile-summary-card
+                        :user="$otherUser"
+                        :role-label="$isSeller ? __('Ostja') : __('Müüja')"
+                        :score="9.8"
+                        :reviews-count="20"
+                        :hide-conversation-action="$hideConversationAction"
+                        :block-user-action="$blockUserAction"
+                        :unblock-user-action="$unblockUserAction"
+                        :is-blocked-by-me="$isBlockedByMe"
+                        :has-messaging-block="$hasMessagingBlock"
+                        :report-user-action="$reportUserAction"
+                        :conversation-id="$conversationId"
+                    />
                 </div>
 
-                {{-- Kuulutuse kaart --}}
+                {{-- Kuulutuse mini-kaart vestluse kohal --}}
                 <div class="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4">
                     <x-listings.mini-card :listing="$listing" />
                 </div>
 
-                {{-- Vestlus --}}
+                {{-- Vestluse sõnumid --}}
                 <x-messaging.chat-thread :conversation="$activeConversation" />
 
-                {{-- Sisestusala --}}
-                <x-messaging.chat-compose :conversation="$activeConversation" />
+                {{-- Sisestusala.
+                     Kui blokk on peal, saab chat-compose selle põhjal otsustada,
+                     kas kuvada päris sisestusvorm või blokeeringu infoplokk. --}}
+                <x-messaging.chat-compose
+                    :conversation="$activeConversation"
+                    :has-messaging-block="$hasMessagingBlock"
+                    :is-blocked-by-me="$isBlockedByMe"
+                    :unblock-user-action="$unblockUserAction"
+                />
             @else
-                {{-- Desktop placeholder --}}
+                {{-- Desktop placeholder, kui aktiivset vestlust pole --}}
                 <div class="flex h-full flex-1 items-center justify-center p-8">
                     <div class="max-w-md text-center">
                         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">

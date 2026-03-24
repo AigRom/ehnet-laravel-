@@ -12,6 +12,9 @@ use App\Http\Controllers\Messaging\MessageController;
 use App\Http\Controllers\Messaging\ConversationController;
 use App\Http\Controllers\Public\ListingController as PublicListingController;
 use App\Http\Controllers\User\ListingController as UserListingController;
+use App\Http\Controllers\Messaging\UserBlockController;
+use App\Http\Controllers\Messaging\UserReportController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -102,9 +105,28 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
         ->name('messages.store');
 
-    // Peidab vestluse ainult текущise kasutaja vaatest
+    // Peidab vestluse ainult kasutaja vaatest
     Route::delete('/messages/{conversation}', [ConversationController::class, 'destroy'])
         ->name('messages.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kasutajate blokeerimine
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/user-blocks/{user}', [UserBlockController::class, 'store'])
+        ->name('user-blocks.store');
+
+    Route::delete('/user-blocks/{user}', [UserBlockController::class, 'destroy'])
+        ->name('user-blocks.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kasutajast teatamine
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/user-reports', [UserReportController::class, 'store'])
+        ->name('user-reports.store');
 
     /*
     |--------------------------------------------------------------------------

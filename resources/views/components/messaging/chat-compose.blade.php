@@ -1,135 +1,198 @@
 @props([
     'conversation',
+
+    // Kas kasutajate vahel on aktiivne sõnumiblokk
+    'hasMessagingBlock' => false,
+
+    // Kas praegune kasutaja on ise selle teise kasutaja blokeerinud
+    'isBlockedByMe' => false,
+
+    // Route blokeeringu eemaldamiseks
+    'unblockUserAction' => null,
 ])
 
-<div
-    x-data="messageCompose()"
-    class="border-t border-emerald-200 bg-white p-4 md:p-5"
->
-    <form
-        method="POST"
-        action="{{ route('messages.store', $conversation) }}"
-        enctype="multipart/form-data"
-        class="space-y-3"
-    >
-        @csrf
-
-        <input
-            type="file"
-            name="attachments[]"
-            id="attachments-{{ $conversation->id }}"
-            multiple
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
-            class="hidden"
-            @change="onFilesSelected($event)"
-        />
-
-        <div class="flex items-end gap-3 w-full">
-            <button
-                type="button"
-                onclick="document.getElementById('attachments-{{ $conversation->id }}').click()"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow hover:bg-emerald-700 transition"
-                title="{{ __('Lisa fail') }}"
-            >
-                <x-icons.paperclip class="h-5 w-5" />
-            </button>
-
-            <textarea
-                x-ref="body"
-                x-model="bodyText"
-                x-init="autosizeTextarea($el)"
-                @input="autosizeTextarea($el)"
-                @keydown="
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-
-                        if (canSend()) {
-                            $el.form.requestSubmit();
-                        }
-                    }
-                "
-                id="body"
-                name="body"
-                rows="1"
-                placeholder="{{ __('Kirjuta vastus...') }}"
-                class="flex-1 w-full min-w-0 resize-none overflow-hidden rounded-2xl border border-emerald-400 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-            >{{ old('body') }}</textarea>
-
-            <button
-                x-show="canSend()"
-                x-transition.opacity.scale.duration.150ms
-                type="submit"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow hover:bg-emerald-700 transition"
-                title="{{ __('Saada') }}"
-            >
-                <x-icons.paper-airplane class="h-5 w-5" />
-            </button>
-        </div>
-
-        @error('body')
-            <p class="text-sm text-red-600">{{ $message }}</p>
-        @enderror
-
-        @error('attachments')
-            <p class="text-sm text-red-600">{{ $message }}</p>
-        @enderror
-
-        @error('attachments.*')
-            <p class="text-sm text-red-600">{{ $message }}</p>
-        @enderror
-
-        <template x-if="files.length > 0">
-            <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                <div class="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    {{ __('Valitud failid') }}
+<div class="border-t border-emerald-200 bg-white p-4 md:p-5">
+    @if($hasMessagingBlock)
+        {{-- Kui kasutajate vahel on blokk, ei näita sõnumi sisestamise vormi.
+             Selle asemel kuvame selge staatuse ja vajadusel võimaluse blokeering eemaldada. --}}
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+                    <x-icons.block class="h-5 w-5" />
                 </div>
 
-                <div class="space-y-3">
-                    <template x-for="(item, index) in files" :key="item.id">
-                        <div class="rounded-xl bg-white p-2 shadow-sm">
-                            <template x-if="item.isImage">
-                                <div class="flex items-start gap-3">
-                                    <img
-                                        :src="item.previewUrl"
-                                        :alt="item.name"
-                                        class="h-20 w-20 shrink-0 rounded-lg object-cover border border-zinc-200"
-                                    >
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-sm font-semibold text-zinc-900">
+                        {{ __('Sõnumite saatmine on piiratud') }}
+                    </h3>
 
-                                    <div class="min-w-0 flex-1">
-                                        <div class="truncate font-medium text-sm text-zinc-900" x-text="item.name"></div>
-                                        <div class="mt-1 text-xs text-zinc-500" x-text="formatSize(item.size)"></div>
+                    @if($isBlockedByMe)
+                        <p class="mt-1 text-sm leading-6 text-zinc-600">
+                            {{ __('Oled selle kasutaja blokeerinud. Blokeeringu eemaldamisel saate jälle uusi sõnumeid vahetada.') }}
+                        </p>
 
-                                        <button
-                                            type="button"
-                                            class="mt-2 text-xs font-medium text-red-600 hover:underline"
-                                            @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
-                                        >
-                                            {{ __('Eemalda') }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
+                        @if($unblockUserAction)
+                            <form method="POST" action="{{ $unblockUserAction }}" class="mt-4">
+                                @csrf
+                                @method('DELETE')
 
-                            <template x-if="!item.isImage">
-                                <div class="flex items-center justify-between gap-3 px-1 py-1 text-sm">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="truncate font-medium text-zinc-900" x-text="item.name"></div>
-                                        <div class="text-xs text-zinc-500" x-text="formatSize(item.size)"></div>
-                                    </div>
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+                                >
+                                    {{ __('Eemalda blokeering') }}
+                                </button>
+                            </form>
+                        @endif
+                    @else
+                        <p class="mt-1 text-sm leading-6 text-zinc-600">
+                            {{ __('Selle kasutajaga ei saa praegu uusi sõnumeid vahetada.') }}
+                        </p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- Tavaline sõnumi koostamise vorm --}}
+        <div
+            x-data="messageCompose()"
+            class=""
+        >
+            <form
+                method="POST"
+                action="{{ route('messages.store', $conversation) }}"
+                enctype="multipart/form-data"
+                class="space-y-3"
+            >
+                @csrf
 
-                                    <button
-                                        type="button"
-                                        class="text-xs font-medium text-red-600 hover:underline"
-                                        @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
-                                    >
-                                        {{ __('Eemalda') }}
-                                    </button>
+                {{-- Peidetud failisisend manuste jaoks --}}
+                <input
+                    type="file"
+                    name="attachments[]"
+                    id="attachments-{{ $conversation->id }}"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
+                    class="hidden"
+                    @change="onFilesSelected($event)"
+                />
+
+                <div class="flex w-full items-end gap-3">
+                    {{-- Manuse lisamise nupp --}}
+                    <button
+                        type="button"
+                        onclick="document.getElementById('attachments-{{ $conversation->id }}').click()"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow transition hover:bg-emerald-700"
+                        title="{{ __('Lisa fail') }}"
+                    >
+                        <x-icons.paperclip class="h-5 w-5" />
+                    </button>
+
+                    {{-- Sõnumi tekstiala:
+                         Enter saadab, Shift+Enter teeb uue rea --}}
+                    <textarea
+                        x-ref="body"
+                        x-model="bodyText"
+                        x-init="autosizeTextarea($el)"
+                        @input="autosizeTextarea($el)"
+                        @keydown="
+                            if (event.key === 'Enter' && !event.shiftKey) {
+                                event.preventDefault();
+
+                                if (canSend()) {
+                                    $el.form.requestSubmit();
+                                }
+                            }
+                        "
+                        id="body"
+                        name="body"
+                        rows="1"
+                        placeholder="{{ __('Kirjuta vastus...') }}"
+                        class="w-full min-w-0 flex-1 resize-none overflow-hidden rounded-2xl border border-emerald-400 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    >{{ old('body') }}</textarea>
+
+                    {{-- Saatmise nupp kuvatakse ainult siis, kui on tekst või failid --}}
+                    <button
+                        x-show="canSend()"
+                        x-transition.opacity.scale.duration.150ms
+                        type="submit"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow transition hover:bg-emerald-700"
+                        title="{{ __('Saada') }}"
+                    >
+                        <x-icons.paper-airplane class="h-5 w-5" />
+                    </button>
+                </div>
+
+                {{-- Veateated --}}
+                @error('body')
+                    <p class="text-sm text-red-600">{{ $message }}</p>
+                @enderror
+
+                @error('attachments')
+                    <p class="text-sm text-red-600">{{ $message }}</p>
+                @enderror
+
+                @error('attachments.*')
+                    <p class="text-sm text-red-600">{{ $message }}</p>
+                @enderror
+
+                {{-- Valitud failide eelvaade --}}
+                <template x-if="files.length > 0">
+                    <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                        <div class="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                            {{ __('Valitud failid') }}
+                        </div>
+
+                        <div class="space-y-3">
+                            <template x-for="(item, index) in files" :key="item.id">
+                                <div class="rounded-xl bg-white p-2 shadow-sm">
+                                    {{-- Pildi eelvaade --}}
+                                    <template x-if="item.isImage">
+                                        <div class="flex items-start gap-3">
+                                            <img
+                                                :src="item.previewUrl"
+                                                :alt="item.name"
+                                                class="h-20 w-20 shrink-0 rounded-lg border border-zinc-200 object-cover"
+                                            >
+
+                                            <div class="min-w-0 flex-1">
+                                                <div class="truncate text-sm font-medium text-zinc-900" x-text="item.name"></div>
+                                                <div class="mt-1 text-xs text-zinc-500" x-text="formatSize(item.size)"></div>
+
+                                                <button
+                                                    type="button"
+                                                    class="mt-2 text-xs font-medium text-red-600 hover:underline"
+                                                    @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
+                                                >
+                                                    {{ __('Eemalda') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    {{-- Muu faili eelvaade --}}
+                                    <template x-if="!item.isImage">
+                                        <div class="flex items-center justify-between gap-3 px-1 py-1 text-sm">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="truncate font-medium text-zinc-900" x-text="item.name"></div>
+                                                <div class="text-xs text-zinc-500" x-text="formatSize(item.size)"></div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                class="text-xs font-medium text-red-600 hover:underline"
+                                                @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
+                                            >
+                                                {{ __('Eemalda') }}
+                                            </button>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>
-                    </template>
-                </div>
-            </div>
-        </template>
-    </form>
+                    </div>
+                </template>
+            </form>
+        </div>
+    @endif
 </div>

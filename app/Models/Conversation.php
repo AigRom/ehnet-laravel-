@@ -179,4 +179,34 @@ class Conversation extends Model
         // Kui vähemalt üks pool on nähtav, ei ole vestlus enam "fully hidden"
         $this->fully_hidden_at = null;
     }
+
+    /**
+     * Tagastab vestluse teise osapoole antud kasutaja suhtes
+     */
+    public function otherParticipant(User $user): ?User
+    {
+        if ($this->isSeller($user)) {
+            return $this->buyer;
+        }
+
+        if ($this->isBuyer($user)) {
+            return $this->seller;
+        }
+
+        return null;
+    }
+
+    /**
+     * Kas selle vestluse kahe osapoole vahel on sõnumiblokk
+     */
+    public function hasMessagingBlock(User $user): bool
+    {
+        $otherUser = $this->otherParticipant($user);
+
+        if (!$otherUser) {
+            return false;
+        }
+
+        return $user->hasMessagingBlockWith($otherUser);
+    }
 }

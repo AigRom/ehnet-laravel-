@@ -7,6 +7,9 @@
     @livewireStyles
 </head>
 <body class="min-h-screen bg-white text-zinc-900">
+    {{-- Üldine toast kogu rakenduse jaoks --}}
+    <x-ui.toast />
+
     <x-layouts.app.header :title="$title" />
 
     @if($container)
@@ -18,14 +21,6 @@
             {{ $slot }}
         </main>
     @endif
-
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('notify', ({ message }) => {
-                alert(message); // MVP
-            });
-        });
-    </script>
 
     @livewireScripts
 </body>

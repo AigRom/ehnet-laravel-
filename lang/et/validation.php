@@ -33,6 +33,8 @@ return [
         'password_confirmation' => 'parooli kinnitus',
         'type' => 'konto tüüp',
         'email' => 'e-post',
+        'reason' => 'Põhjus',
+        'details' => 'Selgitus',
     ],
 
 ];

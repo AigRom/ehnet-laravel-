@@ -21,6 +21,8 @@ class MessageController extends Controller
      *
      * Kui vestlus oli peidetud, siis uue sõnumi saatmine muudab selle
      * uuesti nähtavaks mõlemale osapoolele.
+     *
+     * Kui kasutajate vahel on sõnumiblokk, siis uut sõnumit saata ei saa.
      */
     public function storeInConversation(Request $request, Conversation $conversation): RedirectResponse
     {
@@ -31,6 +33,12 @@ class MessageController extends Controller
             $conversation->hasParticipant($user),
             404
         );
+
+        // Kui selle vestluse kahe osapoole vahel on blokk,
+        // siis uusi sõnumeid saata ei tohi
+        if ($conversation->hasMessagingBlock($user)) {
+            return back()->with('error', 'Selle kasutajaga ei saa enam sõnumeid vahetada.');
+        }
 
         // Väldime tühja sõnumi saatmist:
         // vähemalt tekst või vähemalt üks manus peab olemas olema
