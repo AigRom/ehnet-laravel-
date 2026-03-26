@@ -71,11 +71,11 @@
 >
     <div class="flex items-start gap-4">
         {{-- Profiilipilt või initsiaalid --}}
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100">
-            @if(!empty($user->profile_photo_url))
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
+            @if(!empty($user->avatar_url))
                 <img
-                    src="{{ $user->profile_photo_url }}"
-                    alt="{{ $user->name }}"
+                    src="{{ $user->avatar_url }}"
+                    alt="{{ $user->name ?? __('Kasutaja') }}"
                     class="h-full w-full object-cover"
                 >
             @else

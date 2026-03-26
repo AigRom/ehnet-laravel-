@@ -6,10 +6,6 @@
             :heading="__('Profiil')"
             :subheading="__('Uuenda oma konto põhiandmeid.')"
         >
-            @php
-                /** @var \App\Models\User $user */
-            @endphp
-
             <form
                 method="POST"
                 action="{{ route('profile.update') }}"
@@ -366,8 +362,10 @@
                     @endif
                 </div>
             </form>
-
-            <livewire:settings.delete-user-form />
         </x-settings.layout>
+
+        <div class="mt-8">
+            <livewire:settings.delete-user-form />
+        </div>
     </section>
 </x-layouts.app.public>
