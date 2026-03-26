@@ -3,30 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
-use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\Listing;
-use App\Models\UserBlock;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable;
 
     /*
     |--------------------------------------------------------------------------
     | Rollide konstandid
     |--------------------------------------------------------------------------
     */
-    public const ROLE_ADMIN     = 'admin';
+    public const ROLE_ADMIN = 'admin';
     public const ROLE_MODERATOR = 'moderator';
-    public const ROLE_CUSTOMER  = 'customer'; // eraisik
-    public const ROLE_BUSINESS  = 'business'; // ettevõte
+    public const ROLE_CUSTOMER = 'customer';   // eraisik
+    public const ROLE_BUSINESS = 'business';   // ettevõte
 
     /*
     |--------------------------------------------------------------------------
@@ -46,7 +43,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'location_id',
-        
+        'avatar_path',
 
         // ettevõte
         'company_name',
@@ -72,8 +69,6 @@ class User extends Authenticatable
     */
     protected $hidden = [
         'password',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
         'remember_token',
     ];
 
@@ -87,41 +82,85 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
-            'last_login_at'     => 'datetime',
-            'date_of_birth'     => 'date',
-
-            'is_active'         => 'boolean',
-
-            'password'          => 'hashed',
+            'last_login_at' => 'datetime',
+            'date_of_birth' => 'date',
+            'is_active' => 'boolean',
+            'password' => 'hashed',
         ];
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    Location/Location
+    | Seosed
     |--------------------------------------------------------------------------
     */
-
-    public function location()
+    public function location(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Location::class);
+        return $this->belongsTo(Location::class);
     }
 
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
+    }
+
+    public function favorites(): BelongsToMany
+    {
+        return $this->belongsToMany(Listing::class, 'favorites')
+            ->withTimestamps();
+    }
+
+    public function buyerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'buyer_id');
+    }
+
+    public function sellerConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'seller_id');
+    }
+
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
+     * Blokeerimised, mille see kasutaja on ise teinud.
+     */
+    public function blocksInitiated(): HasMany
+    {
+        return $this->hasMany(UserBlock::class, 'blocker_id');
+    }
+
+    /**
+     * Blokeerimised, kus see kasutaja on blokeeritud osapool.
+     */
+    public function blocksReceived(): HasMany
+    {
+        return $this->hasMany(UserBlock::class, 'blocked_user_id');
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | Abimeetodid
+    | Accessorid / abimeetodid
     |--------------------------------------------------------------------------
     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar_path
+            ? Storage::url($this->avatar_path)
+            : null;
+    }
 
     /**
-     * Kasutaja initsiaalid (avatarid, menüüd jne)
+     * Kasutaja initsiaalid (avatarid, menüüd jne).
      */
     public function initials(): string
     {
-        return Str::of($this->name)
+        return Str::of($this->name ?? '')
             ->explode(' ')
+            ->filter()
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
@@ -132,7 +171,6 @@ class User extends Authenticatable
     | Rollide kontroll
     |--------------------------------------------------------------------------
     */
-
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
@@ -160,73 +198,9 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
-    | Kuulutused
-    |--------------------------------------------------------------------------
-    |
-    | Kasutaja poolt loodud kuulutused (müügi- ja oksjonikuulutused).
-    | Seos: User 1 → N Listing
-    |
-    */
-    public function listings()
-    {
-        return $this->hasMany(\App\Models\Listing::class);
-    }
-
-    //Lemmik kuulutused
-
-    public function favorites(): BelongsToMany
-    {
-        return $this->belongsToMany(Listing::class, 'favorites')
-            ->withTimestamps();
-    }
-
-        /*
-    |--------------------------------------------------------------------------
-    | Vestlused
+    | Blokeeringute kontroll
     |--------------------------------------------------------------------------
     */
-
-    public function buyerConversations(): HasMany
-    {
-        return $this->hasMany(Conversation::class, 'buyer_id');
-    }
-
-    public function sellerConversations(): HasMany
-    {
-        return $this->hasMany(Conversation::class, 'seller_id');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sõnumid
-    |--------------------------------------------------------------------------
-    */
-
-    public function sentMessages(): HasMany
-    {
-        return $this->hasMany(Message::class, 'sender_id');
-    }
-
-
-    /**
-     * Blokeerimised, mille see kasutaja on ise teinud
-     */
-    public function blocksInitiated(): HasMany
-    {
-        return $this->hasMany(UserBlock::class, 'blocker_id');
-    }
-
-    /**
-     * Blokeerimised, kus see kasutaja on blokeeritud osapool
-     */
-    public function blocksReceived(): HasMany
-    {
-        return $this->hasMany(UserBlock::class, 'blocked_user_id');
-    }
-
-    /**
-     * Kas see kasutaja on blokeerinud teise kasutaja
-     */
     public function hasBlocked(User $otherUser): bool
     {
         return $this->blocksInitiated()
@@ -234,9 +208,6 @@ class User extends Authenticatable
             ->exists();
     }
 
-    /**
-     * Kas see kasutaja on teise kasutaja poolt blokeeritud
-     */
     public function isBlockedBy(User $otherUser): bool
     {
         return $this->blocksReceived()
@@ -244,15 +215,8 @@ class User extends Authenticatable
             ->exists();
     }
 
-    /**
-     * Kas kahe kasutaja vahel on blokk ükskõik kummas suunas
-     */
     public function hasMessagingBlockWith(User $otherUser): bool
     {
         return $this->hasBlocked($otherUser) || $this->isBlockedBy($otherUser);
     }
-
-
-
-
 }

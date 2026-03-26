@@ -1,20 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
-use Livewire\Volt\Volt;
 
 // Kontrollerid
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ListingQuickController;
-use App\Http\Controllers\Messaging\MessageController;
+
 use App\Http\Controllers\Messaging\ConversationController;
-use App\Http\Controllers\Public\ListingController as PublicListingController;
-use App\Http\Controllers\User\ListingController as UserListingController;
+use App\Http\Controllers\Messaging\MessageController;
 use App\Http\Controllers\Messaging\UserBlockController;
 use App\Http\Controllers\Messaging\UserReportController;
-
+use App\Http\Controllers\User\PasswordController;
+use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\Public\ListingController as PublicListingController;
+use App\Http\Controllers\User\ListingController as UserListingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,13 +67,22 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Kasutaja seaded (Livewire / Volt)
+    | Kasutaja seaded
     |--------------------------------------------------------------------------
     */
     Route::redirect('/settings', '/settings/profile');
 
-    Volt::route('/settings/profile', 'settings.profile')->name('profile.edit');
-    Volt::route('/settings/password', 'settings.password')->name('user-password.edit');
+    Route::get('/settings/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/settings/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::get('/settings/password', [PasswordController::class, 'edit'])
+        ->name('user-password.edit');
+
+    Route::put('/settings/password', [PasswordController::class, 'update'])
+        ->name('user-password.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -163,23 +171,4 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/favorites', [UserListingController::class, 'favorites'])
         ->name('favorites.index');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Kahefaktoriline autentimine (edasiarendus)
-    |--------------------------------------------------------------------------
-    */
-    Volt::route('/settings/two-factor', 'settings.two-factor')
-        ->middleware(
-            when(
-                Features::canManageTwoFactorAuthentication()
-                && Features::optionEnabled(
-                    Features::twoFactorAuthentication(),
-                    'confirmPassword'
-                ),
-                ['password.confirm'],
-                [],
-            ),
-        )
-        ->name('two-factor.show');
 });

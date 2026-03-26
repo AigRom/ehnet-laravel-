@@ -10,12 +10,15 @@ class LocationAutocomplete extends Component
 {
     public string $search = '';
 
-    // Volt / Livewire: wire:model="location_id"
+    // Livewire parent binding
     #[Modelable]
     public ?int $location_id = null;
 
-    // Klassikaline POST vorm: hidden input name="location_id"
+    // Klassikalise vormi jaoks
     public ?int $selectedId = null;
+
+    // Hidden input name
+    public string $name = 'location_id';
 
     /** @var array<int, array{id:int,label:string}> */
     public array $results = [];
@@ -25,19 +28,18 @@ class LocationAutocomplete extends Component
         'loc:clear' => 'clearSelection',
     ];
 
-    public function mount(?int $initialId = null): void
+    public function mount(?int $selectedId = null, ?string $name = 'location_id', ?int $initialId = null): void
     {
-        // Prioriteet: wire:model -> initialId
-        $id = $this->location_id ?: $initialId;
+        $this->name = $name ?: 'location_id';
+
+        // toeta nii vana initialId kui uut selectedId
+        $id = $this->location_id ?: $selectedId ?: $initialId;
 
         if ($id) {
             $this->applyLocationId((int) $id);
         }
     }
 
-    /**
-     * Livewire 3: updatedSearch($value) on stabiilne
-     */
     public function updatedSearch($value): void
     {
         $term = mb_strtolower(trim((string) $value));
@@ -51,10 +53,6 @@ class LocationAutocomplete extends Component
             return;
         }
 
-        // Prefix match:
-        // 1) name_et LIKE 'al%'
-        // 2) full_label_et LIKE 'al%'
-        // 3) full_label_et LIKE '%, al%'
         $namePrefix = "{$term}%";
         $labelPrefixStart = "{$term}%";
         $labelPrefixAfterComma = "%, {$term}%";
@@ -89,7 +87,6 @@ class LocationAutocomplete extends Component
     {
         $this->applyLocationId($id);
 
-        // ✅ anna parentile märku (checkbox loogika + location_label täitmine)
         $this->dispatch('loc:selected',
             id: (int) $this->selectedId,
             label: (string) $this->search
@@ -100,7 +97,6 @@ class LocationAutocomplete extends Component
     {
         $this->applyLocationId($id);
 
-        // ✅ ka "Use my location" puhul saadame labeli (et location_label täituks)
         $this->dispatch('loc:selected',
             id: (int) $this->selectedId,
             label: (string) $this->search
@@ -114,7 +110,6 @@ class LocationAutocomplete extends Component
         $this->search = '';
         $this->results = [];
 
-        // (valikuline) kui tahad ka labelit nullida frontis:
         $this->dispatch('loc:selected', id: null, label: '');
     }
 

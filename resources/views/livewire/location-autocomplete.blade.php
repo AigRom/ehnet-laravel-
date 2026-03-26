@@ -28,7 +28,7 @@
     </div>
 
     {{-- hidden field, mis läheb formiga kaasa (POST) --}}
-    <input type="hidden" name="location_id" value="{{ $selectedId ?? $location_id ?? '' }}">
+    <input type="hidden" name="{{ $name }}" value="{{ $selectedId ?? $location_id ?? '' }}">
 
     {{-- Dropdown (näita kui on midagi otsida ja kasutaja pole veel valikut teinud) --}}
     @if(mb_strlen(trim($search)) >= 2 && $selectedId === null)

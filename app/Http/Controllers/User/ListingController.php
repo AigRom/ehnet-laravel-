@@ -39,60 +39,60 @@ class ListingController extends Controller
 
     public function store(Request $request)
     {
-        $action  = (string) $request->input('action', 'publish');
+        $action = (string) $request->input('action', 'publish');
         $isDraft = $action === 'draft';
 
         // price_mode -> price normaliseerimine enne validate
         $this->normalizePriceMode($request);
 
         $rulesDraft = [
-            'action'      => ['nullable', 'in:publish,draft'],
+            'action' => ['nullable', 'in:publish,draft'],
 
             // draft: kõik võivad puududa
-            'title'       => ['nullable', 'string', 'max:140'],
+            'title' => ['nullable', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'location_id' => ['nullable', 'exists:locations,id'],
-            'price'       => ['nullable', 'numeric', 'min:0'],
-            'price_mode'  => ['nullable', 'in:deal,free,price'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'price_mode' => ['nullable', 'in:deal,free,price'],
 
             // Seisukord
-            'condition'   => ['nullable', 'in:new,used,leftover'],
+            'condition' => ['nullable', 'in:new,used,leftover'],
 
             // Kättesaamine
-            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
 
             // Pildid (create)
-            'images'       => ['nullable', 'array', 'max:10'],
-            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images_order' => ['nullable', 'string'],
         ];
 
         $rulesPublish = [
-            'action'      => ['nullable', 'in:publish,draft'],
+            'action' => ['nullable', 'in:publish,draft'],
 
             // publish: tuumik
-            'title'       => ['required', 'string', 'max:140'],
-            'description' => ['nullable', 'string', 'max:5000'], // ✅ valikuline
+            'title' => ['required', 'string', 'max:140'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
-            'price'       => ['nullable', 'numeric', 'min:0'],
-            'price_mode'  => ['nullable', 'in:deal,free,price'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'price_mode' => ['nullable', 'in:deal,free,price'],
 
-            'condition'   => ['nullable', 'in:new,used,leftover'],
+            'condition' => ['nullable', 'in:new,used,leftover'],
 
-            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
 
-            'images'       => ['nullable', 'array', 'max:10'],
-            'images.*'     => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images_order' => ['nullable', 'string'],
         ];
 
         $validated = $request->validate($isDraft ? $rulesDraft : $rulesPublish);
 
-        // STOP: ära loo täiesti tühja mustandit
+        // Ära loo täiesti tühja mustandit
         if ($isDraft) {
             $hasAny =
                 filled($validated['title'] ?? null) ||
@@ -115,24 +115,24 @@ class ListingController extends Controller
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
             $listing = Listing::create([
-                'user_id'      => $request->user()->id,
-                'category_id'  => $validated['category_id'] ?? null,
-                'location_id'  => $validated['location_id'] ?? null,
-                'title'        => $validated['title'] ?? null,
-                'description'  => $validated['description'] ?? null,
-                'price'        => array_key_exists('price', $validated) ? $validated['price'] : null,
-                'currency'     => 'EUR',
+                'user_id' => $request->user()->id,
+                'category_id' => $validated['category_id'] ?? null,
+                'location_id' => $validated['location_id'] ?? null,
+                'title' => $validated['title'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'price' => array_key_exists('price', $validated) ? $validated['price'] : null,
+                'currency' => 'EUR',
                 'listing_type' => 'sale',
 
-                'condition'        => $validated['condition'] ?? null,
+                'condition' => $validated['condition'] ?? null,
                 'delivery_options' => $delivery,
 
-                'status'       => $isDraft ? 'draft' : 'published',
+                'status' => $isDraft ? 'draft' : 'published',
                 'published_at' => $isDraft ? null : now(),
-                'expires_at'   => $isDraft ? null : now()->addDays(30),
+                'expires_at' => $isDraft ? null : now()->addDays(30),
             ]);
 
-            // --- Pildid (create) ---
+            // Pildid (create)
             $files = $request->file('images', []);
             if (!empty($files)) {
                 $order = $this->safeJsonArray($request->input('images_order'));
@@ -148,13 +148,15 @@ class ListingController extends Controller
 
                 $sort = 0;
                 foreach ($order as $fileIndex) {
-                    if (!isset($files[$fileIndex])) continue;
+                    if (!isset($files[$fileIndex])) {
+                        continue;
+                    }
 
                     $path = $files[$fileIndex]->store('listings', 'public');
 
                     ListingImage::create([
                         'listing_id' => $listing->id,
-                        'path'       => $path,
+                        'path' => $path,
                         'sort_order' => $sort++,
                     ]);
                 }
@@ -163,7 +165,7 @@ class ListingController extends Controller
 
         return redirect()
             ->route('listings.mine')
-            ->with('status', $isDraft ? 'Mustand salvestatud!' : 'Kuulutus avaldatud!');
+            ->with('success', $isDraft ? 'Mustand on salvestatud.' : 'Kuulutus on avaldatud.');
     }
 
     // Minu kuulutused
@@ -174,7 +176,7 @@ class ListingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // SoftDeletes tõttu exists() ei arvesta trashed ridu (kui Listing mudelis on SoftDeletes)
+        // SoftDeletes tõttu exists() ei arvesta trashed ridu
         $hasAnyListings = Listing::query()
             ->where('user_id', $request->user()->id)
             ->exists();
@@ -252,37 +254,36 @@ class ListingController extends Controller
         $this->normalizePriceMode($request);
 
         $validated = $request->validate([
-            'title'       => ['required', 'string', 'max:140'],
+            'title' => ['required', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
-            'price'       => ['nullable', 'numeric', 'min:0'],
-            'price_mode'  => ['nullable', 'in:deal,free,price'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'price_mode' => ['nullable', 'in:deal,free,price'],
 
-            'condition'   => ['nullable', 'in:new,used,leftover'],
+            'condition' => ['nullable', 'in:new,used,leftover'],
 
-            'delivery_options'   => ['nullable', 'array', 'max:4'],
+            'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
 
-            'new_images'   => ['nullable', 'array', 'max:10'],
+            'new_images' => ['nullable', 'array', 'max:10'],
             'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
             'deleted_image_ids' => ['nullable', 'string'],
-            'images_order'      => ['nullable', 'string'],
+            'images_order' => ['nullable', 'string'],
         ]);
 
         DB::transaction(function () use ($request, $listing, $validated) {
-
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
             $listing->update([
-                'title'           => $validated['title'],
-                'description'     => $validated['description'] ?? null,
-                'category_id'     => $validated['category_id'],
-                'location_id'     => $validated['location_id'],
-                'price'           => array_key_exists('price', $validated) ? $validated['price'] : null,
-                'condition'       => $validated['condition'] ?? null,
-                'delivery_options'=> $delivery,
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'category_id' => $validated['category_id'],
+                'location_id' => $validated['location_id'],
+                'price' => array_key_exists('price', $validated) ? $validated['price'] : null,
+                'condition' => $validated['condition'] ?? null,
+                'delivery_options' => $delivery,
             ]);
 
             $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
@@ -295,7 +296,9 @@ class ListingController extends Controller
                 $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
 
                 foreach ($toDelete as $img) {
-                    if ($img->path) Storage::disk('public')->delete($img->path);
+                    if ($img->path) {
+                        Storage::disk('public')->delete($img->path);
+                    }
                     $img->delete();
                 }
             }
@@ -310,7 +313,7 @@ class ListingController extends Controller
 
                     $createdNew[] = ListingImage::create([
                         'listing_id' => $listing->id,
-                        'path'       => $path,
+                        'path' => $path,
                         'sort_order' => 9999,
                     ]);
                 }
@@ -382,7 +385,7 @@ class ListingController extends Controller
 
         return redirect()
             ->route('listings.mine.show', $listing)
-            ->with('status', 'Kuulutus muudetud!');
+            ->with('success', 'Kuulutus on muudetud.');
     }
 
     public function toggleMine(Request $request, Listing $listing)
@@ -398,27 +401,39 @@ class ListingController extends Controller
             }
 
             $listing->save();
-            return back()->with('status', 'Kuulutus aktiveeritud!');
+
+            return back()->with('success', 'Kuulutus on aktiveeritud.');
         }
 
         $listing->status = 'archived';
         $listing->save();
 
-        return back()->with('status', 'Kuulutus peatatud (mitteaktiivne).');
+        return back()->with('success', 'Kuulutus on peatatud.');
     }
 
     public function publishMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
-        if ($listing->status !== 'draft') return back();
+
+        if ($listing->status !== 'draft') {
+            return back();
+        }
 
         $errors = [];
 
-        if (!$listing->title) $errors['title'] = 'Pealkiri on puudu.';
-        if (!$listing->category_id) $errors['category_id'] = 'Kategooria on puudu.';
-        if (!$listing->location_id) $errors['location_id'] = 'Asukoht on puudu.';
+        if (!$listing->title) {
+            $errors['title'] = 'Pealkiri on puudu.';
+        }
+        if (!$listing->category_id) {
+            $errors['category_id'] = 'Kategooria on puudu.';
+        }
+        if (!$listing->location_id) {
+            $errors['location_id'] = 'Asukoht on puudu.';
+        }
 
-        if (!empty($errors)) return back()->withErrors($errors);
+        if (!empty($errors)) {
+            return back()->withErrors($errors);
+        }
 
         $listing->status = 'published';
         $listing->published_at = now();
@@ -429,7 +444,7 @@ class ListingController extends Controller
 
         $listing->save();
 
-        return back()->with('status', 'Mustand avaldati (aktiveeriti).');
+        return back()->with('success', 'Mustand on avaldatud.');
     }
 
     public function relistMine(Request $request, Listing $listing)
@@ -440,35 +455,39 @@ class ListingController extends Controller
             && $listing->expires_at
             && $listing->expires_at->isPast();
 
-        if (!$isExpired) return back();
+        if (!$isExpired) {
+            return back();
+        }
 
         $listing->status = 'published';
         $listing->published_at = $listing->published_at ?? now();
         $listing->expires_at = now()->addDays(30);
         $listing->save();
 
-        return back()->with('status', 'Kuulutus pandi uuesti müüki (aktiveeriti).');
+        return back()->with('success', 'Kuulutus on uuesti müüki pandud.');
     }
 
     public function destroyMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // ✅ SOFT DELETE:
+        // SOFT DELETE:
         // - ei kustuta images ridu
         // - ei kustuta faile storage'ist
         $listing->delete();
 
         return redirect()
             ->route('listings.mine')
-            ->with('status', 'Kuulutus kustutatud.');
+            ->with('success', 'Kuulutus on kustutatud.');
     }
 
     public function markSold(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
+
         $listing->update(['status' => 'sold']);
-        return back()->with('status', 'Kuulutus märgitud müüduks.');
+
+        return back()->with('success', 'Kuulutus on märgitud müüduks.');
     }
 
     public function markUnsold(Request $request, Listing $listing)
@@ -476,18 +495,22 @@ class ListingController extends Controller
         abort_unless($listing->user_id === $request->user()->id, 403);
 
         $listing->update([
-            'status'       => 'published',
+            'status' => 'published',
             'published_at' => $listing->published_at ?? now(),
-            'expires_at'   => now()->addDays(30),
+            'expires_at' => now()->addDays(30),
         ]);
 
-        return back()->with('status', 'Kuulutus taastatud müüki.');
+        return back()->with('success', 'Kuulutus on taastatud müüki.');
     }
 
     private function safeJsonArray(?string $raw): array
     {
-        if (!$raw) return [];
+        if (!$raw) {
+            return [];
+        }
+
         $decoded = json_decode($raw, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 

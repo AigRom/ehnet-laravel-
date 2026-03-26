@@ -49,25 +49,16 @@
             </p>
         </div>
 
-        @if($errors->any())
-            <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
-                <ul class="list-disc pl-5">
-                    @foreach($errors->all() as $e)
-                        <li>{{ $e }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <form method="POST"
               action="{{ route('listings.mine.update', $listing) }}"
               class="space-y-6"
-              enctype="multipart/form-data">
+              enctype="multipart/form-data"
+              novalidate>
             @csrf
             @method('PATCH')
 
             {{-- Card: Pildid --}}
-            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-3">
+            <div class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -96,16 +87,27 @@
                     <input type="hidden" name="deleted_image_ids" id="deleted_image_ids" value="[]">
 
                     @error('new_images')
-                        <p class="text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
+
                     @error('new_images.*')
-                        <p class="text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
 
                     <div id="imagePreview" class="grid grid-cols-3 gap-3"></div>
                 </div>
 
-                <div id="imageModal" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/80 p-4">
+                <div id="imageModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
                     <div class="relative w-full max-w-5xl">
                         <button type="button" id="imageModalClose"
                                 class="absolute -top-12 right-0 rounded-lg bg-black/40 px-3 py-2 text-sm text-white hover:bg-black/60">
@@ -132,7 +134,7 @@
             </div>
 
             {{-- Card: Põhiinfo --}}
-            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-5">
+            <div class="space-y-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                     {{ __('Põhiinfo') }}
                 </div>
@@ -148,14 +150,22 @@
                         name="title"
                         type="text"
                         value="{{ old('title', $listing->title) }}"
-                        required
                         maxlength="140"
                         placeholder="Nt. Kipsplaatide jäägid"
-                        class="block w-full rounded-xl border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
+                        @class([
+                            'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-white',
+                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30' => !$errors->has('title'),
+                            'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-900/30' => $errors->has('title'),
+                        ])
                     >
 
                     @error('title')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -181,7 +191,12 @@
                     </div>
 
                     @error('condition')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -194,8 +209,11 @@
                     <select
                         id="category_id"
                         name="category_id"
-                        required
-                        class="w-full rounded-xl border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
+                        @class([
+                            'w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-white',
+                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30' => !$errors->has('category_id'),
+                            'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-900/30' => $errors->has('category_id'),
+                        ])
                     >
                         <option value="">{{ __('Vali kategooria') }}</option>
                         @foreach ($categories as $cat)
@@ -206,7 +224,12 @@
                     </select>
 
                     @error('category_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -258,7 +281,12 @@
                     @endif
 
                     @error('location_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -291,10 +319,21 @@
                     </div>
 
                     @error('delivery_options')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
+
                     @error('delivery_options.*')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -331,7 +370,11 @@
                                 step="0.01"
                                 min="0"
                                 placeholder="Nt. 25.00"
-                                class="block w-full rounded-xl border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
+                                @class([
+                                    'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-white',
+                                    'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30' => !$errors->has('price'),
+                                    'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-900/30' => $errors->has('price'),
+                                ])
                             >
                         </div>
 
@@ -339,7 +382,12 @@
                     </div>
 
                     @error('price')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
 
@@ -355,11 +403,20 @@
                         maxlength="5000"
                         rows="6"
                         placeholder="Kirjelda kogust, mõõte, seisukorda ja kättesaamise tingimusi."
-                        class="block w-full rounded-xl border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
+                        @class([
+                            'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition dark:bg-zinc-900 dark:text-white',
+                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30' => !$errors->has('description'),
+                            'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-900/30' => $errors->has('description'),
+                        ])
                     >{{ old('description', $listing->description) }}</textarea>
 
                     @error('description')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </p>
                     @enderror
                 </div>
             </div>
