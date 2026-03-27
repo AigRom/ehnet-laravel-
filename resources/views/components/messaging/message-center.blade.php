@@ -31,6 +31,11 @@
     // Kuulutus, mille kohta vestlus käib
     $listing = $hasActiveConversation ? $activeConversation->listing : null;
 
+    // Kas selle vestluse puhul tohib veel sõnumeid saata
+    $canSendMessages = $hasActiveConversation
+        && $listing
+        && $listing->status !== 'deleted';
+
     // Kas mina olen selle teise kasutaja blokeerinud
     $isBlockedByMe = $hasActiveConversation && $otherUser
         ? auth()->user()->hasBlocked($otherUser)
@@ -112,20 +117,32 @@
                 {{-- Kuulutuse mini-kaart vestluse kohal --}}
                 <div class="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4">
                     <x-listings.mini-card :listing="$listing" />
+
+                    @if($listing && $listing->status === 'deleted')
+                        <div class="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {{ __('Sõnumite saatmine on suletud, sest kuulutus on kustutatud.') }}
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Vestluse sõnumid --}}
                 <x-messaging.chat-thread :conversation="$activeConversation" />
 
-                {{-- Sisestusala.
-                     Kui blokk on peal, saab chat-compose selle põhjal otsustada,
-                     kas kuvada päris sisestusvorm või blokeeringu infoplokk. --}}
-                <x-messaging.chat-compose
-                    :conversation="$activeConversation"
-                    :has-messaging-block="$hasMessagingBlock"
-                    :is-blocked-by-me="$isBlockedByMe"
-                    :unblock-user-action="$unblockUserAction"
-                />
+                {{-- Sisestusala --}}
+                @if($canSendMessages)
+                    <x-messaging.chat-compose
+                        :conversation="$activeConversation"
+                        :has-messaging-block="$hasMessagingBlock"
+                        :is-blocked-by-me="$isBlockedByMe"
+                        :unblock-user-action="$unblockUserAction"
+                    />
+                @else
+                    <div class="border-t border-zinc-200 bg-zinc-50 px-4 py-4">
+                        <div class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600">
+                            {{ __('Selles vestluses ei saa enam uusi sõnumeid saata.') }}
+                        </div>
+                    </div>
+                @endif
             @else
                 {{-- Desktop placeholder, kui aktiivset vestlust pole --}}
                 <div class="flex h-full flex-1 items-center justify-center p-8">

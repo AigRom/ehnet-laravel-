@@ -5,8 +5,11 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use App\Services\User\DeleteUserAccountService;
 
 class ProfileController extends Controller
 {
@@ -15,6 +18,11 @@ class ProfileController extends Controller
         return view('settings.profile', [
             'user' => auth()->user(),
         ]);
+    }
+
+    public function delete(): View
+    {
+        return view('settings.delete-account');
     }
 
     public function update(UpdateProfileRequest $request): RedirectResponse
@@ -44,6 +52,24 @@ class ProfileController extends Controller
 
         $user->save();
 
-    return back()->with('status', 'Andmed on edulkalt uuendatud');
+        return back()->with('status', 'Andmed on edukalt uuendatud.');
+    }
+
+    public function destroy(Request $request, DeleteUserAccountService $service): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'string', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $service->handle($user);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }

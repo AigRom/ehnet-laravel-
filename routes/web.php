@@ -14,6 +14,8 @@ use App\Http\Controllers\User\PasswordController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\Public\ListingController as PublicListingController;
 use App\Http\Controllers\User\ListingController as UserListingController;
+use App\Http\Controllers\Public\UserProfileController;
+use App\Http\Controllers\User\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +34,15 @@ Route::prefix('listings')->group(function () {
         ->name('listings.show');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Avalik kasutajaprofiil
+|--------------------------------------------------------------------------
+*/
+Route::get('/users/{user}', [UserProfileController::class, 'show'])
+    ->whereNumber('user')
+    ->name('users.show');
+
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
@@ -40,7 +51,7 @@ Route::view('/privacy', 'legal.privacy')->name('privacy');
 | Kasutaja dashboard (vajab autentimist)
 |--------------------------------------------------------------------------
 */
-Route::view('/dashboard', 'user.dashboard')
+Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth'])
     ->name('dashboard');
 
@@ -78,11 +89,20 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/settings/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
 
+
+    Route::get('/settings/delete-account', [ProfileController::class, 'delete'])
+        ->name('profile.delete');
+
+    Route::delete('/settings/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
     Route::get('/settings/password', [PasswordController::class, 'edit'])
         ->name('user-password.edit');
 
     Route::put('/settings/password', [PasswordController::class, 'update'])
         ->name('user-password.update');
+
+
 
     /*
     |--------------------------------------------------------------------------

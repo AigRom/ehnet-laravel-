@@ -26,7 +26,7 @@ class Listing extends Model
         'intent',
         'condition',
         'listing_type',   // sale|auction
-        'status',         // draft|pending|published|rejected|archived|sold
+        'status',         // draft|pending|published|rejected|archived|sold|deleted
         'published_at',
         'expires_at',
         'reviewed_by',
@@ -125,8 +125,9 @@ class Listing extends Model
             'pending'   => 'Ootel',
             'published' => $this->isPublicVisible() ? 'Aktiivne' : 'Aegunud',
             'rejected'  => 'Tagasi lükatud',
-            'archived'  => 'Peatatud',
+            'archived'  => 'Müügist eemaldatud',
             'sold'      => 'Müüdud',
+            'deleted'   => 'Kustutatud',
             default     => '—',
         };
     }

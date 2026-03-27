@@ -71,6 +71,7 @@ class ConversationController extends Controller
             ]);
 
         $conversation->load([
+            'listing',
             'listing.images',
             'seller:id,name,created_at,avatar_path',
             'buyer:id,name,created_at,avatar_path',
@@ -122,6 +123,16 @@ class ConversationController extends Controller
 
         if ($user->hasMessagingBlockWith($listing->user)) {
             return back()->with('error', 'Selle kasutajaga ei saa enam sõnumeid vahetada.');
+        }
+
+        $isExpired = $listing->status === 'published'
+            && $listing->expires_at
+            && $listing->expires_at->isPast();
+
+        $canOpenConversation = $listing->status === 'published' && ! $isExpired;
+
+        if (! $canOpenConversation) {
+            return back()->with('error', 'Selle kuulutuse kohta ei saa enam uut vestlust alustada.');
         }
 
         $conversation = Conversation::firstOrCreate([

@@ -1,77 +1,92 @@
 <x-layouts.app.public :title="$listing->title ?? __('Kuulutus')">
+    @php
+        $isExpired = $listing->status === 'published'
+            && $listing->expires_at
+            && $listing->expires_at->isPast();
 
-    {{-- Lehe sisu konteiner --}}
+        $isPubliclyAvailable = $listing->status === 'published' && ! $isExpired;
+    @endphp
+
     <div class="mx-auto max-w-7xl px-4 py-6 md:py-8 space-y-6">
 
-        {{-- ==========================================================
-            Ülemine navirida
-        ========================================================== --}}
         <div class="flex items-center justify-between">
-
-            <a 
-                href="{{ url()->previous() }}" 
+            <a
+                href="{{ url()->previous() }}"
                 class="text-sm text-blue-600 hover:underline"
             >
                 ← {{ __('Tagasi') }}
             </a>
 
-            <a 
-                href="{{ route('listings.index') }}" 
+            <a
+                href="{{ route('listings.index') }}"
                 class="text-sm text-zinc-600 hover:underline dark:text-zinc-300"
             >
                 {{ __('Kõik kuulutused') }}
             </a>
         </div>
 
-        {{-- ==========================================================
-            Kuulutuse detail
-        ========================================================== --}}
-        <x-listings.detail
-            mode="db"
-            :listing="$listing"
-        />
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <div class="min-w-0">
+                <x-listings.detail
+                    mode="db"
+                    :listing="$listing"
+                />
+            </div>
 
-        {{-- ==========================================================
-            Sõnum müüjale
-        ========================================================== --}}
-        <div class="max-w-xl">
-
-            <h2 class="text-lg font-semibold mb-3">
-                {{ __('Küsi müüjalt') }}
-            </h2>
-
-            @guest
-                <div class="text-sm text-zinc-600">
-                    {{ __('Sõnumi saatmiseks') }}
-                    <a href="{{ route('login') }}" class="text-emerald-600 hover:underline">
-                        {{ __('logi sisse') }}
-                    </a>.
-                </div>
-            @endguest
-
-            @auth
-                @if(auth()->id() !== $listing->user_id)
-
-                    <form method="POST" action="{{ route('listings.conversation.open', $listing) }}">
-                        @csrf
-
-                        <button
-                            type="submit"
-                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700"
-                        >
-                            {{ __('Saada sõnum') }}
-                        </button>
-                    </form>
-
-                @else
-                    <div class="text-sm text-zinc-500">
-                        {{ __('See on sinu kuulutus.') }}
-                    </div>
-                @endif
-            @endauth
-
+            <x-listings.seller-card
+                :seller="$listing->user"
+                :listing="$listing"
+                :is-own-listing="auth()->check() && auth()->id() === $listing->user_id"
+                :is-authenticated="auth()->check()"
+                :message-action="
+                    $isPubliclyAvailable && auth()->check() && auth()->id() !== $listing->user_id
+                        ? route('listings.conversation.open', $listing)
+                        : null
+                "
+                :active-listings-count="$listing->user->active_listings_count"
+                :profile-url="route('users.show', $listing->user)"
+            />
         </div>
 
-    </div>
+        @if($sellerListings->isNotEmpty())
+            <section class="pt-4">
+                <div class="mb-4">
+                    <h2 class="text-xl font-semibold text-zinc-900">
+                        {{ __('Müüja teised kuulutused') }}
+                    </h2>
 
+                    <p class="mt-1 text-sm text-zinc-500">
+                        {{ __('Vaata veel sama müüja aktiivseid kuulutusi.') }}
+                    </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    @foreach($sellerListings as $sellerListing)
+                        <x-listings.card :listing="$sellerListing" />
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if($similarListings->isNotEmpty())
+            <section class="pt-2">
+                <div class="mb-4">
+                    <h2 class="text-xl font-semibold text-zinc-900">
+                        {{ __('Sarnased kuulutused') }}
+                    </h2>
+
+                    <p class="mt-1 text-sm text-zinc-500">
+                        {{ __('Sama kategooria kuulutused, mis võiksid samuti huvi pakkuda.') }}
+                    </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    @foreach($similarListings as $similarListing)
+                        <x-listings.card :listing="$similarListing" />
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+    </div>
 </x-layouts.app.public>

@@ -17,14 +17,11 @@
 
         $avatarUrl = $user->avatar_url ?? null;
 
-        $activeListingsCount = $activeListingsCount
-            ?? ($user->listings()->where('status', 'active')->count() ?? 0);
-
-        $favoritesCount = $favoritesCount ?? null;
+        $activeListingsCount = $activeListingsCount ?? 0;
+        $favoritesCount = $favoritesCount ?? 0;
     @endphp
 
     <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        {{-- Hero / sissejuhatus --}}
         <section class="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
             <div class="absolute inset-0 bg-gradient-to-br from-zinc-50 via-white to-zinc-100"></div>
 
@@ -48,11 +45,9 @@
                             <x-icons.plus-circle class="h-5 w-5" />
                             <span>{{ __('Lisa kuulutus') }}</span>
                         </a>
-
                     </div>
                 </div>
 
-                {{-- Kiirstatistika --}}
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:w-[360px]">
                     <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
                         <div class="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -68,7 +63,7 @@
                             {{ __('Lemmikud') }}
                         </div>
                         <div class="mt-2 text-2xl font-semibold text-zinc-900">
-                            {{ $favoritesCount ?? '—' }}
+                            {{ $favoritesCount }}
                         </div>
                     </div>
                 </div>
@@ -76,7 +71,6 @@
         </section>
 
         <div class="mt-8 grid gap-6 lg:grid-cols-12">
-            {{-- Vasak veerg: profiilikaart --}}
             <div class="lg:col-span-4">
                 <section class="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
                     <div class="border-b border-zinc-100 px-6 py-5">
@@ -129,13 +123,6 @@
                                     {{ $memberSince ?? '—' }}
                                 </dd>
                             </div>
-
-                            <div class="flex items-start justify-between gap-4">
-                                <dt class="text-sm text-zinc-500">{{ __('Aktiivseid kuulutusi') }}</dt>
-                                <dd class="text-right text-sm font-medium text-zinc-900">
-                                    {{ $activeListingsCount }}
-                                </dd>
-                            </div>
                         </dl>
 
                         <div class="mt-6">
@@ -149,10 +136,8 @@
                 </section>
             </div>
 
-            {{-- Parem veerg: tegevused / kaardid --}}
             <div class="lg:col-span-8">
                 <div class="grid gap-6 sm:grid-cols-2">
-                    {{-- Minu kuulutused --}}
                     <a href="{{ route('listings.mine') }}"
                        class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                         <div class="flex items-start gap-4">
@@ -182,7 +167,6 @@
                         </div>
                     </a>
 
-                    {{-- Lemmikud --}}
                     <a href="{{ route('favorites.index') }}"
                        class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                         <div class="flex items-start gap-4">
@@ -212,8 +196,6 @@
                         </div>
                     </a>
 
-
-                    {{-- Sõnumid --}}
                     <a href="{{ route('messages.index') }}"
                        class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                         <div class="flex items-start gap-4">

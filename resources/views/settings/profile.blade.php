@@ -32,7 +32,9 @@
 
                                 <template x-if="!preview && (removeAvatar || !@js($user->avatar_url))">
                                     <div class="flex h-full w-full items-center justify-center">
-                                        <x-icons.user-circle class="h-12 w-12 text-zinc-400" />
+                                        <span class="text-lg font-semibold text-zinc-600">
+                                            {{ $user->initials() }}
+                                        </span>
                                     </div>
                                 </template>
                             </div>
@@ -364,8 +366,6 @@
             </form>
         </x-settings.layout>
 
-        <div class="mt-8">
-            <livewire:settings.delete-user-form />
-        </div>
+
     </section>
 </x-layouts.app.public>

@@ -176,7 +176,6 @@ class ListingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // SoftDeletes tõttu exists() ei arvesta trashed ridu
         $hasAnyListings = Listing::query()
             ->where('user_id', $request->user()->id)
             ->exists();
@@ -204,6 +203,8 @@ class ListingController extends Controller
             $listingsQuery->where('status', 'pending');
         } elseif ($status === 'draft') {
             $listingsQuery->where('status', 'draft');
+        } elseif ($status === 'deleted') {
+            $listingsQuery->where('status', 'deleted');
         }
 
         $q = trim((string) $request->get('q', ''));
@@ -251,6 +252,12 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
+        if ($listing->status === 'deleted') {
+            return back()->withErrors([
+                'listing' => 'Kustutatud kuulutust ei saa muuta.',
+            ]);
+        }
+
         $this->normalizePriceMode($request);
 
         $validated = $request->validate([
@@ -291,7 +298,6 @@ class ListingController extends Controller
 
             $mixOrder = $this->safeJsonArray($request->input('images_order'));
 
-            // delete existing images (user explicitly removed images)
             if (!empty($deletedIds)) {
                 $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
 
@@ -303,7 +309,6 @@ class ListingController extends Controller
                 }
             }
 
-            // save new images
             $files = $request->file('new_images', []);
             $createdNew = [];
 
@@ -319,7 +324,6 @@ class ListingController extends Controller
                 }
             }
 
-            // max 10 after delete+add
             $total = $listing->images()->count();
             if ($total > 10) {
                 throw ValidationException::withMessages([
@@ -327,7 +331,6 @@ class ListingController extends Controller
                 ]);
             }
 
-            // reorder mixed tokens
             if (!empty($mixOrder)) {
                 $sort = 0;
                 $existingMap = $listing->images()->get()->keyBy('id');
@@ -352,7 +355,6 @@ class ListingController extends Controller
                     }
                 }
 
-                // safety: pane ülejäänud lõppu
                 $usedExisting = collect($mixOrder)
                     ->filter(fn ($t) => str_starts_with((string) $t, 'e:'))
                     ->map(fn ($t) => (int) substr((string) $t, 2))
@@ -375,7 +377,6 @@ class ListingController extends Controller
                     }
                 }
             } else {
-                // fallback: uued lõppu
                 $maxSort = (int) ($listing->images()->max('sort_order') ?? 0);
                 foreach ($createdNew as $img) {
                     $img->update(['sort_order' => ++$maxSort]);
@@ -391,6 +392,10 @@ class ListingController extends Controller
     public function toggleMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
+
+        if (in_array($listing->status, ['deleted', 'sold'], true)) {
+            return back();
+        }
 
         if ($listing->status === 'archived') {
             $listing->status = 'published';
@@ -471,10 +476,15 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        // SOFT DELETE:
-        // - ei kustuta images ridu
-        // - ei kustuta faile storage'ist
-        $listing->delete();
+        if ($listing->status === 'deleted') {
+            return redirect()
+                ->route('listings.mine')
+                ->with('success', 'Kuulutus on juba kustutatud.');
+        }
+
+        $listing->update([
+            'status' => 'deleted',
+        ]);
 
         return redirect()
             ->route('listings.mine')
@@ -485,7 +495,13 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        $listing->update(['status' => 'sold']);
+        if ($listing->status === 'deleted') {
+            return back();
+        }
+
+        $listing->update([
+            'status' => 'sold',
+        ]);
 
         return back()->with('success', 'Kuulutus on märgitud müüduks.');
     }
@@ -493,6 +509,10 @@ class ListingController extends Controller
     public function markUnsold(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
+
+        if ($listing->status !== 'sold') {
+            return back();
+        }
 
         $listing->update([
             'status' => 'published',

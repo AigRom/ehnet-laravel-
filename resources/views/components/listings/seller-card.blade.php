@@ -1,0 +1,132 @@
+@props([
+    'seller',
+    'listing',
+    'isOwnListing' => false,
+    'isAuthenticated' => false,
+    'messageAction' => null,
+    'activeListingsCount' => null,
+    'score' => null,
+    'reviewsCount' => null,
+    'profileUrl' => null,
+])
+
+@php
+    $joinedYear = optional($seller->created_at)?->format('Y');
+
+    $locationLabel =
+        $seller->location?->full_label_et
+        ?? $seller->location?->name
+        ?? __('Asukoht lisamata');
+
+    $roleLabel = $seller->company_name ? __('Ettevõte') : __('Eraisik');
+@endphp
+
+<div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div class="mb-4">
+        <h2 class="text-lg font-semibold text-zinc-900">
+            {{ __('Müüja') }}
+        </h2>
+    </div>
+
+    @if($isAuthenticated)
+        @if($profileUrl)
+            <a
+                href="{{ $profileUrl }}"
+                class="block rounded-2xl transition hover:bg-zinc-50"
+            >
+                <x-users.profile-card
+                    :user="$seller"
+                    :role-label="$roleLabel"
+                    :joined-year="$joinedYear"
+                    :location-label="$locationLabel"
+                    :score="$score"
+                    :reviews-count="$reviewsCount"
+                    class="border-0 bg-transparent p-0 shadow-none"
+                />
+            </a>
+        @else
+            <x-users.profile-card
+                :user="$seller"
+                :role-label="$roleLabel"
+                :joined-year="$joinedYear"
+                :location-label="$locationLabel"
+                :score="$score"
+                :reviews-count="$reviewsCount"
+                class="border-0 bg-transparent p-0 shadow-none"
+            />
+        @endif
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-zinc-50 px-3 py-3">
+                <div class="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    {{ __('Aktiivsed kuulutused') }}
+                </div>
+
+                <div class="mt-1 text-base font-semibold text-zinc-900">
+                    {{ $activeListingsCount ?? '—' }}
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-zinc-50 px-3 py-3">
+                <div class="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    {{ __('Tagasiside') }}
+                </div>
+
+                <div class="mt-1 text-base font-semibold text-zinc-900">
+                    @if(!is_null($score))
+                        {{ number_format((float) $score, 1, ',', ' ') }}
+
+                        @if(!is_null($reviewsCount))
+                            <span class="text-sm font-normal text-zinc-500">
+                                ({{ $reviewsCount }})
+                            </span>
+                        @endif
+                    @else
+                        —
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            @if($isOwnListing)
+                <a
+                    href="{{ route('listings.mine.edit', $listing) }}"
+                    class="inline-flex w-full items-center justify-center rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                    {{ __('Muuda kuulutust') }}
+                </a>
+            @elseif($messageAction)
+                <form method="POST" action="{{ $messageAction }}">
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    >
+                        {{ __('Saada sõnum') }}
+                    </button>
+                </form>
+            @endif
+        </div>
+    @else
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-center">
+            <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-zinc-200 bg-white">
+                <x-icons.user-circle class="h-7 w-7 text-zinc-500" />
+            </div>
+
+            <p class="mx-auto max-w-sm text-sm leading-6 text-zinc-600">
+                {{ __('Logi sisse, et näha profiili ja saata sõnumeid.') }}
+            </p>
+
+            <div class="mt-4">
+                <a
+                    href="{{ route('login') }}"
+                    class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                    {{ __('Logi sisse') }}
+                </a>
+            </div>
+        </div>
+    @endif
+</div>

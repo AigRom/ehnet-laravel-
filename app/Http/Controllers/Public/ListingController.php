@@ -26,7 +26,6 @@ class ListingController extends Controller
                 $q2->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', now());
             })
-            // SoftDeletes välistab deleted automaatselt (kui mudelis SoftDeletes)
             ->when($q, fn ($query) => $query->where(function ($qq) use ($q) {
                 $qq->where('title', 'like', "%{$q}%")
                     ->orWhere('description', 'like', "%{$q}%");
@@ -44,14 +43,59 @@ class ListingController extends Controller
 
     public function show(Listing $listing)
     {
-        $listing->load(['category', 'location', 'images']);
+        $isExpired = $listing->status === 'published'
+            && $listing->expires_at
+            && $listing->expires_at->isPast();
 
-        abort_unless(
-            $listing->status === 'published' &&
-            (!$listing->expires_at || $listing->expires_at->isFuture()),
+        abort_if(
+            $listing->status !== 'published' || $isExpired,
             404
         );
 
-        return view('listings.show', compact('listing'));
+        $listing->load([
+            'category',
+            'location',
+            'images',
+            'user.location',
+        ]);
+
+        $listing->user->loadCount([
+            'listings as active_listings_count' => function ($query) {
+                $query->where('status', 'published')
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')
+                            ->orWhere('expires_at', '>=', now());
+                    });
+            },
+        ]);
+
+        $sellerListings = Listing::query()
+            ->with(['images', 'location', 'category'])
+            ->where('id', '!=', $listing->id)
+            ->where('user_id', $listing->user_id)
+            ->where('status', 'published')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now());
+            })
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        $similarListings = Listing::query()
+            ->with(['images', 'location', 'category'])
+            ->where('id', '!=', $listing->id)
+            // ->where('user_id', '!=', $listing->user_id) eemaldab sama müüja kuulutused samalaadsete kuulutuste alt
+            ->where('status', 'published')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now());
+            })
+            ->when($listing->category_id, fn ($query) => $query->where('category_id', $listing->category_id))
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        return view('listings.show', compact('listing', 'sellerListings', 'similarListings'));
     }
 }
