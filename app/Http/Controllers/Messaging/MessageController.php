@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\MessageAttachment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MessageController extends Controller
 {
@@ -15,32 +16,24 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
-        // Kasutaja peab kuuluma vestlusesse
-        abort_unless(
-            $conversation->hasParticipant($user),
-            404
-        );
+        abort_unless($conversation->hasParticipant($user), 404);
 
         $conversation->loadMissing('listing');
 
-        // Kui kuulutus on kustutatud, siis uusi sõnumeid saata ei saa
-        if ($conversation->listing && $conversation->listing->status === 'deleted') {
+        if (! $conversation->canUserSendMessages($user)) {
             return back()->with('error', 'Selles vestluses ei saa enam uusi sõnumeid saata.');
         }
 
-        // Blokeering → ei saa saata
         if ($conversation->hasMessagingBlock($user)) {
             return back()->with('error', 'Selle kasutajaga ei saa enam sõnumeid vahetada.');
         }
 
-        // Väldime täiesti tühja sõnumit
-        if (!$request->filled('body') && !$request->hasFile('attachments')) {
+        if (! $request->filled('body') && ! $request->hasFile('attachments')) {
             return back()->withErrors([
                 'body' => 'Lisa sõnum või manus.',
             ]);
         }
 
-        // Validatsioon
         $validated = $request->validate([
             'body' => ['nullable', 'string', 'max:5000'],
             'attachments' => ['nullable', 'array', 'max:5'],
@@ -53,54 +46,51 @@ class MessageController extends Controller
 
         $body = trim((string) ($validated['body'] ?? ''));
 
-        // Kaitse topeltsaatmise vastu
         $lastMessage = $conversation->messages()
             ->where('sender_id', $user->id)
             ->latest('id')
             ->first();
 
-        if (
-            $body !== '' &&
-            $lastMessage &&
-            $lastMessage->body === $body &&
-            $lastMessage->created_at !== null &&
-            $lastMessage->created_at->gt(now()->subSeconds(5))
-        ) {
+        $isDuplicateRecentTextMessage =
+            $body !== ''
+            && $lastMessage
+            && $lastMessage->body === $body
+            && $lastMessage->created_at !== null
+            && $lastMessage->created_at->gt(now()->subSeconds(5));
+
+        if ($isDuplicateRecentTextMessage) {
             return back()->with('error', 'Sama sõnum saadeti juba.');
         }
 
-        // Sõnum
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'body' => $body !== '' ? $body : null,
-        ]);
+        DB::transaction(function () use ($request, $conversation, $user, $body) {
+            $message = Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $user->id,
+                'body' => $body !== '' ? $body : null,
+            ]);
 
-        // Manused
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $path = $file->store('messages/attachments', 'public');
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('messages/attachments', 'public');
 
-                $mimeType = $file->getMimeType();
-                $isImage = is_string($mimeType) && str_starts_with($mimeType, 'image/');
+                    $mimeType = $file->getMimeType();
+                    $isImage = is_string($mimeType) && str_starts_with($mimeType, 'image/');
 
-                MessageAttachment::create([
-                    'message_id' => $message->id,
-                    'disk' => 'public',
-                    'path' => $path,
-                    'original_name' => $file->getClientOriginalName(),
-                    'mime_type' => $mimeType,
-                    'size' => $file->getSize(),
-                    'type' => $isImage ? 'image' : 'file',
-                ]);
+                    MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'disk' => 'public',
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $mimeType,
+                        'size' => $file->getSize(),
+                        'type' => $isImage ? 'image' : 'file',
+                    ]);
+                }
             }
-        }
 
-        // Vestlus uuesti nähtavaks mõlemale
-        $conversation->unhideForBoth();
-
-        // Tõsta vestlus üles listis
-        $conversation->touch();
+            $conversation->unhideForBoth();
+            $conversation->touch();
+        });
 
         return redirect()
             ->route('messages.show', $conversation)

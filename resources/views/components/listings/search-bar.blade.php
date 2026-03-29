@@ -10,23 +10,25 @@
     $q = request('q');
     $category = request('category');
     $sort = request('sort', 'newest');
+
+    $formClasses = $variant === 'panel'
+        ? 'mt-6 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm md:sticky md:top-20 z-40'
+        : 'mt-6';
 @endphp
 
-<form method="GET" action="{{ $action }}"
-      class="{{ $variant === 'panel'
-            ? 'mt-6 md:sticky md:top-20 z-40 rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-lg backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/70'
-            : 'mt-6' }}">
-
-    <div class="grid gap-4 md:grid-cols-12 md:items-center">
+<form method="GET" action="{{ $action }}" class="{{ $formClasses }}">
+    <div class="grid gap-4 md:grid-cols-12 md:items-end">
 
         {{-- SEARCH --}}
         <div class="{{ $showSort ? 'md:col-span-5' : 'md:col-span-7' }}">
-            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            <label class="block text-sm font-medium text-zinc-700">
                 {{ __('Otsi') }}
             </label>
 
-            <div class="mt-1 flex items-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition focus-within:ring-2 focus-within:ring-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:focus-within:ring-zinc-800">
-                <div class="pl-4 text-zinc-400 dark:text-zinc-500">
+            <div class="mt-1 flex items-center rounded-2xl border border-zinc-200 bg-zinc-50 transition
+                        focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-100">
+
+                <div class="pl-4 text-zinc-400">
                     <x-icons.magnifying-glass class="h-5 w-5" />
                 </div>
 
@@ -35,20 +37,21 @@
                     name="q"
                     value="{{ $q }}"
                     placeholder="{{ __('Nt: kipsplaat, isolatsioon, aknad...') }}"
-                    class="w-full bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    class="w-full bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
                 />
             </div>
         </div>
 
         {{-- CATEGORY --}}
         <div class="md:col-span-3">
-            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            <label class="block text-sm font-medium text-zinc-700">
                 {{ __('Kategooria') }}
             </label>
 
             <select
                 name="category"
-                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm shadow-sm transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-900 transition
+                       focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
             >
                 <option value="">{{ __('Kõik kategooriad') }}</option>
 
@@ -63,13 +66,14 @@
         {{-- SORT --}}
         @if($showSort)
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                <label class="block text-sm font-medium text-zinc-700">
                     {{ __('Sorteeri') }}
                 </label>
 
                 <select
                     name="sort"
-                    class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm shadow-sm transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+                    class="mt-1 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-900 transition
+                           focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                 >
                     <option value="newest" @selected($sort === 'newest')>{{ __('Uusimad') }}</option>
                     <option value="oldest" @selected($sort === 'oldest')>{{ __('Vanimad') }}</option>
@@ -83,7 +87,7 @@
         <div class="mt-6 flex gap-2 md:col-span-2 md:justify-end">
             <button
                 type="submit"
-                class="inline-flex flex-1 items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-zinc-700"
+                class="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200"
             >
                 {{ __('Otsi') }}
             </button>
@@ -91,11 +95,12 @@
             @if($showReset)
                 <a
                     href="{{ $action }}"
-                    class="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800/60"
+                    class="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
                 >
                     {{ __('Tühjenda') }}
                 </a>
             @endif
         </div>
+
     </div>
 </form>

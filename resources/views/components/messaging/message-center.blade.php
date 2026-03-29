@@ -1,83 +1,97 @@
 @props([
-    // Kõik kasutaja nähtavad vestlused vasaku veeru jaoks
     'conversations' => collect(),
-
-    // Hetkel avatud aktiivne vestlus
     'activeConversation' => null,
 ])
 
 @php
-    // Kas aktiivne vestlus on üldse olemas
+    $user = auth()->user();
+
     $hasActiveConversation = !is_null($activeConversation);
 
-    // Kas oleme vestluste listi vaates või konkreetse vestluse vaates
     $isMessagesIndex = request()->routeIs('messages.index');
     $isMessagesShow = request()->routeIs('messages.show');
 
-    // Mobiilis:
-    // - index vaates näitame ainult listi
-    // - show vaates näitame ainult vestlust
     $showListOnMobile = $isMessagesIndex;
     $showConversationOnMobile = $isMessagesShow && $hasActiveConversation;
 
-    // Kontrollime, kas praegune kasutaja on aktiivses vestluses müüja
-    $isSeller = $hasActiveConversation && auth()->id() === $activeConversation->seller_id;
+    $listing = $hasActiveConversation ? $activeConversation->listing : null;
+    $isSeller = $hasActiveConversation && $user && $activeConversation->isSeller($user);
 
-    // Leiame vestluse teise osapoole
     $otherUser = $hasActiveConversation
         ? ($isSeller ? $activeConversation->buyer : $activeConversation->seller)
         : null;
 
-    // Kuulutus, mille kohta vestlus käib
-    $listing = $hasActiveConversation ? $activeConversation->listing : null;
+    $canSendMessages = $hasActiveConversation && $user
+        ? $activeConversation->canUserSendMessages($user)
+        : false;
 
-    // Kas selle vestluse puhul tohib veel sõnumeid saata
-    $canSendMessages = $hasActiveConversation
-        && $listing
-        && $listing->status !== 'deleted';
-
-    // Kas mina olen selle teise kasutaja blokeerinud
     $isBlockedByMe = $hasActiveConversation && $otherUser
-        ? auth()->user()->hasBlocked($otherUser)
+        ? $user->hasBlocked($otherUser)
         : false;
 
-    // Kas kasutajate vahel on üldse aktiivne sõnumiblokk ükskõik kummas suunas
-    $hasMessagingBlock = $hasActiveConversation
-        ? $activeConversation->hasMessagingBlock(auth()->user())
+    $hasMessagingBlock = $hasActiveConversation && $user
+        ? $activeConversation->hasMessagingBlock($user)
         : false;
 
-    // Route kasutaja blokeerimiseks:
-    // ainult siis, kui mina ei ole teda juba blokeerinud
     $blockUserAction = $hasActiveConversation && $otherUser && !$isBlockedByMe
         ? route('user-blocks.store', $otherUser)
         : null;
 
-    // Route blokeeringu eemaldamiseks:
-    // ainult siis, kui mina olen selle kasutaja blokeerinud
     $unblockUserAction = $hasActiveConversation && $otherUser && $isBlockedByMe
         ? route('user-blocks.destroy', $otherUser)
         : null;
 
-    // Route vestluse eemaldamiseks kasutaja vaatest
     $hideConversationAction = $hasActiveConversation
         ? route('messages.destroy', $activeConversation)
         : null;
 
-    // Route kasutajast teatamiseks
     $reportUserAction = $hasActiveConversation
         ? route('user-reports.store')
         : null;
 
-    // Aktiivse vestluse id reporti sidumiseks
-    $conversationId = $hasActiveConversation
-        ? $activeConversation->id
+    $conversationId = $hasActiveConversation ? $activeConversation->id : null;
+
+    $currentTrade = $hasActiveConversation
+        ? $activeConversation->currentTrade()
         : null;
+
+    $canShowTradeActions = $hasActiveConversation && $user
+        ? $activeConversation->canUserSeeTradeActions($user)
+        : false;
+
+    $canExpressInterest = $canShowTradeActions
+        && !$isSeller
+        && $listing
+        && $listing->canAcceptTradeInterest()
+        && !$activeConversation->hasOpenTrade();
+
+    $canReserve = $canShowTradeActions
+        && $isSeller
+        && $currentTrade
+        && $currentTrade->canBeReserved()
+        && $listing?->canAcceptTradeReservation();
+
+    $canComplete = $canShowTradeActions
+        && $isSeller
+        && $currentTrade
+        && $currentTrade->canBeCompleted()
+        && $listing?->isReserved();
+
+    $canConfirmReceived = $canShowTradeActions
+        && !$isSeller
+        && $currentTrade
+        && $currentTrade->canBeConfirmedByBuyer();
+
+    $canCancelTrade = $canShowTradeActions
+        && $currentTrade
+        && $currentTrade->canBeCancelled();
+
+    $showTradeActionBar = $canShowTradeActions
+        && ($canExpressInterest || $canReserve || $canComplete || $canConfirmReceived || $canCancelTrade);
 @endphp
 
 <div class="mx-auto max-w-7xl px-4 py-6 md:py-8">
-    <div class="grid gap-6 lg:h-[calc(100vh-8rem)] lg:grid-cols-[360px_minmax(0,1fr)] lg:min-h-0">
-
-        {{-- Vasak veerg: vestluste list --}}
+    <div class="grid gap-6 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} lg:block lg:h-full lg:min-h-0">
             <x-messaging.conversation-list
                 :conversations="$conversations"
@@ -85,11 +99,8 @@
             />
         </div>
 
-        {{-- Parem veerg: aktiivne vestlus või placeholder --}}
-        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] lg:h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-
+        <section class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex h-[calc(100vh-5rem)] min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm lg:h-full">
             @if($hasActiveConversation)
-                {{-- Päis koos mobiili tagasi-nupuga --}}
                 <div class="border-b border-zinc-200 px-4 py-4">
                     <div class="mb-4 flex items-center lg:hidden">
                         <x-ui.back-button
@@ -98,7 +109,6 @@
                         />
                     </div>
 
-                    {{-- Vestluse teise osapoole kaart koos menüü ja blokeerimise olekuga --}}
                     <x-users.profile-summary-card
                         :user="$otherUser"
                         :role-label="$isSeller ? __('Ostja') : __('Müüja')"
@@ -114,21 +124,113 @@
                     />
                 </div>
 
-                {{-- Kuulutuse mini-kaart vestluse kohal --}}
                 <div class="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4">
-                    <x-listings.mini-card :listing="$listing" />
+                    <x-listings.mini-card
+                        :listing="$listing"
+                        :href="$hasActiveConversation && $listing ? route('messages.listing.show', $activeConversation) : null"
+                    />
 
-                    @if($listing && $listing->status === 'deleted')
+                    @if($listing && $listing->isDeletedStatus())
                         <div class="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {{ __('Sõnumite saatmine on suletud, sest kuulutus on kustutatud.') }}
+                            {{ __('Sõnumite saatmine ja tehingu jätkamine on suletud, sest kuulutus on kustutatud.') }}
+                        </div>
+                    @endif
+
+                    @if($currentTrade)
+                        <div class="mt-3 flex flex-wrap gap-2">
+
+                            {{-- Põhistaatus --}}
+                            <x-ui.status-badge :status="$currentTrade->status">
+                                {{ $currentTrade->statusLabel() }}
+                            </x-ui.status-badge>
+
+                            {{-- Ostja kinnitus --}}
+                            @if($currentTrade->isCompleted() && $currentTrade->isBuyerConfirmed())
+                                <x-ui.status-badge status="received">
+                                    {{ __('Kaup kätte saadud') }}
+                                </x-ui.status-badge>
+                            @endif
+
+                        </div>
+                    @endif
+
+                    @if($showTradeActionBar)
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            @if($canExpressInterest)
+                                <form method="POST" action="{{ route('messages.interest', $activeConversation) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
+                                    >
+                                        {{ __('Soovin osta') }}
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($canReserve)
+                                <form method="POST" action="{{ route('messages.reserve', $activeConversation) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-600"
+                                    >
+                                        {{ __('Broneeri sellele ostjale') }}
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($canComplete)
+                                <form method="POST" action="{{ route('messages.complete', $activeConversation) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                    >
+                                        {{ __('Müüdud sellele ostjale') }}
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($canConfirmReceived)
+                                <form method="POST" action="{{ route('messages.trades.confirm', $activeConversation) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                                    >
+                                        {{ __('Kinnita kauba kättesaamine') }}
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($canCancelTrade && $currentTrade)
+                                <form method="POST" action="{{ route('messages.trades.cancel', [$activeConversation, $currentTrade]) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                                    >
+                                        {{ __('Katkesta') }}
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     @endif
                 </div>
 
-                {{-- Vestluse sõnumid --}}
                 <x-messaging.chat-thread :conversation="$activeConversation" />
 
-                {{-- Sisestusala --}}
                 @if($canSendMessages)
                     <x-messaging.chat-compose
                         :conversation="$activeConversation"
@@ -144,7 +246,6 @@
                     </div>
                 @endif
             @else
-                {{-- Desktop placeholder, kui aktiivset vestlust pole --}}
                 <div class="flex h-full flex-1 items-center justify-center p-8">
                     <div class="max-w-md text-center">
                         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
@@ -161,7 +262,6 @@
                     </div>
                 </div>
             @endif
-
         </section>
     </div>
 </div>

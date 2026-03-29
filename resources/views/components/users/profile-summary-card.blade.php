@@ -14,6 +14,7 @@
 
 @php
     $joinedYear = optional($user->created_at)?->format('Y');
+    $profileUrl = route('users.show', $user);
 
     $blockConfirmClick = $blockUserAction
         ? "\$root.querySelector('form[data-block-user-form]')?.requestSubmit()"
@@ -28,8 +29,6 @@
         $errors->has('conversation_id') ||
         $errors->has('reason') ||
         $errors->has('details');
-
-    $profileUrl = route('users.show', $user);
 @endphp
 
 <div
@@ -118,7 +117,7 @@
                                 {{ __('Eemalda blokeering') }}
                             </x-ui.dropdown-item>
                         </form>
-                    @elseif($blockUserAction)
+                    @elseif(!$isBlockedByMe && $blockUserAction)
                         <form
                             method="POST"
                             action="{{ $blockUserAction }}"
@@ -134,14 +133,6 @@
                                 {{ __('Blokeeri kasutaja') }}
                             </x-ui.dropdown-item>
                         </form>
-                    @else
-                        <x-ui.dropdown-item
-                            icon="icons.block"
-                            danger
-                            @click="openMenu = false; showBlockModal = true"
-                        >
-                            {{ __('Blokeeri kasutaja') }}
-                        </x-ui.dropdown-item>
                     @endif
                 </div>
 
@@ -165,7 +156,7 @@
             :score="$score"
             :reviews-count="$reviewsCount"
             :joined-year="$joinedYear"
-            class="border-0 bg-transparent p-0 shadow-none pr-14"
+            class="border-0 bg-transparent p-0 pr-14 shadow-none"
         >
             @if($isBlockedByMe)
                 <div class="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
@@ -190,7 +181,7 @@
         />
     @endif
 
-    @if(!$isBlockedByMe)
+    @if(!$isBlockedByMe && $blockUserAction)
         <x-ui.confirm-modal
             open="showBlockModal"
             :title="__('Blokeerida see kasutaja?')"

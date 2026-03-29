@@ -1,5 +1,8 @@
 <x-layouts.app.public :title="$listing->title ?? __('Kuulutus')">
     @php
+        $reservedTrade = $reservedTrade ?? null;
+        $soldTrade = $soldTrade ?? null;
+
         $isExpired = $listing->status === 'published'
             && $listing->expires_at
             && $listing->expires_at->isPast();
@@ -19,11 +22,43 @@
 
             <a
                 href="{{ route('listings.index') }}"
-                class="text-sm text-zinc-600 hover:underline dark:text-zinc-300"
+                class="text-sm text-zinc-600 hover:underline"
             >
                 {{ __('Kõik kuulutused') }}
             </a>
         </div>
+
+        @if($listing->status === 'deleted')
+            <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ __('See kuulutus on kustutatud ja ei ole enam avalikult saadaval.') }}
+            </div>
+        @elseif($listing->status === 'sold')
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                @if($soldTrade?->buyer)
+                    {{ __('See kuulutus on müüdud kasutajale :name.', ['name' => $soldTrade->buyer->name]) }}
+                @else
+                    {{ __('See kuulutus on müüdud.') }}
+                @endif
+            </div>
+        @elseif($listing->status === 'reserved')
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                @if($reservedTrade?->buyer && auth()->check() && (int) $reservedTrade->buyer_id === (int) auth()->id())
+                    {{ __('See kuulutus on broneeritud sulle.') }}
+                @elseif($reservedTrade?->buyer)
+                    {{ __('See kuulutus on broneeritud kasutajale :name.', ['name' => $reservedTrade->buyer->name]) }}
+                @else
+                    {{ __('See kuulutus on broneeritud.') }}
+                @endif
+            </div>
+        @elseif($listing->status === 'archived')
+            <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                {{ __('See kuulutus on müügist eemaldatud.') }}
+            </div>
+        @elseif($isExpired)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {{ __('See kuulutus on aegunud.') }}
+            </div>
+        @endif
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <div class="min-w-0">
@@ -43,6 +78,14 @@
                         ? route('listings.conversation.open', $listing)
                         : null
                 "
+                :buy-intent-action="
+                    $isPubliclyAvailable && auth()->check() && auth()->id() !== $listing->user_id
+                        ? route('listings.buy-intent', $listing)
+                        : null
+                "
+                :complete-trade-action="$reservedTrade ? route('messages.complete', $reservedTrade->conversation_id) : null"
+                :reserved-trade="$reservedTrade"
+                :sold-trade="$soldTrade"
                 :active-listings-count="$listing->user->active_listings_count"
                 :profile-url="route('users.show', $listing->user)"
             />

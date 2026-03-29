@@ -4,34 +4,46 @@
 ])
 
 @php
+    $user = auth()->user();
+
     $listing = $conversation->listing;
     $coverImage = $listing?->coverImageUrl();
 
-    $otherUser = $conversation->seller_id === auth()->id()
-        ? $conversation->buyer
-        : $conversation->seller;
+    $otherUser = $user ? $conversation->otherParticipant($user) : null;
 
     $lastMessage = $conversation->latestMessage;
     $hasUnread = ($conversation->unread_messages_count ?? 0) > 0;
+
+    $cardClasses = $active
+        ? 'border-emerald-500 bg-green-50 shadow-sm'
+        : ($hasUnread
+            ? 'border-zinc-300 bg-zinc-50 hover:border-green-300 hover:shadow-sm'
+            : 'border-zinc-200 bg-white hover:border-green-300 hover:shadow-sm');
+
+    $titleClasses = $hasUnread ? 'text-zinc-950' : 'text-zinc-900';
+    $previewClasses = $hasUnread ? 'font-medium text-zinc-900' : 'text-zinc-600';
+
+    $previewText = null;
+
+    if ($lastMessage) {
+        $previewText = \Illuminate\Support\Str::limit((string) $lastMessage->body, 70);
+
+        if ($previewText === '' && $lastMessage->hasAttachments()) {
+            $previewText = __('Saatis manuse');
+        }
+    }
 @endphp
 
 <a
     href="{{ route('messages.show', $conversation) }}"
-    class="block rounded-2xl border p-2.5 sm:p-3 transition
-        {{ $active
-            ? 'border-emerald-500 bg-green-50 shadow-sm dark:border-green-600 dark:bg-blue-950/30'
-            : ($hasUnread
-                ? 'border-zinc-300 bg-zinc-50 hover:border-green-300 hover:shadow-sm'
-                : 'border-zinc-200 bg-white hover:border-green-300 hover:shadow-sm')
-        }}"
+    class="block rounded-2xl border p-2.5 transition sm:p-3 {{ $cardClasses }}"
 >
     <div class="flex items-start gap-2.5 sm:gap-3">
-
-        <div class="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+        <div class="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:h-16 sm:w-16">
             @if($coverImage)
                 <img
                     src="{{ $coverImage }}"
-                    alt="{{ $listing->title }}"
+                    alt="{{ $listing->title ?? __('Kuulutus') }}"
                     class="h-full w-full object-cover"
                 >
             @else
@@ -45,7 +57,7 @@
             <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                        <div class="truncate text-[13px] sm:text-sm font-semibold {{ $hasUnread ? 'text-zinc-950' : 'text-zinc-900' }}">
+                        <div class="truncate text-[13px] font-semibold sm:text-sm {{ $titleClasses }}">
                             {{ $listing->title ?? __('Kuulutus') }}
                         </div>
 
@@ -54,13 +66,13 @@
                         @endif
                     </div>
 
-                    <div class="truncate text-[11px] sm:text-xs text-zinc-500">
+                    <div class="truncate text-[11px] text-zinc-500 sm:text-xs">
                         {{ $otherUser->name ?? __('Tundmatu kasutaja') }}
                     </div>
                 </div>
 
-                <div class="shrink-0 text-[11px] sm:text-xs text-zinc-500 whitespace-nowrap">
-                    @if($lastMessage && $lastMessage->created_at)
+                <div class="shrink-0 whitespace-nowrap text-[11px] text-zinc-500 sm:text-xs">
+                    @if($lastMessage?->created_at)
                         @php
                             $sentAt = $lastMessage->created_at;
                         @endphp
@@ -78,9 +90,9 @@
                 </div>
             </div>
 
-            @if($lastMessage)
-                <div class="mt-1.5 sm:mt-2 truncate text-[13px] sm:text-sm {{ $hasUnread ? 'font-medium text-zinc-900' : 'text-zinc-600' }}">
-                    {{ \Illuminate\Support\Str::limit($lastMessage->body, 70) }}
+            @if($previewText)
+                <div class="mt-1.5 truncate text-[13px] sm:mt-2 sm:text-sm {{ $previewClasses }}">
+                    {{ $previewText }}
                 </div>
             @endif
         </div>

@@ -26,7 +26,6 @@ class ListingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // MVP: level 2 ja 3 (vald/linn + asula/linnaosa)
         $locations = Location::query()
             ->where('is_valid', true)
             ->whereIn('level', [2, 3])
@@ -42,28 +41,19 @@ class ListingController extends Controller
         $action = (string) $request->input('action', 'publish');
         $isDraft = $action === 'draft';
 
-        // price_mode -> price normaliseerimine enne validate
         $this->normalizePriceMode($request);
 
         $rulesDraft = [
             'action' => ['nullable', 'in:publish,draft'],
-
-            // draft: kõik võivad puududa
             'title' => ['nullable', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'location_id' => ['nullable', 'exists:locations,id'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'price_mode' => ['nullable', 'in:deal,free,price'],
-
-            // Seisukord
             'condition' => ['nullable', 'in:new,used,leftover'],
-
-            // Kättesaamine
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
-
-            // Pildid (create)
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images_order' => ['nullable', 'string'],
@@ -71,20 +61,15 @@ class ListingController extends Controller
 
         $rulesPublish = [
             'action' => ['nullable', 'in:publish,draft'],
-
-            // publish: tuumik
             'title' => ['required', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
             'location_id' => ['required', 'exists:locations,id'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'price_mode' => ['nullable', 'in:deal,free,price'],
-
             'condition' => ['nullable', 'in:new,used,leftover'],
-
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
-
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images_order' => ['nullable', 'string'],
@@ -92,7 +77,6 @@ class ListingController extends Controller
 
         $validated = $request->validate($isDraft ? $rulesDraft : $rulesPublish);
 
-        // Ära loo täiesti tühja mustandit
         if ($isDraft) {
             $hasAny =
                 filled($validated['title'] ?? null) ||
@@ -123,16 +107,13 @@ class ListingController extends Controller
                 'price' => array_key_exists('price', $validated) ? $validated['price'] : null,
                 'currency' => 'EUR',
                 'listing_type' => 'sale',
-
                 'condition' => $validated['condition'] ?? null,
                 'delivery_options' => $delivery,
-
                 'status' => $isDraft ? 'draft' : 'published',
                 'published_at' => $isDraft ? null : now(),
                 'expires_at' => $isDraft ? null : now()->addDays(30),
             ]);
 
-            // Pildid (create)
             $files = $request->file('images', []);
             if (!empty($files)) {
                 $order = $this->safeJsonArray($request->input('images_order'));
@@ -168,43 +149,61 @@ class ListingController extends Controller
             ->with('success', $isDraft ? 'Mustand on salvestatud.' : 'Kuulutus on avaldatud.');
     }
 
-    // Minu kuulutused
     public function mine(Request $request)
     {
+        $user = $request->user();
+
         $categories = Category::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
         $hasAnyListings = Listing::query()
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $user->id)
             ->exists();
 
         $listingsQuery = Listing::query()
-            ->where('user_id', $request->user()->id);
+            ->where('user_id', $user->id)
+            ->with([
+                'category',
+                'location',
+                'images',
+                'reservedTrade.buyer',
+                'reservedTrade.conversation',
+                'soldTrade.buyer',
+                'soldTrade.conversation',
+                'latestActiveTrade.buyer',
+                'latestActiveTrade.conversation',
+            ]);
 
         $status = (string) $request->get('status', 'all');
 
         if ($status === 'active') {
-            $listingsQuery->where('status', 'published')
+            $listingsQuery
+                ->where('status', 'published')
                 ->where(function ($q) {
                     $q->whereNull('expires_at')
                         ->orWhere('expires_at', '>=', now());
                 });
         } elseif ($status === 'expired') {
-            $listingsQuery->where('status', 'published')
+            $listingsQuery
+                ->where('status', 'published')
                 ->whereNotNull('expires_at')
                 ->where('expires_at', '<', now());
-        } elseif ($status === 'archived') {
-            $listingsQuery->where('status', 'archived');
+        } elseif ($status === 'reserved') {
+            $listingsQuery->where('status', 'reserved');
         } elseif ($status === 'sold') {
             $listingsQuery->where('status', 'sold');
+        } elseif ($status === 'archived') {
+            $listingsQuery->where('status', 'archived');
         } elseif ($status === 'pending') {
             $listingsQuery->where('status', 'pending');
         } elseif ($status === 'draft') {
             $listingsQuery->where('status', 'draft');
         } elseif ($status === 'deleted') {
             $listingsQuery->where('status', 'deleted');
+        } elseif ($status === 'rejected') {
+            $listingsQuery->where('status', 'rejected');
         }
 
         $q = trim((string) $request->get('q', ''));
@@ -220,16 +219,50 @@ class ListingController extends Controller
             $listingsQuery->where('category_id', $categoryId);
         }
 
-        $listings = $listingsQuery->latest('id')->get();
+        $sort = (string) $request->get('sort', 'newest');
 
-        return view('user.listings.index', compact('listings', 'categories', 'hasAnyListings'));
+        if ($sort === 'oldest') {
+            $listingsQuery->orderBy('id');
+        } elseif ($sort === 'price_asc') {
+            $listingsQuery->orderByRaw('CASE WHEN price IS NULL THEN 1 ELSE 0 END, price ASC');
+        } elseif ($sort === 'price_desc') {
+            $listingsQuery->orderByRaw('CASE WHEN price IS NULL THEN 1 ELSE 0 END, price DESC');
+        } elseif ($sort === 'expires_soon') {
+            $listingsQuery->orderByRaw('CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at ASC');
+        } else {
+            $listingsQuery->latest('id');
+        }
+
+        $listings = $listingsQuery
+            ->paginate(24)
+            ->withQueryString();
+
+        return view('user.listings.index', [
+            'listings' => $listings,
+            'categories' => $categories,
+            'hasAnyListings' => $hasAnyListings,
+            'currentStatus' => $status,
+            'currentSort' => $sort,
+            'currentQuery' => $q,
+            'currentCategoryId' => $categoryId,
+        ]);
     }
 
     public function showMine(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        $listing->load(['category', 'location', 'images']);
+        $listing->load([
+            'category',
+            'location',
+            'images',
+            'reservedTrade.buyer',
+            'reservedTrade.conversation',
+            'soldTrade.buyer',
+            'soldTrade.conversation',
+            'latestActiveTrade.buyer',
+            'latestActiveTrade.conversation',
+        ]);
 
         return view('user.listings.show', compact('listing'));
     }
@@ -238,12 +271,24 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
+        if (!$listing->canBeEditedByOwner()) {
+            return redirect()
+                ->route('listings.mine.show', $listing)
+                ->withErrors([
+                    'listing' => $this->editBlockedMessage($listing),
+                ]);
+        }
+
         $categories = Category::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
-        $listing->load(['category', 'location', 'images']);
+        $listing->load([
+            'category',
+            'location',
+            'images',
+        ]);
 
         return view('user.listings.edit', compact('listing', 'categories'));
     }
@@ -252,9 +297,11 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        if ($listing->status === 'deleted') {
+        $listing->refresh();
+
+        if (!$listing->canBeEditedByOwner()) {
             return back()->withErrors([
-                'listing' => 'Kustutatud kuulutust ei saa muuta.',
+                'listing' => $this->editBlockedMessage($listing),
             ]);
         }
 
@@ -267,15 +314,11 @@ class ListingController extends Controller
             'location_id' => ['required', 'exists:locations,id'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'price_mode' => ['nullable', 'in:deal,free,price'],
-
             'condition' => ['nullable', 'in:new,used,leftover'],
-
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
-
             'new_images' => ['nullable', 'array', 'max:10'],
             'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-
             'deleted_image_ids' => ['nullable', 'string'],
             'images_order' => ['nullable', 'string'],
         ]);
@@ -393,8 +436,12 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        if (in_array($listing->status, ['deleted', 'sold'], true)) {
-            return back();
+        $listing->refresh();
+
+        if (!$listing->canBeToggledByOwner()) {
+            return back()->withErrors([
+                'listing' => 'Seda kuulutust ei saa peatada ega taasaktiveerida selle praeguses olekus.',
+            ]);
         }
 
         if ($listing->status === 'archived') {
@@ -420,8 +467,12 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
+        $listing->refresh();
+
         if ($listing->status !== 'draft') {
-            return back();
+            return back()->withErrors([
+                'listing' => 'Avaldada saab ainult mustandit.',
+            ]);
         }
 
         $errors = [];
@@ -456,16 +507,16 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        $isExpired = $listing->status === 'published'
-            && $listing->expires_at
-            && $listing->expires_at->isPast();
+        $listing->refresh();
 
-        if (!$isExpired) {
-            return back();
+        if (!$listing->isExpired()) {
+            return back()->withErrors([
+                'listing' => 'Uuesti saab avaldada ainult aegunud kuulutust.',
+            ]);
         }
 
         $listing->status = 'published';
-        $listing->published_at = $listing->published_at ?? now();
+        $listing->published_at = now();
         $listing->expires_at = now()->addDays(30);
         $listing->save();
 
@@ -476,10 +527,18 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
+        $listing->refresh();
+
         if ($listing->status === 'deleted') {
             return redirect()
                 ->route('listings.mine')
                 ->with('success', 'Kuulutus on juba kustutatud.');
+        }
+
+        if (!$listing->canBeDeletedByOwner()) {
+            return back()->withErrors([
+                'listing' => 'Seda kuulutust ei saa kustutada selle praeguses olekus.',
+            ]);
         }
 
         $listing->update([
@@ -495,32 +554,56 @@ class ListingController extends Controller
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        if ($listing->status === 'deleted') {
-            return back();
-        }
-
-        $listing->update([
-            'status' => 'sold',
+        return back()->withErrors([
+            'listing' => 'Kuulutust ei märgita enam otse müüduks. Kasuta vastava ostja vestluses nuppu „Müüdud sellele ostjale”.',
         ]);
-
-        return back()->with('success', 'Kuulutus on märgitud müüduks.');
     }
 
     public function markUnsold(Request $request, Listing $listing)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
-        if ($listing->status !== 'sold') {
-            return back();
+        return back()->withErrors([
+            'listing' => 'Müüdud kuulutuse taastamine ei käi enam selle nupu kaudu. Vajadusel lahenda see tehingu loogika või admin-taseme paranduse kaudu.',
+        ]);
+    }
+
+    public function favorites()
+    {
+        $user = auth()->user();
+
+        $listings = $user->favorites()
+            ->with([
+                'images',
+                'location',
+                'category',
+                'user',
+            ])
+            ->latest('favorites.created_at')
+            ->paginate(24);
+
+        return view('user.favorites.index', compact('listings'));
+    }
+
+    private function editBlockedMessage(Listing $listing): string
+    {
+        if ($listing->status === 'deleted') {
+            return 'Kustutatud kuulutust ei saa muuta.';
         }
 
-        $listing->update([
-            'status' => 'published',
-            'published_at' => $listing->published_at ?? now(),
-            'expires_at' => now()->addDays(30),
-        ]);
+        if ($listing->status === 'reserved') {
+            return 'Broneeritud kuulutust ei saa muuta. Lõpeta või vii tehing lõpuni vastava vestluse kaudu.';
+        }
 
-        return back()->with('success', 'Kuulutus on taastatud müüki.');
+        if ($listing->status === 'sold') {
+            return 'Müüdud kuulutust ei saa muuta.';
+        }
+
+        if ($listing->isExpired()) {
+            return 'Aegunud kuulutust ei saa muuta enne uuesti avaldamist.';
+        }
+
+        return 'Seda kuulutust ei saa selle praeguses olekus muuta.';
     }
 
     private function safeJsonArray(?string $raw): array
@@ -534,11 +617,6 @@ class ListingController extends Controller
         return is_array($decoded) ? $decoded : [];
     }
 
-    /**
-     * deal => price null
-     * free => price 0
-     * price => jätab inputi
-     */
     private function normalizePriceMode(Request $request): void
     {
         $priceMode = (string) $request->input('price_mode', 'deal');
@@ -548,16 +626,5 @@ class ListingController extends Controller
         } elseif ($priceMode === 'free') {
             $request->merge(['price' => 0]);
         }
-    }
-
-    public function favorites()
-    {
-        $user = auth()->user();
-
-        $listings = $user->favorites()
-            ->latest()
-            ->paginate(24);
-
-        return view('user.favorites.index', compact('listings'));
     }
 }

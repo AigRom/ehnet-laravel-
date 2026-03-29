@@ -1,20 +1,19 @@
 @props([
     'conversation',
-
-    // Kas kasutajate vahel on aktiivne sõnumiblokk
     'hasMessagingBlock' => false,
-
-    // Kas praegune kasutaja on ise selle teise kasutaja blokeerinud
     'isBlockedByMe' => false,
-
-    // Route blokeeringu eemaldamiseks
     'unblockUserAction' => null,
 ])
 
+@php
+    $fileInputId = 'attachments-' . $conversation->id;
+
+    $iconButtonClasses = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow transition hover:bg-emerald-700';
+    $removeButtonClasses = 'text-xs font-medium text-red-600 hover:underline';
+@endphp
+
 <div class="border-t border-emerald-200 bg-white p-4 md:p-5">
     @if($hasMessagingBlock)
-        {{-- Kui kasutajate vahel on blokk, ei näita sõnumi sisestamise vormi.
-             Selle asemel kuvame selge staatuse ja vajadusel võimaluse blokeering eemaldada. --}}
         <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
@@ -53,10 +52,9 @@
             </div>
         </div>
     @else
-        {{-- Tavaline sõnumi koostamise vorm --}}
         <div
             x-data="messageCompose()"
-            class=""
+            x-init="bodyText = @js(old('body', ''))"
         >
             <form
                 method="POST"
@@ -66,11 +64,10 @@
             >
                 @csrf
 
-                {{-- Peidetud failisisend manuste jaoks --}}
                 <input
                     type="file"
                     name="attachments[]"
-                    id="attachments-{{ $conversation->id }}"
+                    id="{{ $fileInputId }}"
                     multiple
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
                     class="hidden"
@@ -78,18 +75,15 @@
                 />
 
                 <div class="flex w-full items-end gap-3">
-                    {{-- Manuse lisamise nupp --}}
                     <button
                         type="button"
-                        onclick="document.getElementById('attachments-{{ $conversation->id }}').click()"
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow transition hover:bg-emerald-700"
+                        onclick="document.getElementById('{{ $fileInputId }}').click()"
+                        class="{{ $iconButtonClasses }}"
                         title="{{ __('Lisa fail') }}"
                     >
                         <x-icons.paperclip class="h-5 w-5" />
                     </button>
 
-                    {{-- Sõnumi tekstiala:
-                         Enter saadab, Shift+Enter teeb uue rea --}}
                     <textarea
                         x-ref="body"
                         x-model="bodyText"
@@ -104,26 +98,23 @@
                                 }
                             }
                         "
-                        id="body"
                         name="body"
                         rows="1"
                         placeholder="{{ __('Kirjuta vastus...') }}"
                         class="w-full min-w-0 flex-1 resize-none overflow-hidden rounded-2xl border border-emerald-400 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     >{{ old('body') }}</textarea>
 
-                    {{-- Saatmise nupp kuvatakse ainult siis, kui on tekst või failid --}}
                     <button
                         x-show="canSend()"
                         x-transition.opacity.scale.duration.150ms
                         type="submit"
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow transition hover:bg-emerald-700"
+                        class="{{ $iconButtonClasses }}"
                         title="{{ __('Saada') }}"
                     >
                         <x-icons.paper-airplane class="h-5 w-5" />
                     </button>
                 </div>
 
-                {{-- Veateated --}}
                 @error('body')
                     <p class="text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -136,7 +127,6 @@
                     <p class="text-sm text-red-600">{{ $message }}</p>
                 @enderror
 
-                {{-- Valitud failide eelvaade --}}
                 <template x-if="files.length > 0">
                     <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
                         <div class="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -146,7 +136,6 @@
                         <div class="space-y-3">
                             <template x-for="(item, index) in files" :key="item.id">
                                 <div class="rounded-xl bg-white p-2 shadow-sm">
-                                    {{-- Pildi eelvaade --}}
                                     <template x-if="item.isImage">
                                         <div class="flex items-start gap-3">
                                             <img
@@ -161,8 +150,8 @@
 
                                                 <button
                                                     type="button"
-                                                    class="mt-2 text-xs font-medium text-red-600 hover:underline"
-                                                    @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
+                                                    class="{{ $removeButtonClasses }}"
+                                                    @click="removeFile(index, '{{ $fileInputId }}')"
                                                 >
                                                     {{ __('Eemalda') }}
                                                 </button>
@@ -170,7 +159,6 @@
                                         </div>
                                     </template>
 
-                                    {{-- Muu faili eelvaade --}}
                                     <template x-if="!item.isImage">
                                         <div class="flex items-center justify-between gap-3 px-1 py-1 text-sm">
                                             <div class="min-w-0 flex-1">
@@ -180,8 +168,8 @@
 
                                             <button
                                                 type="button"
-                                                class="text-xs font-medium text-red-600 hover:underline"
-                                                @click="removeFile(index, 'attachments-{{ $conversation->id }}')"
+                                                class="{{ $removeButtonClasses }}"
+                                                @click="removeFile(index, '{{ $fileInputId }}')"
                                             >
                                                 {{ __('Eemalda') }}
                                             </button>

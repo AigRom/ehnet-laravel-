@@ -9,30 +9,23 @@ use Illuminate\View\View;
 
 class UserProfileController extends Controller
 {
+    /**
+     * Kuvab avaliku kasutajaprofiili koos aktiivsete kuulutustega.
+     */
     public function show(User $user): View
     {
-        $user->load([
-            'location',
-        ]);
+        $user->load('location');
 
         $user->loadCount([
             'listings as active_listings_count' => function ($query) {
-                $query->where('status', 'published')
-                    ->where(function ($q) {
-                        $q->whereNull('expires_at')
-                            ->orWhere('expires_at', '>=', now());
-                    });
+                $query->publicVisible();
             },
         ]);
 
         $activeListings = Listing::query()
             ->with(['images', 'location', 'category'])
             ->where('user_id', $user->id)
-            ->where('status', 'published')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
-            })
+            ->publicVisible()
             ->latest('created_at')
             ->paginate(12);
 

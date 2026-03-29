@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\Trade;
 
 class ListingController extends Controller
 {
@@ -69,6 +70,20 @@ class ListingController extends Controller
             },
         ]);
 
+        $reservedTrade = Trade::query()
+            ->with('buyer')
+            ->where('listing_id', $listing->id)
+            ->where('status', 'reserved')
+            ->latest('id')
+            ->first();
+
+        $soldTrade = Trade::query()
+            ->with('buyer')
+            ->where('listing_id', $listing->id)
+            ->where('status', 'completed')
+            ->latest('id')
+            ->first();
+
         $sellerListings = Listing::query()
             ->with(['images', 'location', 'category'])
             ->where('id', '!=', $listing->id)
@@ -85,7 +100,6 @@ class ListingController extends Controller
         $similarListings = Listing::query()
             ->with(['images', 'location', 'category'])
             ->where('id', '!=', $listing->id)
-            // ->where('user_id', '!=', $listing->user_id) eemaldab sama müüja kuulutused samalaadsete kuulutuste alt
             ->where('status', 'published')
             ->where(function ($q) {
                 $q->whereNull('expires_at')
@@ -96,6 +110,12 @@ class ListingController extends Controller
             ->limit(8)
             ->get();
 
-        return view('listings.show', compact('listing', 'sellerListings', 'similarListings'));
+        return view('listings.show', compact(
+            'listing',
+            'sellerListings',
+            'similarListings',
+            'reservedTrade',
+            'soldTrade',
+        ));
     }
 }

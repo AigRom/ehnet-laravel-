@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Messaging;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Listing;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,37 +17,11 @@ class ConversationController extends Controller
     {
         $user = $request->user();
 
-        $conversations = Conversation::query()
-            ->with([
-                'listing',
-                'listing.images',
-                'seller:id,name,created_at,avatar_path',
-                'buyer:id,name,created_at,avatar_path',
-                'latestMessage.sender:id,name,avatar_path',
-            ])
-            ->withCount([
-                'messages as unread_messages_count' => function ($query) use ($user) {
-                    $query->whereNull('read_at')
-                        ->where('sender_id', '!=', $user->id);
-                },
-            ])
-            ->where(function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('seller_id', $user->id)
-                        ->whereNull('seller_hidden_at');
-                })->orWhere(function ($q) use ($user) {
-                    $q->where('buyer_id', $user->id)
-                        ->whereNull('buyer_hidden_at');
-                });
-            })
-            ->latest('updated_at')
-            ->get();
-
-        $activeConversation = $conversations->first();
+        $conversations = $this->visibleConversationsQuery($user)->get();
 
         return view('user.messages.index', [
             'conversations' => $conversations,
-            'activeConversation' => $activeConversation,
+            'activeConversation' => $conversations->first(),
         ]);
     }
 
@@ -53,15 +29,8 @@ class ConversationController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(
-            $conversation->hasParticipant($user),
-            404
-        );
-
-        abort_if(
-            $conversation->isHiddenFor($user),
-            404
-        );
+        abort_unless($conversation->hasParticipant($user), 404);
+        abort_if($conversation->isHiddenFor($user), 404);
 
         $conversation->messages()
             ->whereNull('read_at')
@@ -77,37 +46,71 @@ class ConversationController extends Controller
             'buyer:id,name,created_at,avatar_path',
             'messages.sender:id,name,avatar_path',
             'messages.attachments',
+            'trades',
+            'latestTrade',
+            'latestOpenTrade',
         ]);
-
-        $conversations = Conversation::query()
-            ->with([
-                'listing',
-                'listing.images',
-                'seller:id,name,created_at,avatar_path',
-                'buyer:id,name,created_at,avatar_path',
-                'latestMessage.sender:id,name,avatar_path',
-            ])
-            ->withCount([
-                'messages as unread_messages_count' => function ($query) use ($user) {
-                    $query->whereNull('read_at')
-                        ->where('sender_id', '!=', $user->id);
-                },
-            ])
-            ->where(function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('seller_id', $user->id)
-                        ->whereNull('seller_hidden_at');
-                })->orWhere(function ($q) use ($user) {
-                    $q->where('buyer_id', $user->id)
-                        ->whereNull('buyer_hidden_at');
-                });
-            })
-            ->latest('updated_at')
-            ->get();
 
         return view('user.messages.show', [
             'conversation' => $conversation,
-            'conversations' => $conversations,
+            'conversations' => $this->visibleConversationsQuery($user)->get(),
+        ]);
+    }
+
+    public function showListing(Request $request, Conversation $conversation): View
+    {
+        $user = $request->user();
+
+        abort_unless($conversation->hasParticipant($user), 404);
+        abort_if($conversation->isHiddenFor($user), 404);
+
+        $conversation->load([
+            'listing',
+            'listing.images',
+            'listing.category',
+            'listing.location',
+            'listing.user.location',
+            'listing.reservedTrade.buyer',
+            'listing.soldTrade.buyer',
+            'listing.latestActiveTrade.conversation',
+            'latestTrade',
+            'latestOpenTrade',
+        ]);
+
+        $listing = $conversation->listing;
+
+        abort_unless($listing, 404);
+
+        $listing->user->loadCount([
+            'listings as active_listings_count' => function ($query) {
+                $query->publicVisible();
+            },
+        ]);
+
+        $sellerListings = Listing::query()
+            ->with(['images', 'location', 'category'])
+            ->where('id', '!=', $listing->id)
+            ->where('user_id', $listing->user_id)
+            ->publicVisible()
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        $similarListings = Listing::query()
+            ->with(['images', 'location', 'category'])
+            ->where('id', '!=', $listing->id)
+            ->publicVisible()
+            ->when($listing->category_id, fn ($query) => $query->where('category_id', $listing->category_id))
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        return view('listings.show', [
+            'listing' => $listing,
+            'sellerListings' => $sellerListings,
+            'similarListings' => $similarListings,
+            'reservedTrade' => $listing->reservedTrade,
+            'soldTrade' => $listing->soldTrade,
         ]);
     }
 
@@ -125,13 +128,7 @@ class ConversationController extends Controller
             return back()->with('error', 'Selle kasutajaga ei saa enam sõnumeid vahetada.');
         }
 
-        $isExpired = $listing->status === 'published'
-            && $listing->expires_at
-            && $listing->expires_at->isPast();
-
-        $canOpenConversation = $listing->status === 'published' && ! $isExpired;
-
-        if (! $canOpenConversation) {
+        if (! $listing->isActivePublished()) {
             return back()->with('error', 'Selle kuulutuse kohta ei saa enam uut vestlust alustada.');
         }
 
@@ -150,10 +147,7 @@ class ConversationController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(
-            $conversation->hasParticipant($user),
-            404
-        );
+        abort_unless($conversation->hasParticipant($user), 404);
 
         if (! $conversation->isHiddenFor($user)) {
             $conversation->hideFor($user);
@@ -162,5 +156,35 @@ class ConversationController extends Controller
         return redirect()
             ->route('messages.index')
             ->with('success', 'Vestlus peideti sinu vaatest.');
+    }
+
+    private function visibleConversationsQuery(User $user): Builder
+    {
+        return Conversation::query()
+            ->with([
+                'listing',
+                'listing.images',
+                'seller:id,name,created_at,avatar_path',
+                'buyer:id,name,created_at,avatar_path',
+                'latestMessage.sender:id,name,avatar_path',
+                'latestTrade',
+                'latestOpenTrade',
+            ])
+            ->withCount([
+                'messages as unread_messages_count' => function ($query) use ($user) {
+                    $query->whereNull('read_at')
+                        ->where('sender_id', '!=', $user->id);
+                },
+            ])
+            ->where(function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('seller_id', $user->id)
+                        ->whereNull('seller_hidden_at');
+                })->orWhere(function ($q) use ($user) {
+                    $q->where('buyer_id', $user->id)
+                        ->whereNull('buyer_hidden_at');
+                });
+            })
+            ->latest('updated_at');
     }
 }

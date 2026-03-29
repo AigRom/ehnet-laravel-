@@ -2,16 +2,20 @@
     @php
         $joinedYear = optional($profileUser->created_at)?->format('Y');
 
-        $locationLabel =
-            $profileUser->location?->full_label_et
+        $locationLabel = $profileUser->location?->full_label_et
             ?? $profileUser->location?->name
             ?? __('Asukoht lisamata');
 
-        $roleLabel = $profileUser->company_name ? __('Ettevõte') : __('Eraisik');
+        $roleLabel = $profileUser->company_name
+            ? __('Ettevõte')
+            : __('Eraisik');
+
+        $isOwnProfile = auth()->check() && auth()->id() === $profileUser->id;
+        $showGuestNotice = !auth()->check();
+        $showMessageNotice = auth()->check() && !$isOwnProfile;
     @endphp
 
-    <div class="mx-auto max-w-7xl px-4 py-6 md:py-8 space-y-8">
-        {{-- Ülemine navirida --}}
+    <div class="mx-auto max-w-7xl space-y-8 px-4 py-6 md:py-8">
         <div class="flex items-center justify-between">
             <a
                 href="{{ url()->previous() }}"
@@ -22,15 +26,13 @@
 
             <a
                 href="{{ route('listings.index') }}"
-                class="text-sm text-zinc-600 hover:underline dark:text-zinc-300"
+                class="text-sm text-zinc-600 hover:underline"
             >
                 {{ __('Kõik kuulutused') }}
             </a>
         </div>
 
-        {{-- Profiili sisu --}}
         <div class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            {{-- Vasak veerg: profiilikaart --}}
             <aside class="space-y-4">
                 <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
                     <x-users.profile-card
@@ -75,15 +77,13 @@
                         </div>
                     </div>
 
-                    @auth
-                        @if(auth()->id() !== $profileUser->id)
-                            <div class="mt-4">
-                                <div class="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-                                    {{ __('Sõnumi saatmine müüjale toimub tema kuulutuse kaudu.') }}
-                                </div>
-                            </div>
-                        @endif
-                    @else
+                    @if($showMessageNotice)
+                        <div class="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                            {{ __('Sõnumi saatmine müüjale toimub tema kuulutuse kaudu.') }}
+                        </div>
+                    @endif
+
+                    @if($showGuestNotice)
                         <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-center">
                             <p class="mx-auto max-w-sm text-sm leading-6 text-zinc-600">
                                 {{ __('Logi sisse, et näha profiili detailsemalt ja saata sõnumeid.') }}
@@ -98,13 +98,11 @@
                                 </a>
                             </div>
                         </div>
-                    @endauth
+                    @endif
                 </div>
             </aside>
 
-            {{-- Parem veerg: kuulutused + tagasiside --}}
-            <div class="space-y-8 min-w-0">
-                {{-- Müüja aktiivsed kuulutused --}}
+            <div class="min-w-0 space-y-8">
                 <section>
                     <div class="mb-4">
                         <h2 class="text-xl font-semibold text-zinc-900">
@@ -133,7 +131,6 @@
                     @endif
                 </section>
 
-                {{-- Tagasiside placeholder --}}
                 <section>
                     <div class="mb-4">
                         <h2 class="text-xl font-semibold text-zinc-900">

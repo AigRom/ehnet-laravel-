@@ -2,15 +2,15 @@
 
 namespace App\Livewire\Listings;
 
-use Livewire\Component;
 use App\Models\Listing;
+use Livewire\Component;
 
 class FavoriteToggle extends Component
 {
     public Listing $listing;
     public bool $isFavorited = false;
 
-    public function mount(Listing $listing)
+    public function mount(Listing $listing): void
     {
         $this->listing = $listing;
 
@@ -22,7 +22,7 @@ class FavoriteToggle extends Component
         }
     }
 
-    public function toggle()
+    public function toggle(): void
     {
         if (!auth()->check()) {
             $this->dispatch('notify', message: 'Lemmikuks lisamiseks logi sisse.');
@@ -34,10 +34,11 @@ class FavoriteToggle extends Component
         if ($this->isFavorited) {
             $user->favorites()->detach($this->listing->id);
             $this->isFavorited = false;
-        } else {
-            $user->favorites()->attach($this->listing->id);
-            $this->isFavorited = true;
+            return;
         }
+
+        $user->favorites()->syncWithoutDetaching([$this->listing->id]);
+        $this->isFavorited = true;
     }
 
     public function render()

@@ -8,50 +8,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Rollide konstandid
-    |--------------------------------------------------------------------------
-    */
     public const ROLE_ADMIN = 'admin';
     public const ROLE_MODERATOR = 'moderator';
-    public const ROLE_CUSTOMER = 'customer';   // eraisik
-    public const ROLE_BUSINESS = 'business';   // ettevõte
+    public const ROLE_CUSTOMER = 'customer';
+    public const ROLE_BUSINESS = 'business';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Mass assignable väljad
-    |--------------------------------------------------------------------------
-    */
     protected $fillable = [
-        // süsteemne kuvatav nimi
         'name',
-
-        // eraisik
         'first_name',
         'last_name',
         'date_of_birth',
-
-        // kontakt ja asukoht
         'email',
         'phone',
         'location_id',
         'avatar_path',
-
-        // ettevõte
         'company_name',
         'company_reg_no',
         'contact_first_name',
         'contact_last_name',
-
-        // auth & süsteem
         'password',
         'email_verified_at',
         'role',
@@ -62,21 +42,11 @@ class User extends Authenticatable
         'last_login_at',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Peidetud väljad
-    |--------------------------------------------------------------------------
-    */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Castid
-    |--------------------------------------------------------------------------
-    */
     protected function casts(): array
     {
         return [
@@ -89,11 +59,6 @@ class User extends Authenticatable
         ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Seosed
-    |--------------------------------------------------------------------------
-    */
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
@@ -104,10 +69,16 @@ class User extends Authenticatable
         return $this->hasMany(Listing::class);
     }
 
+    public function soldListings(): HasMany
+    {
+        return $this->hasMany(Listing::class, 'sold_to_user_id');
+    }
+
     public function favorites(): BelongsToMany
     {
         return $this->belongsToMany(Listing::class, 'favorites')
-            ->withTimestamps();
+            ->withTimestamps()
+            ->withTrashed();
     }
 
     public function buyerConversations(): HasMany
@@ -120,32 +91,31 @@ class User extends Authenticatable
         return $this->hasMany(Conversation::class, 'seller_id');
     }
 
+    public function buyingTrades(): HasMany
+    {
+        return $this->hasMany(Trade::class, 'buyer_id');
+    }
+
+    public function sellingTrades(): HasMany
+    {
+        return $this->hasMany(Trade::class, 'seller_id');
+    }
+
     public function sentMessages(): HasMany
     {
         return $this->hasMany(Message::class, 'sender_id');
     }
 
-    /**
-     * Blokeerimised, mille see kasutaja on ise teinud.
-     */
     public function blocksInitiated(): HasMany
     {
         return $this->hasMany(UserBlock::class, 'blocker_id');
     }
 
-    /**
-     * Blokeerimised, kus see kasutaja on blokeeritud osapool.
-     */
     public function blocksReceived(): HasMany
     {
         return $this->hasMany(UserBlock::class, 'blocked_user_id');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Accessorid / abimeetodid
-    |--------------------------------------------------------------------------
-    */
     public function getAvatarUrlAttribute(): ?string
     {
         return $this->avatar_path
@@ -153,9 +123,6 @@ class User extends Authenticatable
             : null;
     }
 
-    /**
-     * Kasutaja initsiaalid (avatarid, menüüd jne).
-     */
     public function initials(): string
     {
         return Str::of($this->name ?? '')
@@ -166,11 +133,6 @@ class User extends Authenticatable
             ->implode('');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Rollide kontroll
-    |--------------------------------------------------------------------------
-    */
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
@@ -196,11 +158,6 @@ class User extends Authenticatable
         return (bool) $this->is_active;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Blokeeringute kontroll
-    |--------------------------------------------------------------------------
-    */
     public function hasBlocked(User $otherUser): bool
     {
         return $this->blocksInitiated()

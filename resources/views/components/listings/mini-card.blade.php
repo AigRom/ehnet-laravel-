@@ -6,35 +6,24 @@
 @php
     $coverImage = $listing?->coverImageUrl();
 
-    $isExpired = $listing
-        && $listing->status === 'published'
-        && $listing->expires_at
-        && $listing->expires_at->isPast();
-
-    $statusLabel = null;
-    $statusClasses = 'bg-zinc-100 text-zinc-700';
-
     if (!$listing) {
-        $statusLabel = __('Kuulutus puudub');
         $link = null;
+        $title = __('Kuulutus ei ole enam saadaval');
+        $price = __('Kuulutus puudub');
+        $statusText = __('Kuulutus puudub');
+        $expired = false;
+        $status = null;
     } else {
-        if ($listing->status === 'deleted') {
-            $statusLabel = __('Kustutatud');
-            $statusClasses = 'bg-red-100 text-red-700';
-        } elseif ($listing->status === 'sold') {
-            $statusLabel = __('Müüdud');
-            $statusClasses = 'bg-emerald-100 text-emerald-700';
-        } elseif ($listing->status === 'archived') {
-            $statusLabel = __('Müügist eemaldatud');
-            $statusClasses = 'bg-zinc-200 text-zinc-700';
-        } elseif ($isExpired) {
-            $statusLabel = __('Aegunud');
-            $statusClasses = 'bg-amber-100 text-amber-700';
-        }
+        $expired = $listing->isExpired();
+        $canOpenPublic = $listing->status === 'published' && !$expired;
 
-        $canOpen = $listing->status === 'published' && !$isExpired;
-
-        $link = $href ?? ($canOpen ? route('listings.show', $listing) : null);
+        $link = $href ?: ($canOpenPublic ? route('listings.show', $listing) : null);
+        $title = $listing->title;
+        $price = $listing->priceLabel();
+        $status = $listing->status;
+        $statusText = in_array($listing->status, ['deleted', 'sold', 'reserved', 'archived', 'published'], true) && $listing->statusLabel() !== 'Aktiivne'
+            ? $listing->statusLabel()
+            : null;
     }
 @endphp
 
@@ -48,6 +37,7 @@
         class="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-3 opacity-90"
     >
 @endif
+
     <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
         @if($coverImage)
             <img
@@ -64,27 +54,25 @@
 
     <div class="min-w-0 flex-1">
         <div class="truncate text-sm font-semibold text-zinc-900">
-            {{ $listing?->title ?? __('Kuulutus ei ole enam saadaval') }}
+            {{ $title }}
         </div>
 
         <div class="mt-1 text-sm text-zinc-500">
-            @if($listing && !is_null($listing->price))
-                {{ number_format((float) $listing->price, 2, ',', ' ') }} {{ $listing->currency ?? '€' }}
-            @elseif($listing)
-                {{ __('Kokkuleppel') }}
-            @else
-                {{ __('Kuulutus ei ole enam saadaval') }}
-            @endif
+            {{ $price }}
         </div>
 
-        @if($statusLabel)
+        @if($statusText)
             <div class="mt-2">
-                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClasses }}">
-                    {{ $statusLabel }}
-                </span>
+                <x-ui.status-badge
+                    :status="$status"
+                    :expired="$expired"
+                >
+                    {{ $statusText }}
+                </x-ui.status-badge>
             </div>
         @endif
     </div>
+
 @if($link)
     </a>
 @else

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Conversation extends Model
 {
     /**
-     * Mass assignment lubatud väljad
+     * Mass assignment lubatud väljad.
      */
     protected $fillable = [
         'listing_id',
@@ -22,7 +22,7 @@ class Conversation extends Model
     ];
 
     /**
-     * Castime hidden väljad Carbon kuupäevadeks
+     * Castime kuupäevaväljad Carbon kuupäevadeks.
      */
     protected $casts = [
         'seller_hidden_at' => 'datetime',
@@ -31,7 +31,7 @@ class Conversation extends Model
     ];
 
     /**
-     * Kuulutus, mille kohta vestlus käib
+     * Kuulutus, mille kohta vestlus käib.
      */
     public function listing(): BelongsTo
     {
@@ -39,7 +39,7 @@ class Conversation extends Model
     }
 
     /**
-     * Müüja (kuulutuse omanik)
+     * Müüja ehk kuulutuse omanik.
      */
     public function seller(): BelongsTo
     {
@@ -47,7 +47,7 @@ class Conversation extends Model
     }
 
     /**
-     * Ostja (vestluse algataja)
+     * Ostja ehk vestluse algataja.
      */
     public function buyer(): BelongsTo
     {
@@ -55,7 +55,7 @@ class Conversation extends Model
     }
 
     /**
-     * Kõik vestluse sõnumid (vanimast uuemani)
+     * Kõik vestluse sõnumid vanimast uuemani.
      */
     public function messages(): HasMany
     {
@@ -63,7 +63,7 @@ class Conversation extends Model
     }
 
     /**
-     * Viimane sõnum (kiiremaks kuvamiseks listis)
+     * Viimane sõnum vestluses.
      */
     public function latestMessage(): HasOne
     {
@@ -71,7 +71,64 @@ class Conversation extends Model
     }
 
     /**
-     * Kontrollib, kas kasutaja kuulub sellesse vestlusesse
+     * Kõik selle vestluse tehingukatsed.
+     */
+    public function trades(): HasMany
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    /**
+     * Viimane tehingukatse sõltumata staatusest.
+     */
+    public function latestTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)->latestOfMany();
+    }
+
+    /**
+     * Kõik aktiivsed tehingud selles vestluses.
+     *
+     * Aktiivseks loeme interest ja reserved staatusega tehingud.
+     */
+    public function openTrades(): HasMany
+    {
+        return $this->hasMany(Trade::class)
+            ->whereIn('status', ['interest', 'reserved']);
+    }
+
+    /**
+     * Viimane aktiivne tehing selles vestluses.
+     */
+    public function latestOpenTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)
+            ->whereIn('status', ['interest', 'reserved'])
+            ->latestOfMany();
+    }
+
+    /**
+     * Viimane reserveeritud tehing selles vestluses.
+     */
+    public function latestReservedTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)
+            ->where('status', 'reserved')
+            ->latestOfMany();
+    }
+
+    /**
+     * Viimane ostusoovi staatuses tehing selles vestluses.
+     */
+    public function latestInterestTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)
+            ->where('status', 'interest')
+            ->latestOfMany();
+    }
+
+    /**
+     * Kontrollib, kas kasutaja kuulub sellesse vestlusesse.
      */
     public function hasParticipant(User $user): bool
     {
@@ -79,7 +136,7 @@ class Conversation extends Model
     }
 
     /**
-     * Kas kasutaja on müüja
+     * Kas kasutaja on müüja.
      */
     public function isSeller(User $user): bool
     {
@@ -87,7 +144,7 @@ class Conversation extends Model
     }
 
     /**
-     * Kas kasutaja on ostja
+     * Kas kasutaja on ostja.
      */
     public function isBuyer(User $user): bool
     {
@@ -95,7 +152,7 @@ class Conversation extends Model
     }
 
     /**
-     * Kas vestlus on sellele kasutajale peidetud
+     * Kas vestlus on sellele kasutajale peidetud.
      */
     public function isHiddenFor(User $user): bool
     {
@@ -111,11 +168,7 @@ class Conversation extends Model
     }
 
     /**
-     * Peidab vestluse konkreetse kasutaja jaoks
-     *
-     * - täidab vastava hidden välja
-     * - kontrollib, kas mõlemad pooled on peitnud
-     * - uuendab fully_hidden_at
+     * Peidab vestluse konkreetse kasutaja jaoks.
      */
     public function hideFor(User $user): void
     {
@@ -130,10 +183,7 @@ class Conversation extends Model
     }
 
     /**
-     * Taastab vestluse nähtavuse konkreetse kasutaja jaoks
-     *
-     * - nullib vastava hidden välja
-     * - kui mõlemad pooled ei ole enam peitnud, nullib fully_hidden_at
+     * Taastab vestluse nähtavuse konkreetse kasutaja jaoks.
      */
     public function unhideFor(User $user): void
     {
@@ -148,10 +198,7 @@ class Conversation extends Model
     }
 
     /**
-     * Taastab vestluse nähtavuse mõlemale poolele
-     *
-     * Kasutatakse näiteks:
-     * - uue sõnumi saatmisel
+     * Taastab vestluse nähtavuse mõlemale poolele.
      */
     public function unhideForBoth(): void
     {
@@ -163,25 +210,22 @@ class Conversation extends Model
     }
 
     /**
-     * Sünkroniseerib fully_hidden_at välja
+     * Sünkroniseerib fully_hidden_at välja.
      *
-     * - kui mõlemad pooled on peitnud → määrab fully_hidden_at (kui pole juba määratud)
-     * - kui vähemalt üks pool on nähtav → nullib fully_hidden_at
+     * Kui mõlemad pooled on vestluse peitnud, märgime selle täielikult peidetuks.
      */
     public function syncFullyHiddenAt(): void
     {
         if ($this->seller_hidden_at && $this->buyer_hidden_at) {
-            // Määrame ainult siis, kui see pole juba olemas
             $this->fully_hidden_at ??= now();
             return;
         }
 
-        // Kui vähemalt üks pool on nähtav, ei ole vestlus enam "fully hidden"
         $this->fully_hidden_at = null;
     }
 
     /**
-     * Tagastab vestluse teise osapoole antud kasutaja suhtes
+     * Tagastab vestluse teise osapoole antud kasutaja suhtes.
      */
     public function otherParticipant(User $user): ?User
     {
@@ -197,7 +241,7 @@ class Conversation extends Model
     }
 
     /**
-     * Kas selle vestluse kahe osapoole vahel on sõnumiblokk
+     * Kas selle vestluse kahe osapoole vahel on sõnumiblokk.
      */
     public function hasMessagingBlock(User $user): bool
     {
@@ -208,5 +252,71 @@ class Conversation extends Model
         }
 
         return $user->hasMessagingBlockWith($otherUser);
+    }
+
+    /**
+     * Kas vestluses on aktiivne tehing.
+     *
+     * Aktiivseks loeme interest või reserved staatusega tehingu.
+     */
+    public function hasOpenTrade(): bool
+    {
+        return $this->openTrades()->exists();
+    }
+
+    /**
+     * Tagastab vestluse hetkel kõige olulisema tehingu.
+     *
+     * Eelistus:
+     * 1. viimane aktiivne tehing
+     * 2. viimane tehing üldse
+     */
+    public function currentTrade(): ?Trade
+    {
+        if ($this->relationLoaded('latestOpenTrade') && $this->latestOpenTrade) {
+            return $this->latestOpenTrade;
+        }
+
+        if ($this->relationLoaded('latestTrade') && $this->latestTrade) {
+            return $this->latestTrade;
+        }
+
+        return $this->latestOpenTrade()->first() ?? $this->latestTrade()->first();
+    }
+
+    /**
+     * Kas antud kasutaja võib selles vestluses uusi sõnumeid saata.
+     *
+     * Sõnumite saatmine on suletud, kui kuulutus puudub või on kustutatud.
+     */
+    public function canUserSendMessages(User $user): bool
+    {
+        if (!$this->hasParticipant($user)) {
+            return false;
+        }
+
+        return $this->listing && !$this->listing->isDeletedStatus();
+    }
+
+    /**
+     * Kas antud kasutajale võib näidata tehinguga seotud tegevusnuppe.
+     *
+     * Tehingutegevused peavad olema peidetud, kui:
+     * - kasutaja ei kuulu vestlusesse
+     * - kuulutus puudub
+     * - kuulutus on kustutatud
+     * - osapoolte vahel on sõnumiblokk
+     */
+    public function canUserSeeTradeActions(User $user): bool
+    {
+        if (!$this->hasParticipant($user)) {
+            return false;
+        }
+
+        if (!$this->listing || $this->listing->isDeletedStatus()) {
+            return false;
+        }
+
+        return !$this->hasMessagingBlock($user);
     }
 }

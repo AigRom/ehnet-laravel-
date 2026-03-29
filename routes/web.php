@@ -16,6 +16,7 @@ use App\Http\Controllers\Public\ListingController as PublicListingController;
 use App\Http\Controllers\User\ListingController as UserListingController;
 use App\Http\Controllers\Public\UserProfileController;
 use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\Trade\TradeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +118,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{listing}/open-conversation', [ConversationController::class, 'openFromListing'])
             ->whereNumber('listing')
             ->name('listings.conversation.open');
+        // Ostja avaldab ostusoovi otse kuulutuse lehelt
+        Route::post('/{listing}/buy-intent', [TradeController::class, 'expressInterestFromListing'])
+            ->whereNumber('listing')
+            ->name('listings.buy-intent');
     });
 
     /*
@@ -130,10 +135,37 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/messages/{conversation}', [ConversationController::class, 'show'])
         ->name('messages.show');
 
+    Route::get('/messages/{conversation}/listing', [ConversationController::class, 'showListing'])
+        ->name('messages.listing.show');
+
     Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
         ->name('messages.store');
 
-    // Peidab vestluse ainult kasutaja vaatest
+    /*
+    |--------------------------------------------------------------------------
+    | Tehingud (Trade)
+    |--------------------------------------------------------------------------
+    */
+    Route::patch('/messages/{conversation}/interest', [TradeController::class, 'expressInterest'])
+        ->name('messages.interest');
+
+    Route::patch('/messages/{conversation}/reserve', [TradeController::class, 'reserve'])
+        ->name('messages.reserve');
+
+    Route::patch('/messages/{conversation}/complete', [TradeController::class, 'complete'])
+        ->name('messages.complete');
+    
+    Route::patch('/messages/{conversation}/trades/confirm-received', [TradeController::class, 'confirmReceived'])
+        ->name('messages.trades.confirm');
+
+    Route::patch('/messages/{conversation}/trades/{trade}/cancel', [TradeController::class, 'cancel'])
+        ->name('messages.trades.cancel');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vestluse peitmine
+    |--------------------------------------------------------------------------
+    */
     Route::delete('/messages/{conversation}', [ConversationController::class, 'destroy'])
         ->name('messages.destroy');
 

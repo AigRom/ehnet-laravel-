@@ -8,12 +8,15 @@
 ])
 
 @php
-    $hasMeta = $joinedYear || $locationLabel;
+    $hasMeta = filled($joinedYear) || filled($locationLabel);
+    $hasRating = !is_null($score) || !is_null($reviewsCount);
 @endphp
 
-<div {{ $attributes->merge([
-    'class' => 'rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition'
-]) }}>
+<div
+    {{ $attributes->merge([
+        'class' => 'rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition',
+    ]) }}
+>
     <div class="flex items-start gap-4">
         <x-ui.avatar :user="$user" size="h-14 w-14" />
 
@@ -46,7 +49,7 @@
                 </div>
             @endif
 
-            @if(!is_null($score) || !is_null($reviewsCount))
+            @if($hasRating)
                 <div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     @if(!is_null($score))
                         <span class="font-semibold text-zinc-900">
