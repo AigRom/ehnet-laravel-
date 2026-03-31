@@ -42,8 +42,8 @@ class ConversationController extends Controller
         $conversation->load([
             'listing',
             'listing.images',
-            'seller:id,name,created_at,avatar_path',
-            'buyer:id,name,created_at,avatar_path',
+            'seller:id,name,company_name,company_reg_no,contact_first_name,contact_last_name,first_name,last_name,email,phone,created_at,avatar_path',
+            'buyer:id,name,company_name,company_reg_no,contact_first_name,contact_last_name,first_name,last_name,email,phone,created_at,avatar_path',
             'messages.sender:id,name,avatar_path',
             'messages.attachments',
             'trades',
@@ -164,8 +164,8 @@ class ConversationController extends Controller
             ->with([
                 'listing',
                 'listing.images',
-                'seller:id,name,created_at,avatar_path',
-                'buyer:id,name,created_at,avatar_path',
+                'seller:id,name,company_name,company_reg_no,contact_first_name,contact_last_name,first_name,last_name,email,phone,created_at,avatar_path',
+                'buyer:id,name,company_name,company_reg_no,contact_first_name,contact_last_name,first_name,last_name,email,phone,created_at,avatar_path',
                 'latestMessage.sender:id,name,avatar_path',
                 'latestTrade',
                 'latestOpenTrade',

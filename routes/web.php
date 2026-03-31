@@ -17,6 +17,7 @@ use App\Http\Controllers\User\ListingController as UserListingController;
 use App\Http\Controllers\Public\UserProfileController;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\Trade\TradeController;
+use App\Http\Controllers\Trade\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,26 +50,32 @@ Route::view('/privacy', 'legal.privacy')->name('privacy');
 
 /*
 |--------------------------------------------------------------------------
+| EHNET: kaheastmeline registreerimine (email → vorm)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('/register', function () {
+        return view('livewire.auth.register');
+    })->name('register');
+
+    Route::post('/register', [EmailRegistrationController::class, 'store'])
+        ->name('register.store');
+
+    Route::get('/register/complete/{token}', [EmailRegistrationController::class, 'showCompleteForm'])
+        ->name('register.complete');
+
+    Route::post('/register/complete/{token}', [EmailRegistrationController::class, 'complete'])
+        ->name('register.complete.post');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Kasutaja dashboard (vajab autentimist)
 |--------------------------------------------------------------------------
 */
 Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth'])
     ->name('dashboard');
-
-/*
-|--------------------------------------------------------------------------
-| EHNET: kaheastmeline registreerimine (email → vorm)
-|--------------------------------------------------------------------------
-*/
-Route::post('/register', [EmailRegistrationController::class, 'store'])
-    ->name('register.store');
-
-Route::get('/register/complete/{token}', [EmailRegistrationController::class, 'showCompleteForm'])
-    ->name('register.complete');
-
-Route::post('/register/complete/{token}', [EmailRegistrationController::class, 'complete'])
-    ->name('register.complete.post');
 
 /*
 |--------------------------------------------------------------------------
@@ -90,7 +97,6 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/settings/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
 
-
     Route::get('/settings/delete-account', [ProfileController::class, 'delete'])
         ->name('profile.delete');
 
@@ -102,8 +108,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::put('/settings/password', [PasswordController::class, 'update'])
         ->name('user-password.update');
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -118,6 +122,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{listing}/open-conversation', [ConversationController::class, 'openFromListing'])
             ->whereNumber('listing')
             ->name('listings.conversation.open');
+
         // Ostja avaldab ostusoovi otse kuulutuse lehelt
         Route::post('/{listing}/buy-intent', [TradeController::class, 'expressInterestFromListing'])
             ->whereNumber('listing')
@@ -154,12 +159,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/messages/{conversation}/complete', [TradeController::class, 'complete'])
         ->name('messages.complete');
-    
+
     Route::patch('/messages/{conversation}/trades/confirm-received', [TradeController::class, 'confirmReceived'])
         ->name('messages.trades.confirm');
 
     Route::patch('/messages/{conversation}/trades/{trade}/cancel', [TradeController::class, 'cancel'])
         ->name('messages.trades.cancel');
+
+    Route::post('/messages/{conversation}/trades/{trade}/reviews', [ReviewController::class, 'store'])
+        ->name('messages.trades.reviews.store');
 
     /*
     |--------------------------------------------------------------------------

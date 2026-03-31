@@ -9,7 +9,7 @@
             name="search"
             value="{{ request('search') }}"
             placeholder="Otsi materjale..."
-            class="w-full rounded-lg border border-neutral-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            class="w-full rounded-lg border border-neutral-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
         <button
             type="submit"

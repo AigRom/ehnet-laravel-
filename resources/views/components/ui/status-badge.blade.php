@@ -21,6 +21,7 @@
         'completed' => 'border-emerald-200 bg-emerald-100 text-emerald-700',
         'cancelled' => 'border-zinc-200 bg-zinc-100 text-zinc-700',
         'received' => 'border-blue-200 bg-blue-100 text-blue-700',
+        'reviewed' => 'border-amber-200 bg-violet-100 text-amber-800',
 
         default => $expired
             ? 'border-orange-200 bg-orange-100 text-orange-800'

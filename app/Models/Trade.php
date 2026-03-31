@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Trade extends Model
 {
@@ -218,6 +219,61 @@ class Trade extends Model
     public function isAwaitingBuyerConfirmation(): bool
     {
         return $this->isCompleted() && !$this->isBuyerConfirmed();
+    }
+
+    /**
+     * Tehinguga seotud tagasisided.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Kas antud kasutaja on selle tehingu osapool.
+     */
+    public function involvesUser(User $user): bool
+    {
+        return in_array($user->id, [$this->buyer_id, $this->seller_id], true);
+    }
+
+    /**
+     * Kas sellele tehingule saab antud kasutaja tagasisidet jätta.
+     *
+     * Mõlemad osapooled saavad hinnata alles siis,
+     * kui tehing on completed ja ostja on kauba kättesaamise kinnitanud.
+     */
+    public function canBeReviewedBy(User $user): bool
+    {
+        return $this->isCompleted()
+            && $this->isBuyerConfirmed()
+            && $this->involvesUser($user);
+    }
+
+    /**
+     * Kellele antud kasutaja selle tehingu puhul hinnangu annab.
+     */
+    public function reviewTargetFor(User $user): ?User
+    {
+        if ($user->id === $this->buyer_id) {
+            return $this->seller;
+        }
+
+        if ($user->id === $this->seller_id) {
+            return $this->buyer;
+        }
+
+        return null;
+    }
+
+    /**
+     * Kas antud kasutaja on sellele tehingule juba tagasiside jätnud.
+     */
+    public function hasReviewFrom(User $user): bool
+    {
+        return $this->reviews()
+            ->where('reviewer_id', $user->id)
+            ->exists();
     }
 
 }

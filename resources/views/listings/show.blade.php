@@ -10,8 +10,7 @@
         $isPubliclyAvailable = $listing->status === 'published' && ! $isExpired;
     @endphp
 
-    <div class="mx-auto max-w-7xl px-4 py-6 md:py-8 space-y-6">
-
+    <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
         <div class="flex items-center justify-between">
             <a
                 href="{{ url()->previous() }}"
@@ -72,7 +71,6 @@
                 :seller="$listing->user"
                 :listing="$listing"
                 :is-own-listing="auth()->check() && auth()->id() === $listing->user_id"
-                :is-authenticated="auth()->check()"
                 :message-action="
                     $isPubliclyAvailable && auth()->check() && auth()->id() !== $listing->user_id
                         ? route('listings.conversation.open', $listing)
@@ -96,6 +94,9 @@
                 <div class="mb-4">
                     <h2 class="text-xl font-semibold text-zinc-900">
                         {{ __('Müüja teised kuulutused') }}
+                        <span class="text-zinc-500">
+                            ({{ $sellerListings->count() }})
+                        </span>
                     </h2>
 
                     <p class="mt-1 text-sm text-zinc-500">
@@ -130,6 +131,5 @@
                 </div>
             </section>
         @endif
-
     </div>
 </x-layouts.app.public>

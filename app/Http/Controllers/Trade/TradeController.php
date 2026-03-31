@@ -46,7 +46,7 @@ class TradeController extends Controller
         }
 
         DB::transaction(function () use ($conversation, $listing, $user) {
-            Trade::create([
+            $trade = Trade::create([
                 'conversation_id' => $conversation->id,
                 'listing_id' => $listing->id,
                 'seller_id' => $conversation->seller_id,
@@ -54,10 +54,15 @@ class TradeController extends Controller
                 'status' => 'interest',
             ]);
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Soovin selle kuulutuse osta.'
+                ($conversation->buyer?->name ?? 'Kasutaja') . ' saatis sellele kuulutusele ostusoovi.',
+                [
+                    'event' => 'trade_interest_created',
+                    'trade_id' => $trade->id,
+                    'listing_id' => $listing->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -91,7 +96,7 @@ class TradeController extends Controller
         }
 
         DB::transaction(function () use ($conversation, $listing, $user) {
-            Trade::create([
+            $trade = Trade::create([
                 'conversation_id' => $conversation->id,
                 'listing_id' => $listing->id,
                 'seller_id' => $conversation->seller_id,
@@ -99,10 +104,15 @@ class TradeController extends Controller
                 'status' => 'interest',
             ]);
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Soovin selle kuulutuse osta.'
+                ($conversation->buyer?->name ?? 'Kasutaja') . ' saatis sellele kuulutusele ostusoovi.',
+                [
+                    'event' => 'trade_interest_created',
+                    'trade_id' => $trade->id,
+                    'listing_id' => $listing->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -154,10 +164,15 @@ class TradeController extends Controller
                 'status' => 'reserved',
             ]);
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Broneerisin kuulutuse sulle. Kontaktandmed on nüüd nähtavad mõlemale poolele.'
+                ($conversation->seller?->name ?? 'Kasutaja') . ' broneeris kuulutuse sellele ostjale. Kontaktandmed on nüüd nähtavad mõlemale poolele.',
+                [
+                    'event' => 'trade_reserved',
+                    'trade_id' => $trade->id,
+                    'listing_id' => $listing->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -209,10 +224,15 @@ class TradeController extends Controller
                 'sold_trade_id' => $trade->id,
             ]);
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Märkisin tehingu lõpetatuks. Kuulutus on nüüd müüdud. Ostja saab kinnitada kauba kättesaamise.'
+                ($conversation->seller?->name ?? 'Kasutaja') . ' märkis tehingu lõpetatuks. Kuulutus on nüüd müüdud. Ostja saab kinnitada kauba kättesaamise.',
+                [
+                    'event' => 'trade_completed',
+                    'trade_id' => $trade->id,
+                    'listing_id' => $listing->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -247,10 +267,14 @@ class TradeController extends Controller
                 'buyer_confirmed_received_at' => now(),
             ]);
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Kinnitasin, et kaup on kätte saadud.'
+                ($conversation->buyer?->name ?? 'Kasutaja') . ' kinnitas, et kaup on kätte saadud.',
+                [
+                    'event' => 'trade_received_confirmed',
+                    'trade_id' => $trade->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -289,10 +313,15 @@ class TradeController extends Controller
                 ]);
             }
 
-            $this->createSystemLikeMessage(
+            $this->createSystemMessage(
                 $conversation->id,
-                $user->id,
-                'Tehingukatse katkestati.'
+                'Tehingukatse katkestati.',
+                [
+                    'event' => 'trade_cancelled',
+                    'trade_id' => $trade->id,
+                    'listing_id' => $listing?->id,
+                    'actor_user_id' => $user->id,
+                ]
             );
 
             $conversation->unhideForBoth();
@@ -302,12 +331,14 @@ class TradeController extends Controller
         return back()->with('success', 'Tehingukatse katkestati.');
     }
 
-    private function createSystemLikeMessage(int $conversationId, int $senderId, string $body): void
+    private function createSystemMessage(int $conversationId, string $body, array $meta = []): void
     {
         Message::create([
             'conversation_id' => $conversationId,
-            'sender_id' => $senderId,
+            'sender_id' => null,
+            'type' => Message::TYPE_SYSTEM,
             'body' => $body,
+            'meta' => $meta ?: null,
         ]);
     }
 }

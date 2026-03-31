@@ -1,8 +1,6 @@
 @props([
     'user',
     'roleLabel' => null,
-    'score' => null,
-    'reviewsCount' => null,
     'hideConversationAction' => null,
     'blockUserAction' => null,
     'unblockUserAction' => null,
@@ -10,6 +8,7 @@
     'hasMessagingBlock' => false,
     'reportUserAction' => null,
     'conversationId' => null,
+    'locationLabel' => null,
 ])
 
 @php
@@ -29,6 +28,12 @@
         $errors->has('conversation_id') ||
         $errors->has('reason') ||
         $errors->has('details');
+
+    $hasMeta = filled($joinedYear) || filled($locationLabel);
+
+    $reviewsCountValue = $user->reviewsCount();
+    $scoreValue = $user->averageRating();
+    $hasReviews = $user->hasReviews();
 @endphp
 
 <div
@@ -48,24 +53,24 @@
     "
     class="relative"
 >
-    <div class="relative rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <div class="absolute right-4 top-4 z-10" @click.outside="openMenu = false">
+    <div class="relative rounded-xl bg-white px-2.5 py-2 sm:px-3 sm:py-3">
+        <div class="absolute right-2 top-2 z-10" @click.outside="openMenu = false">
             <button
                 type="button"
                 @click="openMenu = !openMenu"
                 :aria-expanded="openMenu.toString()"
                 aria-haspopup="true"
-                class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500/30"
                 title="{{ __('Vestluse valikud') }}"
             >
-                <x-icons.dots-vertical class="h-5 w-5" />
+                <x-icons.dots-vertical class="h-4 w-4" />
             </button>
 
             <div
                 x-cloak
                 x-show="openMenu"
                 x-transition.origin.top.right
-                class="absolute right-0 top-12 z-30 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-lg"
+                class="absolute right-0 top-10 z-30 w-56 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-lg"
             >
                 <div class="py-1">
                     <a
@@ -150,24 +155,71 @@
             </div>
         </div>
 
-        <x-users.profile-card
-            :user="$user"
-            :role-label="$roleLabel"
-            :score="$score"
-            :reviews-count="$reviewsCount"
-            :joined-year="$joinedYear"
-            class="border-0 bg-transparent p-0 pr-14 shadow-none"
-        >
-            @if($isBlockedByMe)
-                <div class="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
-                    {{ __('Oled selle kasutaja blokeerinud') }}
+        <div class="flex items-start gap-3 pr-9">
+            <x-ui.avatar :user="$user" size="h-12 w-12 sm:h-14 sm:w-14" />
+
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <h3 class="text-sm font-semibold text-zinc-900 sm:text-base">
+                        {{ $user->name ?? __('Kasutaja') }}
+                    </h3>
+
+                    @if($roleLabel)
+                        <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 sm:text-xs">
+                            {{ $roleLabel }}
+                        </span>
+                    @endif
                 </div>
-            @elseif($hasMessagingBlock)
-                <div class="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
-                    {{ __('Selle kasutajaga ei saa praegu uusi sõnumeid vahetada') }}
+
+                @if($hasMeta)
+                    <div class="mt-1 space-y-0.5 text-xs text-zinc-500 sm:text-sm">
+                        @if($joinedYear)
+                            <div>
+                                {{ __('Kasutaja alates :year', ['year' => $joinedYear]) }}
+                            </div>
+                        @endif
+
+                        @if($locationLabel)
+                            <div>
+                                {{ $locationLabel }}
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
+                    @if($hasReviews)
+                        <span class="font-semibold text-zinc-900">
+                            ⭐ {{ number_format($scoreValue, 1, ',', ' ') }}
+                        </span>
+
+                        <span class="text-zinc-500">
+                            {{ trans_choice(':count hinnang|:count hinnangut', $reviewsCountValue, ['count' => $reviewsCountValue]) }}
+                        </span>
+                    @else
+                        <span class="text-zinc-500">
+                            {{ __('Tagasiside puudub') }}
+                        </span>
+                    @endif
                 </div>
-            @endif
-        </x-users.profile-card>
+
+                @if($isBlockedByMe || $hasMessagingBlock)
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        @if($isBlockedByMe)
+                            <div class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                                {{ __('Oled selle kasutaja blokeerinud') }}
+                            </div>
+                        @endif
+
+                        @if($hasMessagingBlock)
+                            <div class="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700">
+                                {{ __('Selle kasutajaga ei saa praegu uusi sõnumeid vahetada') }}
+                            </div>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 
     @if($hideConversationAction)

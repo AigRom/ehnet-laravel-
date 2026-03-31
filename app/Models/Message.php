@@ -5,16 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Review;
 
 class Message extends Model
 {
+    /**
+     * Message tüübid.
+     */
+    public const TYPE_USER = 'user';
+    public const TYPE_SYSTEM = 'system';
+
     /**
      * Mass assignment jaoks lubatud väljad.
      */
     protected $fillable = [
         'conversation_id',
         'sender_id',
+        'type',        // ⬅️ LISATUD
         'body',
+        'meta',        // ⬅️ LISATUD
         'read_at',
     ];
 
@@ -23,6 +32,7 @@ class Message extends Model
      */
     protected $casts = [
         'read_at' => 'datetime',
+        'meta' => 'array', // ⬅️ LISATUD
     ];
 
     /**
@@ -35,6 +45,8 @@ class Message extends Model
 
     /**
      * Sõnumi saatja.
+     *
+     * NB: süsteemisõnumil võib olla null.
      */
     public function sender(): BelongsTo
     {
@@ -66,10 +78,23 @@ class Message extends Model
     }
 
     /**
+     * Kas tegemist on süsteemisõnumiga.
+     */
+    public function isSystem(): bool
+    {
+        return $this->type === self::TYPE_SYSTEM;
+    }
+
+    /**
+     * Kas tegemist on kasutaja sõnumiga.
+     */
+    public function isUserMessage(): bool
+    {
+        return $this->type === self::TYPE_USER;
+    }
+
+    /**
      * Kas sõnumil on manuseid.
-     *
-     * Kui attachments seos on juba eager loaditud, kasutame seda.
-     * Vastasel juhul teeme exists() päringu.
      */
     public function hasAttachments(): bool
     {
@@ -82,8 +107,6 @@ class Message extends Model
 
     /**
      * Tagastab ainult pildimanused.
-     *
-     * Eeldab, et attachments seos on eager loaditud või laetud.
      */
     public function imageAttachments()
     {
@@ -92,11 +115,29 @@ class Message extends Model
 
     /**
      * Tagastab kõik mitte-pildi manused.
-     *
-     * Eeldab, et attachments seos on eager loaditud või laetud.
      */
     public function fileAttachments()
     {
         return $this->attachments->where('type', '!=', 'image');
     }
+
+    /**
+ * Tagastab süsteemisõnumiga seotud review, kui see on olemas.
+ */
+    public function relatedReview(): ?Review
+    {
+        static $cache = [];
+
+        $reviewId = data_get($this->meta, 'review_id');
+
+        if (! $reviewId) {
+            return null;
+        }
+
+        if (! array_key_exists($reviewId, $cache)) {
+            $cache[$reviewId] = Review::with(['reviewer', 'reviewedUser', 'trade.listing'])->find($reviewId);
+        }
+
+        return $cache[$reviewId];
+}
 }

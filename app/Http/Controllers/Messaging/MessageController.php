@@ -66,6 +66,7 @@ class MessageController extends Controller
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $user->id,
+                'type' => Message::TYPE_USER,
                 'body' => $body !== '' ? $body : null,
             ]);
 
