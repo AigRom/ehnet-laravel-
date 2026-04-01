@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use App\Services\Listing\ListingImageService;
 
 class ListingController extends Controller
 {
@@ -36,7 +37,7 @@ class ListingController extends Controller
         return view('user.listings.create', compact('categories', 'locations'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ListingImageService $listingImageService)
     {
         $action = (string) $request->input('action', 'publish');
         $isDraft = $action === 'draft';
@@ -55,7 +56,7 @@ class ListingController extends Controller
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
             'images' => ['nullable', 'array', 'max:10'],
-            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
             'images_order' => ['nullable', 'string'],
         ];
 
@@ -71,7 +72,7 @@ class ListingController extends Controller
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
             'images' => ['nullable', 'array', 'max:10'],
-            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
             'images_order' => ['nullable', 'string'],
         ];
 
@@ -95,7 +96,7 @@ class ListingController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $validated, $isDraft) {
+        DB::transaction(function () use ($request, $validated, $isDraft, $listingImageService) {
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
             $listing = Listing::create([
@@ -133,13 +134,12 @@ class ListingController extends Controller
                         continue;
                     }
 
-                    $path = $files[$fileIndex]->store('listings', 'public');
-
-                    ListingImage::create([
-                        'listing_id' => $listing->id,
-                        'path' => $path,
-                        'sort_order' => $sort++,
-                    ]);
+                    $listingImageService->store(
+                        file: $files[$fileIndex],
+                        listingId: $listing->id,
+                        sortOrder: $sort++
+                    );
+                    
                 }
             }
         });
@@ -293,7 +293,7 @@ class ListingController extends Controller
         return view('user.listings.edit', compact('listing', 'categories'));
     }
 
-    public function updateMine(Request $request, Listing $listing)
+    public function updateMine(Request $request, Listing $listing, ListingImageService $listingImageService)
     {
         abort_unless($listing->user_id === $request->user()->id, 403);
 
@@ -318,12 +318,12 @@ class ListingController extends Controller
             'delivery_options' => ['nullable', 'array', 'max:4'],
             'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
             'new_images' => ['nullable', 'array', 'max:10'],
-            'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
             'deleted_image_ids' => ['nullable', 'string'],
             'images_order' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($request, $listing, $validated) {
+        DB::transaction(function () use ($request, $listing, $validated, $listingImageService) {
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
             $listing->update([
@@ -345,9 +345,16 @@ class ListingController extends Controller
                 $toDelete = $listing->images()->whereIn('id', $deletedIds)->get();
 
                 foreach ($toDelete as $img) {
+                    $disk = $img->disk ?: 'public';
+
                     if ($img->path) {
-                        Storage::disk('public')->delete($img->path);
+                        Storage::disk($disk)->delete($img->path);
                     }
+
+                    if ($img->thumb_path) {
+                        Storage::disk($disk)->delete($img->thumb_path);
+                    }
+
                     $img->delete();
                 }
             }
@@ -357,13 +364,11 @@ class ListingController extends Controller
 
             if (!empty($files)) {
                 foreach ($files as $file) {
-                    $path = $file->store('listings', 'public');
-
-                    $createdNew[] = ListingImage::create([
-                        'listing_id' => $listing->id,
-                        'path' => $path,
-                        'sort_order' => 9999,
-                    ]);
+                    $createdNew[] = $listingImageService->store(
+                        file: $file,
+                        listingId: $listing->id,
+                        sortOrder: 9999
+                    );
                 }
             }
 
@@ -383,17 +388,21 @@ class ListingController extends Controller
 
                     if (str_starts_with($token, 'e:')) {
                         $id = (int) substr($token, 2);
+
                         if ($id && $existingMap->has($id)) {
                             $existingMap[$id]->update(['sort_order' => $sort++]);
                         }
+
                         continue;
                     }
 
                     if (str_starts_with($token, 'n:')) {
                         $idx = (int) substr($token, 2);
+
                         if (isset($createdNew[$idx])) {
                             $createdNew[$idx]->update(['sort_order' => $sort++]);
                         }
+
                         continue;
                     }
                 }
@@ -421,6 +430,7 @@ class ListingController extends Controller
                 }
             } else {
                 $maxSort = (int) ($listing->images()->max('sort_order') ?? 0);
+
                 foreach ($createdNew as $img) {
                     $img->update(['sort_order' => ++$maxSort]);
                 }
