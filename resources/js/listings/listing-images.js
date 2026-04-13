@@ -1,325 +1,205 @@
-/**
- * listings-images.js (create)
- * - töötab nii DOMContentLoaded kui Livewire wire:navigate (livewire:navigated)
- * - väldib topelt-init'i (input dataset)
- * - väldib topelt evente (modal + document keydown bind once)
- */
+document.addEventListener('alpine:init', () => {
+    Alpine.data('listingImagesCreate', () => ({
+        maxImages: 10,
+        items: [],
+        modalOpen: false,
+        activeModalIndex: null,
 
-function initListingImages() {
-  const input = document.getElementById('images');
-  if (!input) return;
+        get imagesOrderJson() {
+            return JSON.stringify(this.items.map((_, index) => index));
+        },
 
-  // ✅ ära init'i mitu korda sama elemendi peal (wire:navigate puhul)
-  if (input.dataset.imagesInit === '1') return;
-  input.dataset.imagesInit = '1';
+        init() {
+            // create lehel algseid pilte ei ole
+        },
 
-  const preview = document.getElementById('imagePreview');
-  const orderField = document.getElementById('images_order');
-  if (!preview || !orderField) return;
+        handleFiles(event) {
+            const selected = Array.from(event.target.files || []);
+            if (!selected.length) return;
 
-  const MAX_IMAGES = 10;
+            const freeSlots = this.maxImages - this.items.length;
 
-  // Modal elemendid (võivad olla null, kui markup puudub)
-  const modal = document.getElementById('imageModal');
-  const modalImg = document.getElementById('imageModalImg');
-  const modalClose = document.getElementById('imageModalClose');
-  const modalPrev = document.getElementById('imageModalPrev');
-  const modalNext = document.getElementById('imageModalNext');
-  const modalCounter = document.getElementById('imageModalCounter');
+            if (freeSlots <= 0) {
+                alert(`Maksimaalselt ${this.maxImages} pilti.`);
+                this.rebuildInputFiles();
+                return;
+            }
 
-  // items: { file: File }
-  let items = [];
-  let activeModalIndex = null;
+            let added = 0;
 
-  function rebuildInputFilesFromItems() {
-    const dt = new DataTransfer();
-    items.forEach((it) => dt.items.add(it.file));
-    input.files = dt.files;
-  }
+            for (const file of selected) {
+                if (this.items.length >= this.maxImages) break;
+                if (this.isDuplicate(file)) continue;
 
-  function syncOrderField() {
-    orderField.value = JSON.stringify(items.map((_, i) => i));
-  }
+                this.items.push({
+                    uid: this.makeUid(file),
+                    file,
+                    preview: URL.createObjectURL(file),
+                });
 
-  function isDuplicate(file) {
-    return items.some(
-      (it) =>
-        it.file.name === file.name &&
-        it.file.size === file.size &&
-        it.file.lastModified === file.lastModified
-    );
-  }
+                added++;
+            }
 
-  function isModalOpen() {
-    return !!(modal && modal.classList.contains('flex') && !modal.classList.contains('hidden'));
-  }
+            if (added < selected.length) {
+                alert(`Lisati ${added} pilti. Maksimaalne lubatud on ${this.maxImages}. Ülejäänud jäeti välja.`);
+            }
 
-  function showModalIndex(index) {
-    if (!modal || !modalImg) return;
-    if (!items.length) return;
+            this.rebuildInputFiles();
+        },
 
-    if (index < 0) index = items.length - 1;
-    if (index >= items.length) index = 0;
+        makeUid(file) {
+            const random =
+                typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    activeModalIndex = index;
-    const item = items[activeModalIndex];
+            return `${file.name}-${file.size}-${file.lastModified}-${random}`;
+        },
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      modalImg.src = ev.target.result;
-      modalImg.alt = item.file.name;
+        isDuplicate(file) {
+            return this.items.some((item) =>
+                item.file &&
+                item.file.name === file.name &&
+                item.file.size === file.size &&
+                item.file.lastModified === file.lastModified
+            );
+        },
 
-      if (modalCounter) modalCounter.textContent = `${activeModalIndex + 1} / ${items.length}`;
-    };
-    reader.readAsDataURL(item.file);
-  }
+        rebuildInputFiles() {
+            if (!this.$refs.input) return;
 
-  function openModalFromItem(index) {
-    if (!modal || !modalImg) return;
-    if (!items[index]) return;
+            const dt = new DataTransfer();
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+            this.items.forEach((item) => {
+                if (item.file) {
+                    dt.items.add(item.file);
+                }
+            });
 
-    showModalIndex(index);
-  }
+            this.$refs.input.files = dt.files;
+        },
 
-  function closeModal() {
-    if (!modal || !modalImg) return;
+        swap(indexA, indexB) {
+            if (
+                indexA < 0 ||
+                indexB < 0 ||
+                indexA >= this.items.length ||
+                indexB >= this.items.length
+            ) {
+                return;
+            }
 
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+            const temp = this.items[indexA];
+            this.items[indexA] = this.items[indexB];
+            this.items[indexB] = temp;
 
-    modalImg.src = '';
-    activeModalIndex = null;
+            this.items = [...this.items];
+            this.rebuildInputFiles();
+        },
 
-    if (modalCounter) modalCounter.textContent = '';
-  }
+        moveUp(index) {
+            if (index <= 0) return;
 
-  // BIND MODAL EVENTS ONLY ONCE
-  if (modal && modal.dataset.bound !== '1') {
-    modal.dataset.bound = '1';
+            this.swap(index, index - 1);
 
-    modalClose?.addEventListener('click', (e) => {
-      e.preventDefault();
-      closeModal();
-    });
+            if (this.modalOpen && this.activeModalIndex === index) {
+                this.activeModalIndex = index - 1;
+            } else if (this.modalOpen && this.activeModalIndex === index - 1) {
+                this.activeModalIndex = index;
+            }
+        },
 
-    modalPrev?.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex - 1);
-    });
+        moveDown(index) {
+            if (index >= this.items.length - 1) return;
 
-    modalNext?.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex + 1);
-    });
+            this.swap(index, index + 1);
 
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-  }
+            if (this.modalOpen && this.activeModalIndex === index) {
+                this.activeModalIndex = index + 1;
+            } else if (this.modalOpen && this.activeModalIndex === index + 1) {
+                this.activeModalIndex = index;
+            }
+        },
 
-  // DOCUMENT KEYDOWN: bind only once
-  if (!document.body.dataset.imagesKeydownInit) {
-    document.body.dataset.imagesKeydownInit = '1';
+        remove(index) {
+            if (index < 0 || index >= this.items.length) return;
 
-    document.addEventListener('keydown', (e) => {
-      const api = window.__EHNET_CREATE_IMAGES_API;
-      if (!api) return;
+            const removed = this.items[index];
 
-      if (e.key === 'Escape') {
-        api.closeModal();
-        return;
-      }
+            if (removed?.preview) {
+                URL.revokeObjectURL(removed.preview);
+            }
 
-      if (!api.isModalOpen()) return;
+            this.items.splice(index, 1);
+            this.items = [...this.items];
+            this.rebuildInputFiles();
 
-      if (e.key === 'ArrowLeft') api.prev();
-      if (e.key === 'ArrowRight') api.next();
-    });
-  }
+            if (!this.items.length) {
+                this.closeModal();
+                return;
+            }
 
-  // expose API
-  window.__EHNET_CREATE_IMAGES_API = {
-    isModalOpen,
-    closeModal,
-    prev: () => {
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex - 1);
-    },
-    next: () => {
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex + 1);
-    },
-  };
+            if (this.modalOpen) {
+                if (this.activeModalIndex === index) {
+                    this.activeModalIndex = Math.min(index, this.items.length - 1);
+                } else if (index < this.activeModalIndex) {
+                    this.activeModalIndex--;
+                }
+            }
+        },
 
-  function addPlusTile() {
-    if (items.length >= MAX_IMAGES) return;
+        openModal(index) {
+            if (!this.items[index]) return;
 
-    const addTile = document.createElement('button');
-    addTile.type = 'button';
-    addTile.className =
-      'flex aspect-square items-center justify-center rounded-xl border-2 border-dashed ' +
-      'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 ' +
-      'hover:text-zinc-700 dark:hover:text-zinc-200';
+            this.activeModalIndex = index;
+            this.modalOpen = true;
+        },
 
-    addTile.innerHTML = `
-      <div class="flex flex-col items-center gap-1">
-        <div class="text-3xl leading-none">+</div>
-        <div class="text-xs">Lisa</div>
-      </div>
-    `;
+        closeModal() {
+            this.modalOpen = false;
+            this.activeModalIndex = null;
+        },
 
-    addTile.addEventListener('click', () => {
-      input.value = null; // ✅ lubab valida sama faili uuesti
-      input.click();
-    });
+        prevModal() {
+            if (!this.items.length || this.activeModalIndex === null) return;
 
-    preview.appendChild(addTile);
-  }
+            this.activeModalIndex =
+                this.activeModalIndex <= 0
+                    ? this.items.length - 1
+                    : this.activeModalIndex - 1;
+        },
 
-  function render() {
-    preview.innerHTML = '';
+        nextModal() {
+            if (!this.items.length || this.activeModalIndex === null) return;
 
-    items.forEach((item, index) => {
-      const wrap = document.createElement('div');
-      wrap.className =
-        'relative aspect-square rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900';
-      wrap.draggable = true;
+            this.activeModalIndex =
+                this.activeModalIndex >= this.items.length - 1
+                    ? 0
+                    : this.activeModalIndex + 1;
+        },
 
-      const img = document.createElement('img');
-      img.className = 'w-full h-full object-cover cursor-zoom-in';
-      img.alt = item.file.name;
+        modalImageSrc() {
+            if (this.activeModalIndex === null || !this.items[this.activeModalIndex]) {
+                return '';
+            }
 
-      const badge = document.createElement('div');
-      badge.className =
-        'absolute top-1 left-1 text-[10px] px-2 py-1 rounded-lg bg-black/60 text-white';
-      badge.textContent = index === 0 ? 'Cover' : `#${index + 1}`;
+            return this.items[this.activeModalIndex].preview;
+        },
 
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className =
-        'absolute top-1 right-1 text-[12px] w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center';
-      removeBtn.textContent = '×';
-      removeBtn.title = 'Remove';
+        modalCounterText() {
+            if (this.activeModalIndex === null || !this.items.length) {
+                return '';
+            }
 
-      removeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+            return `${this.activeModalIndex + 1} / ${this.items.length}`;
+        },
 
-        items.splice(index, 1);
-
-        if (activeModalIndex !== null) {
-          if (items.length === 0) closeModal();
-          else if (activeModalIndex >= items.length) activeModalIndex = items.length - 1;
-
-          if (isModalOpen() && activeModalIndex !== null) showModalIndex(activeModalIndex);
+        destroy() {
+            this.items.forEach((item) => {
+                if (item.preview) {
+                    URL.revokeObjectURL(item.preview);
+                }
+            });
         }
-
-        rebuildInputFilesFromItems();
-        syncOrderField();
-        render();
-      });
-
-      img.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModalFromItem(index);
-      });
-
-      // Drag & drop reorder
-      wrap.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', String(index));
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      wrap.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        wrap.classList.add('ring-2', 'ring-zinc-400');
-      });
-
-      wrap.addEventListener('dragleave', () => {
-        wrap.classList.remove('ring-2', 'ring-zinc-400');
-      });
-
-      wrap.addEventListener('drop', (e) => {
-        e.preventDefault();
-        wrap.classList.remove('ring-2', 'ring-zinc-400');
-
-        const from = Number(e.dataTransfer.getData('text/plain'));
-        const to = index;
-        if (Number.isNaN(from) || from === to) return;
-
-        const moved = items.splice(from, 1)[0];
-        items.splice(to, 0, moved);
-
-        if (activeModalIndex !== null) {
-          if (activeModalIndex === from) activeModalIndex = to;
-          else if (from < activeModalIndex && to >= activeModalIndex) activeModalIndex -= 1;
-          else if (from > activeModalIndex && to <= activeModalIndex) activeModalIndex += 1;
-
-          if (isModalOpen()) showModalIndex(activeModalIndex);
-        }
-
-        rebuildInputFilesFromItems();
-        syncOrderField();
-        render();
-      });
-
-      // Thumb
-      const reader = new FileReader();
-      reader.onload = (e) => { img.src = e.target.result; };
-      reader.readAsDataURL(item.file);
-
-      wrap.appendChild(img);
-      wrap.appendChild(badge);
-      wrap.appendChild(removeBtn);
-      preview.appendChild(wrap);
-    });
-
-    addPlusTile();
-  }
-
-  // Add more images
-  input.addEventListener('change', () => {
-    const newlySelected = Array.from(input.files || []);
-    if (!newlySelected.length) return;
-
-    const freeSlots = MAX_IMAGES - items.length;
-    if (freeSlots <= 0) {
-      alert(`Maksimaalselt ${MAX_IMAGES} pilti.`);
-      rebuildInputFilesFromItems();
-      syncOrderField();
-      render();
-      return;
-    }
-
-    let added = 0;
-
-    for (const file of newlySelected) {
-      if (items.length >= MAX_IMAGES) break;
-      if (isDuplicate(file)) continue;
-
-      items.push({ file });
-      added++;
-    }
-
-    if (added < newlySelected.length) {
-      alert(`Lisati ${added} pilti. Maksimaalne lubatud on ${MAX_IMAGES}. Ülejäänud jäeti välja.`);
-    }
-
-    rebuildInputFilesFromItems();
-    syncOrderField();
-    render();
-
-  });
-
-  // init
-  syncOrderField();
-  render();
-}
-
-document.addEventListener('DOMContentLoaded', initListingImages);
-document.addEventListener('livewire:navigated', initListingImages);
+    }));
+});

@@ -34,7 +34,10 @@ class ListingController extends Controller
             ->limit(200)
             ->get();
 
-        return view('user.listings.create', compact('categories', 'locations'));
+        $submissionToken = (string) \Illuminate\Support\Str::uuid();
+        session(['listing_submission_token' => $submissionToken]);
+
+        return view('user.listings.create', compact('categories', 'locations', 'submissionToken'));
     }
 
     public function store(Request $request, ListingImageService $listingImageService)
@@ -46,6 +49,7 @@ class ListingController extends Controller
 
         $rulesDraft = [
             'action' => ['nullable', 'in:publish,draft'],
+            'submission_token' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['nullable', 'exists:categories,id'],
@@ -62,6 +66,7 @@ class ListingController extends Controller
 
         $rulesPublish = [
             'action' => ['nullable', 'in:publish,draft'],
+            'submission_token' => ['required', 'string'],
             'title' => ['required', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
@@ -77,6 +82,20 @@ class ListingController extends Controller
         ];
 
         $validated = $request->validate($isDraft ? $rulesDraft : $rulesPublish);
+
+        $sessionToken = session('listing_submission_token');
+        $formToken = $validated['submission_token'] ?? null;
+
+        if (!$sessionToken || !$formToken || !hash_equals($sessionToken, $formToken)) {
+            return redirect()
+                ->route('listings.create')
+                ->withErrors([
+                    'title' => 'Vormi topeltsaatmine blokeeriti. Palun proovi uuesti.',
+                ]);
+        }
+
+        // Muudame tokeni ühekordseks
+        session()->forget('listing_submission_token');
 
         if ($isDraft) {
             $hasAny =
@@ -139,7 +158,6 @@ class ListingController extends Controller
                         listingId: $listing->id,
                         sortOrder: $sort++
                     );
-                    
                 }
             }
         });
@@ -148,7 +166,6 @@ class ListingController extends Controller
             ->route('listings.mine')
             ->with('success', $isDraft ? 'Mustand on salvestatud.' : 'Kuulutus on avaldatud.');
     }
-
     public function mine(Request $request)
     {
         $user = $request->user();
@@ -164,6 +181,7 @@ class ListingController extends Controller
 
         $listingsQuery = Listing::query()
             ->where('user_id', $user->id)
+            ->where('status', '!=', 'deleted') // Minu kuulutused lehel ei kuvata kustutatud kuulutusi
             ->with([
                 'category',
                 'location',
@@ -200,8 +218,9 @@ class ListingController extends Controller
             $listingsQuery->where('status', 'pending');
         } elseif ($status === 'draft') {
             $listingsQuery->where('status', 'draft');
-        } elseif ($status === 'deleted') {
-            $listingsQuery->where('status', 'deleted');
+            // Kustutatud kuulutuste kuvamine sorteerimis valikus minu kuultuste lehel 
+        // } elseif ($status === 'deleted') {
+        //     $listingsQuery->where('status', 'deleted');
         } elseif ($status === 'rejected') {
             $listingsQuery->where('status', 'rejected');
         }
@@ -305,9 +324,30 @@ class ListingController extends Controller
             ]);
         }
 
+        $action = (string) $request->input('action', $listing->status === 'draft' ? 'draft' : 'publish');
+        $isDraft = $action === 'draft';
+
         $this->normalizePriceMode($request);
 
-        $validated = $request->validate([
+        $rulesDraft = [
+            'action' => ['nullable', 'in:publish,draft'],
+            'title' => ['nullable', 'string', 'max:140'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'location_id' => ['nullable', 'exists:locations,id'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'price_mode' => ['nullable', 'in:deal,free,price'],
+            'condition' => ['nullable', 'in:new,used,leftover'],
+            'delivery_options' => ['nullable', 'array', 'max:4'],
+            'delivery_options.*' => ['in:pickup,seller_delivery,courier,agreement'],
+            'new_images' => ['nullable', 'array', 'max:10'],
+            'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
+            'deleted_image_ids' => ['nullable', 'string'],
+            'images_order' => ['nullable', 'string'],
+        ];
+
+        $rulesPublish = [
+            'action' => ['nullable', 'in:publish,draft'],
             'title' => ['required', 'string', 'max:140'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
@@ -321,20 +361,48 @@ class ListingController extends Controller
             'new_images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
             'deleted_image_ids' => ['nullable', 'string'],
             'images_order' => ['nullable', 'string'],
-        ]);
+        ];
 
-        DB::transaction(function () use ($request, $listing, $validated, $listingImageService) {
+        $validated = $request->validate($isDraft ? $rulesDraft : $rulesPublish);
+
+        if ($isDraft) {
+            $hasAny =
+                filled($validated['title'] ?? null) ||
+                filled($validated['description'] ?? null) ||
+                filled($validated['category_id'] ?? null) ||
+                filled($validated['location_id'] ?? null) ||
+                filled($validated['condition'] ?? null) ||
+                !empty($validated['delivery_options'] ?? []) ||
+                ($request->filled('price') && $request->input('price') !== null) ||
+                !empty($request->file('new_images', []));
+
+            if (!$hasAny) {
+                throw ValidationException::withMessages([
+                    'title' => 'Täiesti tühja mustandit ei salvestata. Lisa vähemalt pealkiri, kategooria, asukoht, hind, seisukord, kättesaamine või pilt.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($request, $listing, $validated, $listingImageService, $isDraft) {
             $delivery = array_values(array_unique($validated['delivery_options'] ?? []));
 
-            $listing->update([
-                'title' => $validated['title'],
+            $updateData = [
+                'title' => $validated['title'] ?? null,
                 'description' => $validated['description'] ?? null,
-                'category_id' => $validated['category_id'],
-                'location_id' => $validated['location_id'],
+                'category_id' => $validated['category_id'] ?? null,
+                'location_id' => $validated['location_id'] ?? null,
                 'price' => array_key_exists('price', $validated) ? $validated['price'] : null,
                 'condition' => $validated['condition'] ?? null,
                 'delivery_options' => $delivery,
-            ]);
+            ];
+
+            if ($listing->status === 'draft') {
+                $updateData['status'] = $isDraft ? 'draft' : 'published';
+                $updateData['published_at'] = $isDraft ? null : ($listing->published_at ?? now());
+                $updateData['expires_at'] = $isDraft ? null : (($listing->expires_at && $listing->expires_at->isFuture()) ? $listing->expires_at : now()->addDays(30));
+            }
+
+            $listing->update($updateData);
 
             $deletedIds = $this->safeJsonArray($request->input('deleted_image_ids'));
             $deletedIds = array_values(array_filter(array_map('intval', $deletedIds)));
@@ -439,7 +507,7 @@ class ListingController extends Controller
 
         return redirect()
             ->route('listings.mine.show', $listing)
-            ->with('success', 'Kuulutus on muudetud.');
+            ->with('success', $isDraft ? 'Mustand on salvestatud.' : 'Kuulutus on muudetud.');
     }
 
     public function toggleMine(Request $request, Listing $listing)
@@ -539,16 +607,38 @@ class ListingController extends Controller
 
         $listing->refresh();
 
-        if ($listing->status === 'deleted') {
-            return redirect()
-                ->route('listings.mine')
-                ->with('success', 'Kuulutus on juba kustutatud.');
-        }
-
         if (!$listing->canBeDeletedByOwner()) {
             return back()->withErrors([
                 'listing' => 'Seda kuulutust ei saa kustutada selle praeguses olekus.',
             ]);
+        }
+
+        $listing->load('images');
+
+        $shouldHardDelete = $listing->status === 'draft' || !$listing->hasRelations();
+
+        if ($shouldHardDelete) {
+            DB::transaction(function () use ($listing) {
+                foreach ($listing->images as $img) {
+                    $disk = $img->disk ?: 'public';
+
+                    if ($img->path) {
+                        Storage::disk($disk)->delete($img->path);
+                    }
+
+                    if ($img->thumb_path) {
+                        Storage::disk($disk)->delete($img->thumb_path);
+                    }
+
+                    $img->delete();
+                }
+
+                $listing->forceDelete();
+            });
+
+            return redirect()
+                ->route('listings.mine')
+                ->with('success', 'Kuulutus on kustutatud.');
         }
 
         $listing->update([

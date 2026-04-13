@@ -2,12 +2,14 @@
 
 @php
     $href = route('listings.show', $listing);
-    $img = $listing->coverImageUrl();
+    $img = $listing->coverThumbUrlOrPlaceholder();
 
     $location = $listing->location?->full_label_et
         ?? $listing->location?->name
         ?? $listing->location?->name_et
         ?? null;
+
+    $isReserved = $listing->isReserved();
 @endphp
 
 <a
@@ -15,16 +17,19 @@
     class="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
 >
     <div class="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100">
-        @if($img)
-            <img
-                src="{{ $img }}"
-                alt="{{ $listing->title }}"
-                class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                loading="lazy"
-            >
-        @else
-            <div class="flex h-full w-full items-center justify-center text-sm text-zinc-500">
-                {{ __('Pilt puudub') }}
+        <img
+            src="{{ $img }}"
+            alt="{{ $listing->title }}"
+            class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03] {{ $isReserved ? 'opacity-60' : '' }}"
+            loading="lazy"
+            decoding="async"
+        />
+
+        @if($isReserved)
+            <div class="absolute inset-0 flex items-center justify-center bg-black/20">
+                <span class="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm">
+                    {{ __('Broneeritud') }}
+                </span>
             </div>
         @endif
 

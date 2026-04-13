@@ -22,6 +22,69 @@
         </main>
     @endif
 
-    @livewireScripts
-</body>
-</html>
+   @livewireScripts
+
+    <script>
+    (function () {
+        function lockForm(form) {
+            if (!form) return;
+
+            form.dataset.submitting = '1';
+
+            const buttons = form.querySelectorAll('button[type="submit"]');
+            buttons.forEach((btn) => {
+                btn.disabled = true;
+                btn.classList.add('opacity-60');
+            });
+
+            if (form.__unlockTimer) {
+                clearTimeout(form.__unlockTimer);
+            }
+
+            // Kui jääd samale lehele, vabasta lukk uuesti
+            form.__unlockTimer = setTimeout(() => {
+                unlockForm(form);
+            }, 8000);
+        }
+
+        function unlockForm(form) {
+            if (!form) return;
+
+            form.dataset.submitting = '0';
+
+            const buttons = form.querySelectorAll('button[type="submit"]');
+            buttons.forEach((btn) => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-60');
+            });
+
+            if (form.__unlockTimer) {
+                clearTimeout(form.__unlockTimer);
+                form.__unlockTimer = null;
+            }
+        }
+
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+
+            if (form.dataset.submitting === '1') {
+                e.preventDefault();
+                return;
+            }
+
+            // Lase submitil kõigepealt käivituda, lukusta kohe järgmises tickis
+            setTimeout(() => {
+                lockForm(form);
+            }, 0);
+        }, true);
+
+        // Kui leht tuleb tagasi browseri cache’ist
+        window.addEventListener('pageshow', function () {
+            document.querySelectorAll('form').forEach(unlockForm);
+        });
+    })();
+    </script>
+
+    </body>
+    </html>

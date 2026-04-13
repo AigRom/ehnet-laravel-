@@ -24,23 +24,24 @@ class ListingImage extends Model
 
     protected $casts = [
         'listing_id' => 'integer',
+        'file_size' => 'integer',
+        'width' => 'integer',
+        'height' => 'integer',
         'sort_order' => 'integer',
     ];
 
-    /**
-     * Kuulutus, millele pilt kuulub
-     */
     public function listing(): BelongsTo
     {
         return $this->belongsTo(Listing::class);
     }
 
-    /**
-     * Täielik URL pildile (storage / CDN)
-     * Kasutamiseks Blade'is: {{ $image->url() }}
-     */
     public function url(): string
     {
-        return Storage::url($this->path);
+        return Storage::disk($this->disk ?: 'public')->url($this->path);
+    }
+
+    public function thumbUrl(): string
+    {
+        return Storage::disk($this->disk ?: 'public')->url($this->thumb_path ?: $this->path);
     }
 }

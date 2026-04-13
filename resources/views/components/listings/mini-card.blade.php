@@ -6,7 +6,7 @@
 ])
 
 @php
-    $coverImage = $listing?->coverImageUrl();
+    $coverImage = $listing?->coverThumbUrlOrPlaceholder();
 
     if (! $listing) {
         $link = null;
@@ -17,16 +17,24 @@
         $status = null;
     } else {
         $expired = $listing->isExpired();
-        $canOpenPublic = $listing->status === 'published' && ! $expired;
+
+        $canOpenPublic = in_array($listing->status, ['published', 'reserved'], true)
+            && ! $expired;
 
         $link = $href ?: ($canOpenPublic ? route('listings.show', $listing) : null);
         $title = $listing->title;
         $price = $listing->priceLabel();
         $status = $listing->status;
-        $statusText = in_array($listing->status, ['deleted', 'sold', 'reserved', 'archived', 'published'], true)
-            && $listing->statusLabel() !== 'Aktiivne'
-            ? $listing->statusLabel()
-            : null;
+
+        $statusText = match (true) {
+            $trade && $trade->isAwaitingConfirmation() => __('Ootab kinnitust'),
+
+            in_array($listing->status, ['deleted', 'sold', 'reserved', 'archived', 'published'], true)
+                && $listing->statusLabel() !== 'Aktiivne'
+                => $listing->statusLabel(),
+
+            default => null,
+        };
     }
 
     $showReceivedBadge = $trade
@@ -37,6 +45,11 @@
 
     $locationLabel = $listing?->location?->full_label_et
         ?? $listing?->location?->name;
+
+    $statusBadgeStatus = match (true) {
+        $trade && $trade->isAwaitingConfirmation() => 'reserved',
+        default => $status,
+    };
 @endphp
 
 @if($link)
@@ -91,7 +104,7 @@
             <div class="mt-1.5 flex flex-wrap gap-1.5">
                 @if($statusText)
                     <x-ui.status-badge
-                        :status="$status"
+                        :status="$statusBadgeStatus"
                         :expired="$expired"
                     >
                         {{ $statusText }}

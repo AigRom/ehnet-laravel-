@@ -98,8 +98,7 @@ class User extends Authenticatable
     public function favorites(): BelongsToMany
     {
         return $this->belongsToMany(Listing::class, 'favorites')
-            ->withTimestamps()
-            ->withTrashed();
+            ->withTimestamps();
     }
 
     /**

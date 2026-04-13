@@ -15,7 +15,7 @@
 
 <div
     {{ $attributes->merge([
-        'class' => 'rounded-2xl border border-zinc-200 bg-white p-5 md:p-6 shadow-sm transition',
+        'class' => 'transition',
     ]) }}
 >
     <div class="flex items-start gap-4 md:gap-5">
@@ -23,7 +23,7 @@
 
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                <h3 class="text-lg md:text-xl font-semibold text-zinc-900">
+                <h3 class="text-lg font-semibold text-zinc-900 md:text-xl">
                     {{ $user->name ?? __('Kasutaja') }}
                 </h3>
 

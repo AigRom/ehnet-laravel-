@@ -5,8 +5,14 @@
         $canDelete = $listing->canBeDeletedByOwner();
         $canToggle = $listing->canBeToggledByOwner();
         $conversationUrl = $listing->conversationUrl();
+
         $reservedTrade = $listing->reservedTrade;
+        $awaitingConfirmationTrade = $listing->awaitingConfirmationTrade;
+
+        $activeTrade = $awaitingConfirmationTrade ?? $reservedTrade;
+
         $isReserved = $listing->status === 'reserved' && $reservedTrade;
+        $isAwaitingConfirmation = $listing->status === 'reserved' && $awaitingConfirmationTrade;
     @endphp
 
     <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 md:px-0">
@@ -117,23 +123,39 @@
                     @if($isReserved)
                         <form method="POST" action="{{ route('messages.complete', $reservedTrade->conversation_id) }}">
                             @csrf
+                            @method('PATCH')
 
                             <button
                                 type="submit"
                                 class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
                             >
-                                {{ __('Müüdud') }}
+                                {{ __('Märgi üleantuks') }}
                             </button>
                         </form>
 
                         <form method="POST" action="{{ route('messages.trades.cancel', [$reservedTrade->conversation_id, $reservedTrade]) }}">
                             @csrf
+                            @method('PATCH')
 
                             <button
                                 type="submit"
                                 class="inline-flex w-full items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 sm:w-auto"
                             >
-                                {{ __('Katkesta') }}
+                                {{ __('Tühista broneering') }}
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($isAwaitingConfirmation)
+                        <form method="POST" action="{{ route('messages.trades.cancel', [$awaitingConfirmationTrade->conversation_id, $awaitingConfirmationTrade]) }}">
+                            @csrf
+                            @method('PATCH')
+
+                            <button
+                                type="submit"
+                                class="inline-flex w-full items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 sm:w-auto"
+                            >
+                                {{ __('Katkesta tehing') }}
                             </button>
                         </form>
                     @endif

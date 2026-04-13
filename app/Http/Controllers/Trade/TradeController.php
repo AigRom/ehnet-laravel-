@@ -201,36 +201,23 @@ class TradeController extends Controller
             return back()->with('error', 'Enne tuleb kuulutus sellele ostjale broneerida.');
         }
 
-        if (! $trade->canBeCompleted()) {
-            return back()->with('error', 'Seda tehingut ei saa lõpetada.');
+        if (! $trade->canBeMarkedAsHandedOver()) {
+            return back()->with('error', 'Seda tehingut ei saa sellesse etappi viia.');
         }
 
-        DB::transaction(function () use ($conversation, $listing, $trade, $user) {
+        DB::transaction(function () use ($conversation, $trade, $user) {
             $trade->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
-
-            $conversation->openTrades()
-                ->where('id', '!=', $trade->id)
-                ->update([
-                    'status' => 'cancelled',
-                    'cancelled_at' => now(),
-                ]);
-
-            $listing->update([
-                'status' => 'sold',
-                'sold_to_user_id' => $trade->buyer_id,
-                'sold_trade_id' => $trade->id,
+                'status' => 'awaiting_confirmation',
+                'awaiting_confirmation_at' => now(),
             ]);
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->seller?->name ?? 'Kasutaja') . ' märkis tehingu lõpetatuks. Kuulutus on nüüd müüdud. Ostja saab kinnitada kauba kättesaamise.',
+                ($conversation->seller?->name ?? 'Kasutaja') . ' märkis, et kaup on üle antud või teele pandud. Ostja saab nüüd kinnitada kauba kättesaamise.',
                 [
-                    'event' => 'trade_completed',
+                    'event' => 'trade_awaiting_confirmation',
                     'trade_id' => $trade->id,
-                    'listing_id' => $listing->id,
+                    'listing_id' => $trade->listing_id,
                     'actor_user_id' => $user->id,
                 ]
             );
@@ -239,7 +226,7 @@ class TradeController extends Controller
             $conversation->touch();
         });
 
-        return back()->with('success', 'Kuulutus märgiti müüduks sellele ostjale.');
+        return back()->with('success', 'Tehing märgiti ostja kinnituse ootele.');
     }
 
     public function confirmReceived(Request $request, Conversation $conversation): RedirectResponse
@@ -250,12 +237,12 @@ class TradeController extends Controller
         abort_unless($conversation->isBuyer($user), 403);
 
         $trade = $conversation->trades()
-            ->where('status', 'completed')
+            ->where('status', 'awaiting_confirmation')
             ->latest('id')
             ->first();
 
         if (! $trade) {
-            return back()->with('error', 'Tehingut ei leitud.');
+            return back()->with('error', 'Ootel kinnitusega tehingut ei leitud.');
         }
 
         if (! $trade->canBeConfirmedByBuyer()) {
@@ -264,15 +251,31 @@ class TradeController extends Controller
 
         DB::transaction(function () use ($conversation, $trade, $user) {
             $trade->update([
+                'status' => 'completed',
+                'completed_at' => now(),
                 'buyer_confirmed_received_at' => now(),
             ]);
 
+            $trade->listing?->update([
+                'status' => 'sold',
+                'sold_to_user_id' => $trade->buyer_id,
+                'sold_trade_id' => $trade->id,
+            ]);
+
+            $conversation->openTrades()
+                ->where('id', '!=', $trade->id)
+                ->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                ]);
+
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->buyer?->name ?? 'Kasutaja') . ' kinnitas, et kaup on kätte saadud.',
+                ($conversation->buyer?->name ?? 'Kasutaja') . ' kinnitas, et kaup on kätte saadud. Tehing on nüüd lõpetatud.',
                 [
                     'event' => 'trade_received_confirmed',
                     'trade_id' => $trade->id,
+                    'listing_id' => $trade->listing_id,
                     'actor_user_id' => $user->id,
                 ]
             );
@@ -302,6 +305,8 @@ class TradeController extends Controller
         $listing = $conversation->listing;
 
         DB::transaction(function () use ($conversation, $listing, $trade, $user) {
+            $previousStatus = $trade->status;
+
             $trade->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
@@ -313,9 +318,18 @@ class TradeController extends Controller
                 ]);
             }
 
+            $cancelMessage = match ($previousStatus) {
+                'interest' => $conversation->isSeller($user)
+                    ? 'Müüja lükkas ostusoovi tagasi.'
+                    : 'Ostja võttis ostusoovi tagasi.',
+                'reserved' => 'Broneering tühistati.',
+                'awaiting_confirmation' => 'Tehing katkestati enne ostja kinnitust.',
+                default => 'Tehing katkestati.',
+            };
+
             $this->createSystemMessage(
                 $conversation->id,
-                'Tehingukatse katkestati.',
+                $cancelMessage,
                 [
                     'event' => 'trade_cancelled',
                     'trade_id' => $trade->id,
@@ -328,7 +342,7 @@ class TradeController extends Controller
             $conversation->touch();
         });
 
-        return back()->with('success', 'Tehingukatse katkestati.');
+        return back()->with('success', 'Tehing katkestati.');
     }
 
     private function createSystemMessage(int $conversationId, string $body, array $meta = []): void

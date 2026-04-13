@@ -19,6 +19,7 @@ class Trade extends Model
         'status',
         'contact_revealed_at',
         'reserved_at',
+        'awaiting_confirmation_at',
         'completed_at',
         'buyer_confirmed_received_at',
         'cancelled_at',
@@ -34,6 +35,7 @@ class Trade extends Model
         'buyer_id' => 'integer',
         'contact_revealed_at' => 'datetime',
         'reserved_at' => 'datetime',
+        'awaiting_confirmation_at' => 'datetime',
         'completed_at' => 'datetime',
         'buyer_confirmed_received_at' => 'datetime',
         'cancelled_at' => 'datetime',
@@ -49,13 +51,10 @@ class Trade extends Model
 
     /**
      * Tehinguga seotud kuulutus.
-     *
-     * withTrashed() jätab seose alles ka siis,
-     * kui kuulutus on soft delete'itud.
      */
     public function listing(): BelongsTo
     {
-        return $this->belongsTo(Listing::class)->withTrashed();
+        return $this->belongsTo(Listing::class);
     }
 
     /**
@@ -91,10 +90,21 @@ class Trade extends Model
     }
 
     /**
-     * Kas tehing on lõpetatud müüja poolt.
+     * Kas tehing ootab ostja kinnitust.
      *
-     * completed tähendab siin, et kuulutus on müüduks märgitud.
-     * Ostja kättesaamise kinnitus on eraldi samm.
+     * See staatus tekib pärast seda, kui müüja märgib kauba
+     * üleantuks / saadetuks, kuid ostja ei ole veel kinnitanud.
+     */
+    public function isAwaitingConfirmation(): bool
+    {
+        return $this->status === 'awaiting_confirmation';
+    }
+
+    /**
+     * Kas tehing on lõplikult lõpetatud.
+     *
+     * completed tähendab nüüd, et ostja on kauba kättesaamise kinnitanud
+     * ja tehing on päriselt läbi.
      */
     public function isCompleted(): bool
     {
@@ -120,18 +130,20 @@ class Trade extends Model
     /**
      * Kas tehing on aktiivne.
      *
-     * Aktiivseks loeme interest ja reserved staatusega tehingud,
-     * mis ei ole lõpetatud ega katkestatud.
+     * Aktiivseks loeme sellised tehingud, mis on veel protsessis
+     * ega ole lõplikult lõpetatud või katkestatud.
      */
     public function isActive(): bool
     {
-        return in_array($this->status, ['interest', 'reserved'], true)
+        return in_array($this->status, ['interest', 'reserved', 'awaiting_confirmation'], true)
             && !$this->isCancelled()
             && !$this->isCompleted();
     }
 
     /**
      * Kas tehingut saab reserveerida.
+     *
+     * Müüja saab reserveerida ainult interest staatuses tehingu.
      */
     public function canBeReserved(): bool
     {
@@ -141,11 +153,11 @@ class Trade extends Model
     }
 
     /**
-     * Kas tehingut saab lõpetada müügina.
+     * Kas müüja saab märkida tehingu üleantuks.
      *
-     * Seda teeb müüja reserved staatusest.
+     * Seda saab teha ainult reserved staatusest.
      */
-    public function canBeCompleted(): bool
+    public function canBeMarkedAsHandedOver(): bool
     {
         return $this->isReserved()
             && !$this->isCancelled()
@@ -153,13 +165,30 @@ class Trade extends Model
     }
 
     /**
+     * Ajutine alias vana nimega, et olemasolevat koodi mitte kohe lõhkuda.
+     *
+     * Soovitav on controllerites ja Blade'ides minna üle meetodile
+     * canBeMarkedAsHandedOver().
+     */
+    public function canBeCompleted(): bool
+    {
+        return $this->canBeMarkedAsHandedOver();
+    }
+
+    /**
      * Kas tehingut saab katkestada.
      *
-     * Katkestada saab aktiivse interest või reserved tehingu.
+     * Katkestada saab:
+     * - interest
+     * - reserved
+     * - awaiting_confirmation
+     *
+     * See jätab paindlikkuse ka olukorraks, kus pärast üleandmise märkimist
+     * selgub probleem enne ostja kinnitust.
      */
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['interest', 'reserved'], true)
+        return in_array($this->status, ['interest', 'reserved', 'awaiting_confirmation'], true)
             && !$this->isCancelled()
             && !$this->isCompleted();
     }
@@ -167,12 +196,12 @@ class Trade extends Model
     /**
      * Kas ostja saab kinnitada kauba kättesaamist.
      *
-     * Kinnitada saab ainult completed tehingu puhul,
-     * kui ostja pole seda juba varem kinnitanud.
+     * Kinnitada saab ainult siis, kui tehing ootab ostja kinnitust
+     * ja ostja pole seda juba kinnitanud.
      */
     public function canBeConfirmedByBuyer(): bool
     {
-        return $this->isCompleted() && !$this->isBuyerConfirmed();
+        return $this->isAwaitingConfirmation() && !$this->isBuyerConfirmed();
     }
 
     /**
@@ -207,18 +236,21 @@ class Trade extends Model
         return match ($this->status) {
             'interest' => 'Ostusoov',
             'reserved' => 'Broneeritud',
-            'completed' => 'Müüdud',
+            'awaiting_confirmation' => 'Ootab kinnitust',
+            'completed' => 'Lõpetatud',
             'cancelled' => 'Katkestatud',
             default => '—',
         };
     }
 
     /**
-     * Kas completed tehing ootab veel ostja kinnitust.
+     * Kas tehing ootab veel ostja kinnitust.
+     *
+     * See jääb alles, sest nime poolest sobib hästi UI ja muude kontrollide jaoks.
      */
     public function isAwaitingBuyerConfirmation(): bool
     {
-        return $this->isCompleted() && !$this->isBuyerConfirmed();
+        return $this->isAwaitingConfirmation() && !$this->isBuyerConfirmed();
     }
 
     /**
@@ -275,5 +307,4 @@ class Trade extends Model
             ->where('reviewer_id', $user->id)
             ->exists();
     }
-
 }

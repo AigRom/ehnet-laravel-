@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('buyer_id')->constrained('users')->cascadeOnDelete();
 
             $table->string('status')->default('interest');
-            // interest | reserved | completed | cancelled
+            // interest | reserved | awaiting_confirmation | completed | cancelled
 
             $table->timestamp('contact_revealed_at')->nullable();
             $table->timestamp('reserved_at')->nullable();

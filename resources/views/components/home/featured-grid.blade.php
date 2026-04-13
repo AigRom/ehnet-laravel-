@@ -7,7 +7,7 @@
 
     </div>
 
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @forelse($listings as $listing)
             <x-listings.card :listing="$listing" />
         @empty

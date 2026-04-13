@@ -71,10 +71,10 @@
         && $currentTrade->canBeReserved()
         && $listing?->canAcceptTradeReservation();
 
-    $canComplete = $canShowTradeActions
+    $canMarkAsHandedOver = $canShowTradeActions
         && $isSeller
         && $currentTrade
-        && $currentTrade->canBeCompleted()
+        && $currentTrade->canBeMarkedAsHandedOver()
         && $listing?->isReserved();
 
     $canConfirmReceived = $canShowTradeActions
@@ -87,7 +87,7 @@
         && $currentTrade->canBeCancelled();
 
     $showTradeActionBar = $canShowTradeActions
-        && ($canExpressInterest || $canReserve || $canComplete || $canConfirmReceived || $canCancelTrade);
+        && ($canExpressInterest || $canReserve || $canMarkAsHandedOver || $canConfirmReceived || $canCancelTrade);
 
     $canLeaveReview = $hasActiveConversation
         && $user
@@ -106,6 +106,17 @@
         && $currentTrade
         && $currentTrade->contactsRevealed()
         && $currentTrade->involvesUser($user);
+
+    $cancelTradeLabel = $currentTrade
+        ? match ($currentTrade->status) {
+            'interest' => $isSeller
+                ? __('Lükka ostusoov tagasi')
+                : __('Võta ostusoov tagasi'),
+            'reserved' => __('Tühista broneering'),
+            'awaiting_confirmation' => __('Katkesta tehing'),
+            default => __('Katkesta tehing'),
+        }
+        : __('Katkesta tehing');
 @endphp
 
 <div class="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
@@ -193,7 +204,7 @@
                                 </form>
                             @endif
 
-                            @if($canComplete)
+                            @if($canMarkAsHandedOver)
                                 <form method="POST" action="{{ route('messages.complete', $activeConversation) }}">
                                     @csrf
                                     @method('PATCH')
@@ -202,7 +213,7 @@
                                         type="submit"
                                         class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 sm:text-sm"
                                     >
-                                        {{ __('Müüdud sellele ostjale') }}
+                                        {{ __('Märgi üleantuks') }}
                                     </button>
                                 </form>
                             @endif
@@ -230,7 +241,7 @@
                                         type="submit"
                                         class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 sm:text-sm"
                                     >
-                                        {{ __('Katkesta') }}
+                                        {{ $cancelTradeLabel }}
                                     </button>
                                 </form>
                             @endif

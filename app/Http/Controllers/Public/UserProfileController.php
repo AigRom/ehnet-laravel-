@@ -30,13 +30,13 @@ class UserProfileController extends Controller
             ->where('user_id', $user->id)
             ->publicVisible()
             ->latest('created_at')
-            ->paginate(12, ['*'], 'listings_page');
+            ->paginate(24, ['*'], 'listings_page');
 
         // Kasutajale jäetud tagasisided profiili "tagasiside" vaate jaoks.
         $reviews = $user->reviewsReceived()
             ->with(['reviewer', 'trade'])
             ->latest('created_at')
-            ->paginate(10, ['*'], 'reviews_page');
+            ->paginate(20, ['*'], 'reviews_page');
 
         return view('users.show', [
             'profileUser' => $user,

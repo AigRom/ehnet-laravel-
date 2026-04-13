@@ -7,7 +7,6 @@
             : __('Eraisik');
 
         $isOwnProfile = auth()->check() && auth()->id() === $profileUser->id;
-        $showGuestNotice = !auth()->check();
 
         $averageRating = $profileUser->averageRating();
         $reviewsTotal = $profileUser->reviewsCount();
@@ -23,7 +22,7 @@
     @endphp
 
     <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:space-y-8 md:py-8">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <a
                 href="{{ url()->previous() }}"
                 class="text-sm text-blue-600 hover:underline"
@@ -40,43 +39,31 @@
         </div>
 
         <div x-data="{ tab: 'listings' }" class="space-y-6">
-            <div class="rounded-2xl border border-zinc-200 bg-white p-6 md:p-7 shadow-sm">
+            <div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm md:p-7">
                 <x-users.profile-card
                     :user="$profileUser"
                     :role-label="$roleLabel"
                     :joined-year="$joinedYear"
                     class="border-0 bg-transparent p-0 shadow-none"
                 />
-
-                @if($showGuestNotice)
-                    <div class="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-center">
-                        <p class="mx-auto max-w-sm text-sm leading-6 text-zinc-600">
-                            {{ __('Logi sisse, et näha profiili detailsemalt ja saata sõnumeid.') }}
-                        </p>
-
-                        <div class="mt-4">
-                            <a
-                                href="{{ route('login') }}"
-                                class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
-                            >
-                                {{ __('Logi sisse') }}
-                            </a>
-                        </div>
-                    </div>
-                @endif
             </div>
 
             <div class="border-b border-zinc-200">
-                <div class="flex items-center gap-6 overflow-x-auto">
+                <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-6 sm:overflow-x-auto">
                     <button
                         type="button"
                         @click="tab = 'listings'"
-                        class="border-b-2 px-1 py-3 text-xl font-semibold whitespace-nowrap transition"
+                        class="rounded-xl border px-2 py-3 text-center text-xs font-semibold leading-tight transition sm:rounded-none sm:border-0 sm:border-b-2 sm:px-1 sm:py-3 sm:text-xl sm:leading-normal whitespace-nowrap"
                         :class="tab === 'listings'
-                            ? 'border-emerald-600 text-zinc-900'
-                            : 'border-transparent text-zinc-500 hover:text-zinc-700'"
+                            ? 'border-emerald-600 bg-emerald-50 text-zinc-900 sm:bg-transparent'
+                            : 'border-zinc-200 bg-white text-zinc-500 hover:text-zinc-700 sm:border-transparent'"
                     >
-                        {{ __('Aktiivsed kuulutused') }}
+                        <span class="sm:hidden">
+                            {{ __('Kuulutused') }}
+                        </span>
+                        <span class="hidden sm:inline">
+                            {{ __('Aktiivsed kuulutused') }}
+                        </span>
                         <span class="text-zinc-500">
                             ({{ $profileUser->active_listings_count ?? 0 }})
                         </span>
@@ -85,10 +72,10 @@
                     <button
                         type="button"
                         @click="tab = 'reviews'"
-                        class="border-b-2 px-1 py-3 text-xl font-semibold whitespace-nowrap transition"
+                        class="rounded-xl border px-2 py-3 text-center text-xs font-semibold leading-tight transition sm:rounded-none sm:border-0 sm:border-b-2 sm:px-1 sm:py-3 sm:text-xl sm:leading-normal whitespace-nowrap"
                         :class="tab === 'reviews'
-                            ? 'border-emerald-600 text-zinc-900'
-                            : 'border-transparent text-zinc-500 hover:text-zinc-700'"
+                            ? 'border-emerald-600 bg-emerald-50 text-zinc-900 sm:bg-transparent'
+                            : 'border-zinc-200 bg-white text-zinc-500 hover:text-zinc-700 sm:border-transparent'"
                     >
                         {{ __('Tagasiside') }}
                         <span class="text-zinc-500">

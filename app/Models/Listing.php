@@ -7,13 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class Listing extends Model
 {
-    use SoftDeletes;
-
     /**
      * Mass assignment jaoks lubatud väljad.
      */
@@ -54,7 +50,6 @@ class Listing extends Model
         'expires_at'       => 'datetime',
         'reviewed_at'      => 'datetime',
         'delivery_options' => 'array',
-        'deleted_at'       => 'datetime',
     ];
 
     /**
@@ -122,19 +117,23 @@ class Listing extends Model
     }
 
     /**
-     * Aktiivsed tehingud: ostusoov või broneering.
+     * Aktiivsed tehingud.
+     *
+     * Uue flow järgi loeme aktiivseks:
+     * - interest
+     * - reserved
+     * - awaiting_confirmation
      */
     public function activeTrades(): HasMany
     {
         return $this->hasMany(Trade::class)
-            ->whereIn('status', ['interest', 'reserved']);
+            ->whereIn('status', ['interest', 'reserved', 'awaiting_confirmation']);
     }
 
     /**
-     * Hetkel aktiivne reserveeritud tehing.
+     * Hetkel reserveeritud tehing.
      *
-     * latestOfMany() aitab vältida olukorda, kus mitme kirje korral
-     * tagastuks ebamäärane reserved trade.
+     * Reserved tähendab siin “ostjale kinni pandud, aga veel mitte üleantud”.
      */
     public function reservedTrade(): HasOne
     {
@@ -144,12 +143,24 @@ class Listing extends Model
     }
 
     /**
-     * Viimane aktiivne tehing (interest või reserved).
+     * Tehing, mis ootab ostja kinnitust.
+     *
+     * See tekib pärast seda, kui müüja märkis kauba üleantuks / teele panduks.
+     */
+    public function awaitingConfirmationTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)
+            ->where('status', 'awaiting_confirmation')
+            ->latestOfMany();
+    }
+
+    /**
+     * Viimane aktiivne tehing.
      */
     public function latestActiveTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
-            ->whereIn('status', ['interest', 'reserved'])
+            ->whereIn('status', ['interest', 'reserved', 'awaiting_confirmation'])
             ->latestOfMany();
     }
 
@@ -178,13 +189,62 @@ class Listing extends Model
     }
 
     /**
-     * Kaanepildi avalik URL.
+     * Tagastab kaanepildi täissuuruses URL-i.
      */
     public function coverImageUrl(): ?string
     {
         $img = $this->coverImage();
 
-        return $img ? Storage::url($img->path) : null;
+        return $img ? $img->url() : null;
+    }
+
+    /**
+     * Tagastab kaanepildi thumbnail URL-i.
+     */
+    public function coverThumbUrl(): ?string
+    {
+        $img = $this->coverImage();
+
+        return $img ? $img->thumbUrl() : null;
+    }
+
+    /**
+     * Tagastab kuulutuse pildid detailvaate jaoks struktureeritud kujul.
+     *
+     * @return array<int, array{full: string, thumb: string}>
+     */
+    public function detailImageItems(): array
+    {
+        if (!$this->relationLoaded('images')) {
+            $this->load('images');
+        }
+
+        return $this->images
+            ->map(fn ($img) => [
+                'full' => $img->url(),
+                'thumb' => $img->thumbUrl(),
+            ])
+            ->filter(fn ($item) => !empty($item['full']))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Kui kuulutusel pilti ei ole, kasutatakse placeholder pilti.
+     */
+    public function coverThumbUrlOrPlaceholder(): string
+    {
+        return $this->coverThumbUrl() ?? asset('images/placeholder.png');
+    }
+
+    /**
+     * Kas kuulutusel on süsteemi jaoks säilitamist vajavaid seoseid.
+     */
+    public function hasRelations(): bool
+    {
+        return $this->favoritedBy()->exists()
+            || $this->conversations()->exists()
+            || $this->trades()->exists();
     }
 
     /**
@@ -218,7 +278,7 @@ class Listing extends Model
     /**
      * Kas kuulutus on märgitud kustutatuks.
      *
-     * NB! See on äriloogika staatus, mitte sama mis soft delete.
+     * NB! See on äriloogika staatus, mitte Laravel soft delete.
      */
     public function isDeletedStatus(): bool
     {
@@ -227,9 +287,16 @@ class Listing extends Model
 
     /**
      * Kas kuulutus on avalikus vaates nähtav.
+     *
+     * - published => peab olema avaldatud ja mitte aegunud
+     * - reserved  => jääb avalikuks ka siis, kui expires_at oleks minevikus
      */
     public function isPublicVisible(): bool
     {
+        if ($this->status === 'reserved') {
+            return $this->published_at !== null;
+        }
+
         return $this->status === 'published'
             && $this->published_at !== null
             && ($this->expires_at === null || $this->expires_at->isFuture() || $this->expires_at->isToday());
@@ -237,16 +304,16 @@ class Listing extends Model
 
     /**
      * Kas kuulutus on aktiivne published kuulutus.
+     *
+     * Reserved ei ole aktiivne published kuulutus, kuigi ta on avalik.
      */
     public function isActivePublished(): bool
     {
-        return $this->isPublicVisible();
+        return $this->status === 'published' && $this->isPublicVisible();
     }
 
     /**
      * Kas kuulutus saab vastu võtta uut ostusoovi.
-     *
-     * Ostusoovi saab esitada ainult aktiivsele published kuulutusele.
      */
     public function canAcceptTradeInterest(): bool
     {
@@ -255,8 +322,6 @@ class Listing extends Model
 
     /**
      * Kas kuulutust saab reserveerida.
-     *
-     * Reserveerida saab ainult aktiivset published kuulutust.
      */
     public function canAcceptTradeReservation(): bool
     {
@@ -290,6 +355,20 @@ class Listing extends Model
     }
 
     /**
+     * Kas kuulutusel on tehing, mis ootab ostja kinnitust.
+     */
+    public function hasAwaitingConfirmationTrade(): bool
+    {
+        if ($this->relationLoaded('awaitingConfirmationTrade')) {
+            return $this->awaitingConfirmationTrade !== null;
+        }
+
+        return $this->trades()
+            ->where('status', 'awaiting_confirmation')
+            ->exists();
+    }
+
+    /**
      * Kas omanik tohib kuulutust muuta.
      *
      * Muuta ei tohi:
@@ -297,7 +376,8 @@ class Listing extends Model
      * - broneeritud kuulutust
      * - müüdud kuulutust
      *
-     * Muuta tohib ka aegunud published kuulutust.
+     * NB! Ka awaiting_confirmation etapis ei tohiks omanik kuulutust muuta,
+     * sest tehing on juba lõppfaasis.
      */
     public function canBeEditedByOwner(): bool
     {
@@ -318,12 +398,6 @@ class Listing extends Model
 
     /**
      * Kas omanik tohib kuulutust peatada või taasaktiveerida.
-     *
-     * Lubatud ainult:
-     * - published
-     * - archived
-     *
-     * Aegunud kuulutust ei peatata enam, vaid pannakse uuesti müüki.
      */
     public function canBeToggledByOwner(): bool
     {
@@ -336,8 +410,6 @@ class Listing extends Model
 
     /**
      * Inimloetav staatuse nimetus.
-     *
-     * Published puhul eristame aktiivset ja aegunud kuulutust.
      */
     public function statusLabel(): string
     {
@@ -358,13 +430,15 @@ class Listing extends Model
      * Tagastab tehinguga seotud ostja nime.
      *
      * Eelistus:
-     * 1. reservedTrade buyer
-     * 2. soldTrade buyer
-     * 3. soldToUser
+     * 1. awaitingConfirmationTrade buyer
+     * 2. reservedTrade buyer
+     * 3. soldTrade buyer
+     * 4. soldToUser
      */
     public function tradeBuyerName(): ?string
     {
-        return $this->reservedTrade?->buyerName()
+        return $this->awaitingConfirmationTrade?->buyerName()
+            ?? $this->reservedTrade?->buyerName()
             ?? $this->soldTrade?->buyerName()
             ?? $this->soldToUser?->name
             ?? null;
@@ -374,13 +448,15 @@ class Listing extends Model
      * Tagastab halduses eelistatud vestluse.
      *
      * Eelistus:
-     * 1. reserveeritud tehingu vestlus
-     * 2. lõpetatud müügitehingu vestlus
-     * 3. viimane aktiivne tehingu vestlus
+     * 1. ostja kinnitust ootava tehingu vestlus
+     * 2. reserveeritud tehingu vestlus
+     * 3. lõpetatud müügitehingu vestlus
+     * 4. viimane aktiivne tehingu vestlus
      */
     public function preferredConversation(): ?Conversation
     {
-        return $this->reservedTrade?->conversation
+        return $this->awaitingConfirmationTrade?->conversation
+            ?? $this->reservedTrade?->conversation
             ?? $this->soldTrade?->conversation
             ?? $this->latestActiveTrade?->conversation
             ?? null;
@@ -399,17 +475,19 @@ class Listing extends Model
     /**
      * Tagastab lühikese abiteksti staatuse kõrvale.
      *
-     * Näited:
-     * - Broneeritud: Mari
-     * - Müüdud: Jaan
-     * - Huvi tundnud: Peeter
-     * - Aegus: 12.04.2026
+     * NB! Kuna listing.status jääb reserved kuni ostja kinnitab,
+     * eristame siin helperis kahte olukorda:
+     * - reserved + reservedTrade => Broneeritud: Mari
+     * - reserved + awaitingConfirmationTrade => Ootab kinnitust: Mari
      */
     public function statusHelpText(): ?string
     {
         $buyerName = $this->tradeBuyerName();
 
         return match (true) {
+            $this->status === 'reserved' && $this->hasAwaitingConfirmationTrade() && $buyerName !== null
+                => __('Ootab kinnitust: :name', ['name' => $buyerName]),
+
             $this->status === 'reserved' && $buyerName !== null
                 => __('Broneeritud: :name', ['name' => $buyerName]),
 
@@ -431,8 +509,6 @@ class Listing extends Model
 
     /**
      * Kas aegumiskuupäeva peaks view's näitama.
-     *
-     * Aegumise info on sisuline ainult published kuulutuse puhul.
      */
     public function showExpiryDate(): bool
     {
@@ -441,10 +517,6 @@ class Listing extends Model
 
     /**
      * Tagastab aegumise prefiksi.
-     *
-     * Võimalikud väärtused:
-     * - Aegub:
-     * - Aegus:
      */
     public function expiryLabel(): ?string
     {
@@ -469,12 +541,6 @@ class Listing extends Model
 
     /**
      * Tagastab hinna inimloetaval kujul.
-     *
-     * Näited:
-     * - Kokkuleppel
-     * - Tasuta
-     * - 25 EUR
-     * - 25.5 EUR
      */
     public function priceLabel(): string
     {
@@ -527,30 +593,49 @@ class Listing extends Model
 
     /**
      * Kas reserveeritud kuulutus on broneeritud konkreetsele kasutajale.
+     *
+     * Lubame sõnumi jätkamist nii reserved kui awaiting_confirmation faasis,
+     * sest listing ise jääb selle aja jooksul reserved staatuse alla.
      */
     public function isReservedForUser(?User $user): bool
     {
-        if (!$user || !$this->isReserved() || !$this->reservedTrade) {
+        if (!$user || !$this->isReserved()) {
             return false;
         }
 
-        return (int) $this->reservedTrade->buyer_id === (int) $user->id;
+        $trade = $this->awaitingConfirmationTrade
+            ?? $this->reservedTrade
+            ?? null;
+
+        if (!$trade) {
+            return false;
+        }
+
+        return (int) $trade->buyer_id === (int) $user->id;
     }
 
     /**
-     * Kas ostja võib selle kuulutuse puhul sõnumi saata.
+     * Kas kasutaja võib selle kuulutuse puhul sõnumi saata.
      *
-     * Ostja vaates:
-     * - aktiivne published => võib saata
-     * - reserved => võib jätkata suhtlust
+     * - aktiivne published => võib saata iga huviline
+     * - reserved => võib jätkata ainult seotud ostja
+     * - muu staatus => ei või
      */
-    public function canBuyerSendMessage(): bool
+    public function canBuyerSendMessage(?User $viewer = null): bool
     {
-        return $this->isActivePublished() || $this->isReserved();
+        if ($this->isActivePublished()) {
+            return true;
+        }
+
+        if ($this->isReserved()) {
+            return $this->isReservedForUser($viewer);
+        }
+
+        return false;
     }
 
     /**
-     * Kas ostja võib esitada ostusoovi.
+     * Kas kasutaja võib esitada ostusoovi.
      *
      * Ostusoovi saab esitada ainult aktiivsele published kuulutusele.
      */
@@ -560,87 +645,20 @@ class Listing extends Model
     }
 
     /**
-     * Tagastab müüjakaardi saadavuse teavitusteksti.
-     *
-     * Kasutatakse seller-card komponendis nii ostja kui müüja vaates.
-     */
-    public function sellerCardAvailabilityMessage(?User $viewer = null): ?string
-    {
-        $reservedBuyer = $this->reservedTrade?->buyer;
-        $soldBuyer = $this->soldTrade?->buyer;
-
-        if ($this->isDeletedStatus()) {
-            return __('See kuulutus on kustutatud.');
-        }
-
-        if ($this->isSold()) {
-            return $soldBuyer
-                ? __('See kuulutus on müüdud kasutajale :name.', ['name' => $soldBuyer->name])
-                : __('See kuulutus on müüdud.');
-        }
-
-        if ($this->status === 'archived') {
-            return __('See kuulutus on müügist eemaldatud.');
-        }
-
-        if ($this->isExpired()) {
-            return __('See kuulutus on aegunud.');
-        }
-
-        if ($this->isReserved()) {
-            if ($this->isReservedForUser($viewer)) {
-                return __('See kuulutus on broneeritud sulle. Võta müüjaga ühendust ja vii tehing lõpuni.');
-            }
-
-            return $reservedBuyer
-                ? __('See kuulutus on broneeritud kasutajale :name.', ['name' => $reservedBuyer->name])
-                : __('See kuulutus on broneeritud teisele ostjale.');
-        }
-
-        return null;
-    }
-
-    /**
-     * Tagastab müüjakaardi teavituse stiiliklassid.
-     */
-    public function sellerCardAvailabilityClasses(?User $viewer = null): string
-    {
-        if ($this->isDeletedStatus()) {
-            return 'border-red-200 bg-red-50 text-red-700';
-        }
-
-        if ($this->isSold()) {
-            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-        }
-
-        if ($this->status === 'archived') {
-            return 'border-zinc-200 bg-zinc-50 text-zinc-600';
-        }
-
-        if ($this->isExpired()) {
-            return 'border-amber-200 bg-amber-50 text-amber-700';
-        }
-
-        if ($this->isReserved()) {
-            return $this->isReservedForUser($viewer)
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-amber-200 bg-amber-50 text-amber-700';
-        }
-
-        return 'border-zinc-200 bg-zinc-50 text-zinc-600';
-    }
-
-    /**
      * Scope avalikult nähtavate kuulutuste jaoks.
      */
     public function scopePublicVisible(Builder $query): Builder
     {
         return $query
-            ->where('status', 'published')
             ->whereNotNull('published_at')
-            ->where(function (Builder $q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+            ->where(function (Builder $query) {
+                $query->where(function (Builder $q) {
+                    $q->where('status', 'published')
+                        ->where(function (Builder $qq) {
+                            $qq->whereNull('expires_at')
+                                ->orWhere('expires_at', '>=', now());
+                        });
+                })->orWhere('status', 'reserved');
             });
     }
 

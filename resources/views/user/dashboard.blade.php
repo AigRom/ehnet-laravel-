@@ -72,8 +72,8 @@
 
         <div class="mt-8 grid gap-6 lg:grid-cols-12">
             <div class="lg:col-span-4">
-                <section class="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
-                    <div class="border-b border-zinc-100 px-6 py-5">
+                <section class="overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+                    <div class="border-b border-zinc-100 px-5 py-4 sm:px-6 sm:py-5">
                         <h2 class="text-lg font-semibold text-zinc-900">
                             {{ __('Profiil') }}
                         </h2>
@@ -82,8 +82,8 @@
                         </p>
                     </div>
 
-                    <div class="p-6">
-                        <div class="flex items-center gap-4">
+                    <div class="p-5 sm:p-6">
+                        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                             <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
                                 @if($avatarUrl)
                                     <img src="{{ $avatarUrl }}"
@@ -94,12 +94,12 @@
                                 @endif
                             </div>
 
-                            <div class="min-w-0">
-                                <div class="truncate text-lg font-semibold text-zinc-900">
+                            <div class="min-w-0 w-full">
+                                <div class="break-words text-lg font-semibold text-zinc-900">
                                     {{ $displayName }}
                                 </div>
 
-                                <div class="mt-1 text-sm text-zinc-500">
+                                <div class="mt-1 break-all text-sm text-zinc-500">
                                     {{ $user->email }}
                                 </div>
 
@@ -110,20 +110,48 @@
                         </div>
 
                         <dl class="mt-6 space-y-4">
-                            <div class="flex items-start justify-between gap-4">
+                            <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <dt class="text-sm text-zinc-500">{{ __('Asukoht') }}</dt>
-                                <dd class="text-right text-sm font-medium text-zinc-900">
+                                <dd class="text-sm font-medium text-zinc-900 sm:text-right">
                                     {{ $locationLabel }}
                                 </dd>
                             </div>
 
-                            <div class="flex items-start justify-between gap-4">
+                            <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <dt class="text-sm text-zinc-500">{{ __('Liitunud') }}</dt>
-                                <dd class="text-right text-sm font-medium text-zinc-900">
+                                <dd class="text-sm font-medium text-zinc-900 sm:text-right">
                                     {{ $memberSince ?? '—' }}
                                 </dd>
                             </div>
                         </dl>
+
+                        @php
+                            $reviewsCountValue = $user->reviewsCount();
+                            $scoreValue = $user->averageRating();
+                            $hasReviews = $user->hasReviews();
+                        @endphp
+
+                        <div class="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                            <div class="text-sm text-zinc-500">
+                                {{ __('Tagasiside') }}
+                            </div>
+
+                            @if($hasReviews)
+                                <div class="mt-2 flex items-center justify-between gap-3">
+                                    <div class="text-lg font-semibold text-zinc-900">
+                                        ⭐ {{ number_format($scoreValue, 1, ',', ' ') }}
+                                    </div>
+
+                                    <div class="text-sm text-zinc-500 text-right">
+                                        {{ trans_choice(':count hinnang|:count hinnangut', $reviewsCountValue, ['count' => $reviewsCountValue]) }}
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mt-2 text-sm text-zinc-500">
+                                    {{ __('Tagasiside puudub') }}
+                                </div>
+                            @endif
+                        </div>
 
                         <div class="mt-6">
                             <a href="{{ route('profile.edit') }}"
@@ -137,16 +165,16 @@
             </div>
 
             <div class="lg:col-span-8">
-                <div class="grid gap-6 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
                     <a href="{{ route('listings.mine') }}"
-                       class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
-                                <x-icons.squares-2x2 class="h-7 w-7 text-zinc-700" />
+                       class="group relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
+                                <x-icons.squares-2x2 class="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
                             </div>
 
                             <div class="min-w-0">
-                                <h2 class="text-lg font-semibold text-zinc-900">
+                                <h2 class="text-base sm:text-lg font-semibold text-zinc-900">
                                     {{ __('Minu kuulutused') }}
                                 </h2>
                                 <p class="mt-1 text-sm leading-6 text-zinc-600">
@@ -155,7 +183,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-center justify-between">
+                        <div class="mt-5 sm:mt-6 flex items-center justify-between">
                             <span class="text-sm font-medium text-zinc-500 group-hover:text-zinc-900">
                                 {{ __('Ava') }}
                             </span>
@@ -168,14 +196,14 @@
                     </a>
 
                     <a href="{{ route('favorites.index') }}"
-                       class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
-                                <x-icons.heart class="h-7 w-7 text-zinc-700" />
+                       class="group relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
+                                <x-icons.heart class="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
                             </div>
 
                             <div class="min-w-0">
-                                <h2 class="text-lg font-semibold text-zinc-900">
+                                <h2 class="text-base sm:text-lg font-semibold text-zinc-900">
                                     {{ __('Lemmikud') }}
                                 </h2>
                                 <p class="mt-1 text-sm leading-6 text-zinc-600">
@@ -184,7 +212,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-center justify-between">
+                        <div class="mt-5 sm:mt-6 flex items-center justify-between">
                             <span class="text-sm font-medium text-zinc-500 group-hover:text-zinc-900">
                                 {{ __('Ava') }}
                             </span>
@@ -197,14 +225,14 @@
                     </a>
 
                     <a href="{{ route('messages.index') }}"
-                       class="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
-                                <x-icons.chat-bubble class="h-7 w-7 text-zinc-700" />
+                       class="group relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
+                                <x-icons.chat-bubble class="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
                             </div>
 
                             <div class="min-w-0">
-                                <h2 class="text-lg font-semibold text-zinc-900">
+                                <h2 class="text-base sm:text-lg font-semibold text-zinc-900">
                                     {{ __('Sõnumid') }}
                                 </h2>
                                 <p class="mt-1 text-sm leading-6 text-zinc-600">
@@ -213,7 +241,36 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-center justify-between">
+                        <div class="mt-5 sm:mt-6 flex items-center justify-between">
+                            <span class="text-sm font-medium text-zinc-500 group-hover:text-zinc-900">
+                                {{ __('Ava') }}
+                            </span>
+
+                            <svg class="h-5 w-5 text-zinc-400 transition group-hover:translate-x-1 group-hover:text-zinc-700"
+                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('purchases.index') }}"
+                       class="group relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100">
+                                <x-icons.shopping-bag class="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
+                            </div>
+
+                            <div class="min-w-0">
+                                <h2 class="text-base sm:text-lg font-semibold text-zinc-900">
+                                    {{ __('Minu ostud') }}
+                                </h2>
+                                <p class="mt-1 text-sm leading-6 text-zinc-600">
+                                    {{ __('Vaata oma ostusoove, broneeringuid ja lõpetatud tehinguid.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 sm:mt-6 flex items-center justify-between">
                             <span class="text-sm font-medium text-zinc-500 group-hover:text-zinc-900">
                                 {{ __('Ava') }}
                             </span>

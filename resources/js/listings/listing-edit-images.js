@@ -1,407 +1,271 @@
-// resources/js/listings/listing-edit-images.js
+document.addEventListener('alpine:init', () => {
+    Alpine.data('listingImagesEdit', ({ existing = [], maxImages = 10 } = {}) => ({
+        maxImages,
+        items: [],
+        deletedExistingIds: [],
+        modalOpen: false,
+        activeModalIndex: null,
 
-function initListingEditImages() {
-  const root = document.querySelector('[data-listing-edit-images]');
-  if (!root) return;
+        init() {
+            this.items = (Array.isArray(existing) ? existing : [])
+                .filter((img) => img && img.id && img.src)
+                .map((img) => ({
+                    uid: `e-${img.id}`,
+                    kind: 'existing',
+                    id: Number(img.id),
+                    src: String(img.src),
+                    preview: String(img.src),
+                    name: img.name ? String(img.name) : '',
+                }));
 
-  // ära init’i mitu korda (wire:navigate / livewire:navigated)
-  if (root.dataset.imagesInit === '1') return;
-  root.dataset.imagesInit = '1';
+            this.rebuildInputFiles();
+        },
 
-  const input = root.querySelector('#images'); // name="new_images[]"
-  const preview = root.querySelector('#imagePreview');
+        visibleItems() {
+            return this.items.filter((item) => {
+                return item.kind !== 'existing' || !this.deletedExistingIds.includes(item.id);
+            });
+        },
 
-  const orderField = root.querySelector('#images_order');
-  const deletedField = root.querySelector('#deleted_image_ids');
+        get deletedImageIdsJson() {
+            return JSON.stringify(this.deletedExistingIds);
+        },
 
-  if (!input || !preview || !orderField || !deletedField) return;
+        get imagesOrderJson() {
+            const visible = this.visibleItems();
+            let newIndex = 0;
 
-  const MAX_IMAGES = 10;
+            return JSON.stringify(
+                visible.map((item) => {
+                    if (item.kind === 'existing') {
+                        return `e:${item.id}`;
+                    }
 
-  /**
-   * items:
-   *  existing: { kind:'existing', id:number, src:string, name?:string }
-   *  new:      { kind:'new', file:File }
-   */
-  let items = [];
-  let deletedExistingIds = new Set(); // existing ids marked for delete
-  let activeModalIndex = null;
+                    return `n:${newIndex++}`;
+                })
+            );
+        },
 
-  // --- Modal (kui sul on sama markup nagu create lehel)
-  const modal = document.getElementById('imageModal');
-  const modalImg = document.getElementById('imageModalImg');
-  const modalClose = document.getElementById('imageModalClose');
-  const modalPrev = document.getElementById('imageModalPrev');
-  const modalNext = document.getElementById('imageModalNext');
-  const modalCounter = document.getElementById('imageModalCounter');
+        handleFiles(event) {
+            const selected = Array.from(event.target.files || []);
+            if (!selected.length) return;
 
-  function isModalOpen() {
-    return !!(modal && modal.classList.contains('flex') && !modal.classList.contains('hidden'));
-  }
+            let freeSlots = this.maxImages - this.visibleItems().length;
 
-  function getVisibleItems() {
-    return items.filter((it) => it.kind === 'new' || !deletedExistingIds.has(it.id));
-  }
+            if (freeSlots <= 0) {
+                alert(`Maksimaalselt ${this.maxImages} pilti (olemasolevad + uued kokku).`);
+                this.rebuildInputFiles();
+                return;
+            }
 
-  function showModalIndex(index) {
-    if (!modal || !modalImg) return;
-    const visible = getVisibleItems();
-    if (!visible.length) return;
+            let added = 0;
 
-    // wrap
-    if (index < 0) index = visible.length - 1;
-    if (index >= visible.length) index = 0;
+            for (const file of selected) {
+                if (freeSlots <= 0) break;
+                if (this.isDuplicateNew(file)) continue;
 
-    activeModalIndex = index;
-    const it = visible[activeModalIndex];
+                this.items.push({
+                    uid: this.makeUid(file),
+                    kind: 'new',
+                    file,
+                    preview: URL.createObjectURL(file),
+                    name: file.name,
+                });
 
-    modalImg.style.transform = 'rotate(0deg)';
+                freeSlots--;
+                added++;
+            }
 
-    if (it.kind === 'existing') {
-      modalImg.src = it.src;
-      modalImg.alt = it.name || '';
-    } else {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        modalImg.src = ev.target.result;
-        modalImg.alt = it.file?.name || '';
-      };
-      reader.readAsDataURL(it.file);
-    }
+            if (added < selected.length) {
+                alert(`Lisati ${added} pilti. Ülejäänud jäeti välja (max piirang või duplikaat).`);
+            }
 
-    if (modalCounter) modalCounter.textContent = `${activeModalIndex + 1} / ${visible.length}`;
-  }
+            this.rebuildInputFiles();
+        },
 
-  function openModalFromItemIndex(visibleIndex) {
-    if (!modal || !modalImg) return;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    showModalIndex(visibleIndex);
-  }
+        makeUid(file) {
+            const random =
+                typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  function closeModal() {
-    if (!modal || !modalImg) return;
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    modalImg.src = '';
-    modalImg.style.transform = 'rotate(0deg)';
-    activeModalIndex = null;
-    if (modalCounter) modalCounter.textContent = '';
-  }
+            return `n-${file.name}-${file.size}-${file.lastModified}-${random}`;
+        },
 
-  if (modalClose) {
-    modalClose.addEventListener('click', (e) => {
-      e.preventDefault();
-      closeModal();
-    });
-  }
+        isDuplicateNew(file) {
+            return this.items.some((item) =>
+                item.kind === 'new' &&
+                item.file &&
+                item.file.name === file.name &&
+                item.file.size === file.size &&
+                item.file.lastModified === file.lastModified
+            );
+        },
 
-  if (modalPrev) {
-    modalPrev.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex - 1);
-    });
-  }
+        rebuildInputFiles() {
+            if (!this.$refs.input) return;
 
-  if (modalNext) {
-    modalNext.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (activeModalIndex === null) return;
-      showModalIndex(activeModalIndex + 1);
-    });
-  }
+            const dt = new DataTransfer();
 
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-  }
+            this.items.forEach((item) => {
+                if (item.kind === 'new' && item.file) {
+                    dt.items.add(item.file);
+                }
+            });
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (isModalOpen()) closeModal();
-      return;
-    }
-    if (!isModalOpen()) return;
-    if (e.key === 'ArrowLeft') {
-      if (activeModalIndex !== null) showModalIndex(activeModalIndex - 1);
-    }
-    if (e.key === 'ArrowRight') {
-      if (activeModalIndex !== null) showModalIndex(activeModalIndex + 1);
-    }
-  });
+            this.$refs.input.files = dt.files;
+        },
 
-  // --- Load existing from data-existing JSON
-  function loadExistingFromDataset() {
-    const raw = root.getAttribute('data-existing');
-    if (!raw) return;
+        visibleIndexToRealIndex(visibleIndex) {
+            const visible = this.visibleItems();
+            const target = visible[visibleIndex];
+            if (!target) return -1;
 
-    let arr = [];
-    try {
-      arr = JSON.parse(raw);
-    } catch {
-      arr = [];
-    }
+            return this.items.findIndex((item) => item.uid === target.uid);
+        },
 
-    arr.forEach((x) => {
-      if (!x || !x.id || !x.src) return;
+        swapReal(realA, realB) {
+            if (
+                realA < 0 ||
+                realB < 0 ||
+                realA >= this.items.length ||
+                realB >= this.items.length
+            ) {
+                return;
+            }
 
-      items.push({
-        kind: 'existing',
-        id: Number(x.id),
-        src: String(x.src),
-        name: x.name ? String(x.name) : '',
-      });
-    });
-  }
+            const temp = this.items[realA];
+            this.items[realA] = this.items[realB];
+            this.items[realB] = temp;
 
-  function countTotalVisible() {
-    return getVisibleItems().length;
-  }
+            this.items = [...this.items];
+            this.rebuildInputFiles();
+        },
 
-  function isDuplicateNew(file) {
-    // ainult uute sees kontroll
-    return items.some((it) =>
-      it.kind === 'new' &&
-      it.file.name === file.name &&
-      it.file.size === file.size &&
-      it.file.lastModified === file.lastModified
-    );
-  }
+        moveUp(visibleIndex) {
+            if (visibleIndex <= 0) return;
 
-  function rebuildInputFilesFromItems() {
-    // input.files sisaldab ainult NEW faile järjekorras nagu items-is (new itemid)
-    const dt = new DataTransfer();
-    items.forEach((it) => {
-      if (it.kind === 'new') dt.items.add(it.file);
-    });
-    input.files = dt.files;
-  }
+            const realA = this.visibleIndexToRealIndex(visibleIndex);
+            const realB = this.visibleIndexToRealIndex(visibleIndex - 1);
 
-  /**
-   * ✅ OLULINE: edit backend ootab images_order JSON-i segajärjekorras:
-   * ["e:12","n:0","e:15","n:1", ...]
-   * kus n: indeks viitab uute piltide järjekorrale (0..)
-   */
-  function syncHiddenFields() {
-    // deleted existing ids
-    deletedField.value = JSON.stringify(Array.from(deletedExistingIds));
+            this.swapReal(realA, realB);
 
-    const visible = getVisibleItems();
+            if (this.modalOpen && this.activeModalIndex === visibleIndex) {
+                this.activeModalIndex = visibleIndex - 1;
+            } else if (this.modalOpen && this.activeModalIndex === visibleIndex - 1) {
+                this.activeModalIndex = visibleIndex;
+            }
+        },
 
-    // anna uutele nähtavatele piltidele n-indeksid nende nähtavas järjekorras
-    let nIdx = 0;
-    const orderTokens = visible.map((it) => {
-      if (it.kind === 'existing') return `e:${it.id}`;
-      return `n:${nIdx++}`;
-    });
+        moveDown(visibleIndex) {
+            const visible = this.visibleItems();
+            if (visibleIndex >= visible.length - 1) return;
 
-    orderField.value = JSON.stringify(orderTokens);
-  }
+            const realA = this.visibleIndexToRealIndex(visibleIndex);
+            const realB = this.visibleIndexToRealIndex(visibleIndex + 1);
 
-  function addPlusTile() {
-    if (countTotalVisible() >= MAX_IMAGES) return;
+            this.swapReal(realA, realB);
 
-    const addTile = document.createElement('button');
-    addTile.type = 'button';
-    addTile.className =
-      'flex aspect-square items-center justify-center rounded-xl border-2 border-dashed ' +
-      'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 ' +
-      'hover:text-zinc-700 dark:hover:text-zinc-200';
+            if (this.modalOpen && this.activeModalIndex === visibleIndex) {
+                this.activeModalIndex = visibleIndex + 1;
+            } else if (this.modalOpen && this.activeModalIndex === visibleIndex + 1) {
+                this.activeModalIndex = visibleIndex;
+            }
+        },
 
-    addTile.innerHTML = `
-      <div class="flex flex-col items-center gap-1">
-        <div class="text-3xl leading-none">+</div>
-        <div class="text-xs">Lisa</div>
-      </div>
-    `;
+        remove(visibleIndex) {
+            const visible = this.visibleItems();
+            const target = visible[visibleIndex];
+            if (!target) return;
 
-    addTile.addEventListener('click', () => {
-      input.value = null;
-      input.click();
-    });
+            if (target.kind === 'existing') {
+                if (!this.deletedExistingIds.includes(target.id)) {
+                    this.deletedExistingIds = [...this.deletedExistingIds, target.id];
+                }
+            } else {
+                const realIndex = this.items.findIndex((item) => item.uid === target.uid);
 
-    preview.appendChild(addTile);
-  }
+                if (realIndex >= 0) {
+                    const removed = this.items[realIndex];
 
-  function sameItem(a, b) {
-    if (a.kind !== b.kind) return false;
-    if (a.kind === 'existing') return a.id === b.id;
-    return a.file === b.file;
-  }
+                    if (removed?.preview) {
+                        URL.revokeObjectURL(removed.preview);
+                    }
 
-  function render() {
-    preview.innerHTML = '';
+                    this.items.splice(realIndex, 1);
+                    this.items = [...this.items];
+                }
+            }
 
-    const visible = getVisibleItems();
+            this.rebuildInputFiles();
 
-    visible.forEach((item, visibleIndex) => {
-      const wrap = document.createElement('div');
-      wrap.className =
-        'relative aspect-square rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900';
-      wrap.draggable = true;
-      wrap.dataset.visibleIndex = String(visibleIndex);
+            const newVisible = this.visibleItems();
 
-      const img = document.createElement('img');
-      img.className = 'w-full h-full object-cover cursor-zoom-in';
-      img.alt = item.kind === 'existing' ? (item.name || '') : (item.file?.name || '');
-      img.style.transform = 'rotate(0deg)';
+            if (!newVisible.length) {
+                this.closeModal();
+                return;
+            }
 
-      if (item.kind === 'existing') {
-        img.src = item.src;
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => { img.src = e.target.result; };
-        reader.readAsDataURL(item.file);
-      }
+            if (this.modalOpen) {
+                if (this.activeModalIndex === visibleIndex) {
+                    this.activeModalIndex = Math.min(visibleIndex, newVisible.length - 1);
+                } else if (visibleIndex < this.activeModalIndex) {
+                    this.activeModalIndex--;
+                }
+            }
+        },
 
-      img.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (modal && modalImg) openModalFromItemIndex(visibleIndex);
-      });
+        openModal(visibleIndex) {
+            const visible = this.visibleItems();
+            if (!visible[visibleIndex]) return;
 
-      const badge = document.createElement('div');
-      badge.className =
-        'absolute top-1 left-1 text-[10px] px-2 py-1 rounded-lg bg-black/60 text-white';
-      badge.textContent = visibleIndex === 0 ? 'Cover' : `#${visibleIndex + 1}`;
+            this.activeModalIndex = visibleIndex;
+            this.modalOpen = true;
+        },
 
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className =
-        'absolute top-1 right-1 text-[12px] w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center';
-      removeBtn.textContent = '×';
-      removeBtn.title = 'Eemalda';
+        closeModal() {
+            this.modalOpen = false;
+            this.activeModalIndex = null;
+        },
 
-      removeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        prevModal() {
+            const visible = this.visibleItems();
+            if (!visible.length || this.activeModalIndex === null) return;
 
-        const it = visible[visibleIndex];
-        if (!it) return;
+            this.activeModalIndex =
+                this.activeModalIndex <= 0
+                    ? visible.length - 1
+                    : this.activeModalIndex - 1;
+        },
 
-        if (it.kind === 'existing') {
-          deletedExistingIds.add(it.id);
-        } else {
-          const realIdx = items.findIndex((x) => x.kind === 'new' && x.file === it.file);
-          if (realIdx >= 0) items.splice(realIdx, 1);
+        nextModal() {
+            const visible = this.visibleItems();
+            if (!visible.length || this.activeModalIndex === null) return;
+
+            this.activeModalIndex =
+                this.activeModalIndex >= visible.length - 1
+                    ? 0
+                    : this.activeModalIndex + 1;
+        },
+
+        modalImageSrc() {
+            const visible = this.visibleItems();
+
+            if (this.activeModalIndex === null || !visible[this.activeModalIndex]) {
+                return '';
+            }
+
+            return visible[this.activeModalIndex].preview;
+        },
+
+        modalCounterText() {
+            const visible = this.visibleItems();
+
+            if (this.activeModalIndex === null || !visible.length) {
+                return '';
+            }
+
+            return `${this.activeModalIndex + 1} / ${visible.length}`;
         }
-
-        if (activeModalIndex !== null && isModalOpen()) {
-          const newVisible = getVisibleItems();
-          if (newVisible.length === 0) closeModal();
-          else if (activeModalIndex >= newVisible.length) showModalIndex(newVisible.length - 1);
-          else showModalIndex(activeModalIndex);
-        }
-
-        rebuildInputFilesFromItems();
-        syncHiddenFields();
-        render();
-      });
-
-      // Drag & drop reorder
-      wrap.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', String(visibleIndex));
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      wrap.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        wrap.classList.add('ring-2', 'ring-zinc-400');
-      });
-
-      wrap.addEventListener('dragleave', () => {
-        wrap.classList.remove('ring-2', 'ring-zinc-400');
-      });
-
-      wrap.addEventListener('drop', (e) => {
-        e.preventDefault();
-        wrap.classList.remove('ring-2', 'ring-zinc-400');
-
-        const fromVisible = Number(e.dataTransfer.getData('text/plain'));
-        const toVisible = visibleIndex;
-        if (Number.isNaN(fromVisible) || fromVisible === toVisible) return;
-
-        const visibleNow = getVisibleItems();
-        const fromItem = visibleNow[fromVisible];
-        const toItem = visibleNow[toVisible];
-        if (!fromItem || !toItem) return;
-
-        const fromReal = items.findIndex((x) => sameItem(x, fromItem));
-        const toReal = items.findIndex((x) => sameItem(x, toItem));
-        if (fromReal < 0 || toReal < 0) return;
-
-        const moved = items.splice(fromReal, 1)[0];
-        items.splice(toReal, 0, moved);
-
-        if (activeModalIndex !== null && isModalOpen()) {
-          const newVisible = getVisibleItems();
-          if (newVisible.length) {
-            activeModalIndex = Math.min(activeModalIndex, newVisible.length - 1);
-            showModalIndex(activeModalIndex);
-          }
-        }
-
-        rebuildInputFilesFromItems();
-        syncHiddenFields();
-        render();
-      });
-
-      wrap.appendChild(img);
-      wrap.appendChild(badge);
-      wrap.appendChild(removeBtn);
-
-      preview.appendChild(wrap);
-    });
-
-    addPlusTile();
-  }
-
-  // --- NEW file add
-  input.addEventListener('change', () => {
-    const selected = Array.from(input.files || []);
-    if (!selected.length) return;
-
-    let freeSlots = MAX_IMAGES - countTotalVisible();
-
-    if (freeSlots <= 0) {
-      alert(`Maksimaalselt ${MAX_IMAGES} pilti (olemasolevad + uued kokku).`);
-      input.value = null;
-      rebuildInputFilesFromItems();
-      syncHiddenFields();
-      render();
-      return;
-    }
-
-    let added = 0;
-
-    for (const file of selected) {
-      if (freeSlots <= 0) break;
-      if (isDuplicateNew(file)) continue;
-
-      items.push({ kind: 'new', file });
-      freeSlots--;
-      added++;
-    }
-
-    if (added < selected.length) {
-      alert(`Lisati ${added} pilti. Ülejäänud jäeti välja (max piirang / duplikaat).`);
-    }
-
-    rebuildInputFilesFromItems();
-    syncHiddenFields();
-    render();
-
-    // allow selecting same file again
-    //input.value = null; //See praegu ei lase uutel piltidel salvestuda vist
-  });
-
-  // --- INIT
-  loadExistingFromDataset();
-  rebuildInputFilesFromItems();
-  syncHiddenFields();
-  render();
-}
-
-document.addEventListener('DOMContentLoaded', initListingEditImages);
-document.addEventListener('livewire:navigated', initListingEditImages);
+    }));
+});

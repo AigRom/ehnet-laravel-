@@ -22,11 +22,16 @@ class ListingController extends Controller
             ->get(['id', 'name_et', 'slug']);
 
         $listings = Listing::query()
-            ->where('status', 'published')
-            ->where(function ($q2) {
-                $q2->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', 'published')
+                        ->where(function ($qq) {
+                            $qq->whereNull('expires_at')
+                                ->orWhere('expires_at', '>=', now());
+                        });
+                })->orWhere('status', 'reserved');
             })
+
             ->when($q, fn ($query) => $query->where(function ($qq) use ($q) {
                 $qq->where('title', 'like', "%{$q}%")
                     ->orWhere('description', 'like', "%{$q}%");
@@ -36,7 +41,7 @@ class ListingController extends Controller
             ->when($sort === 'price_desc', fn ($query) => $query->orderBy('price', 'desc'))
             ->when($sort === 'oldest', fn ($query) => $query->orderBy('created_at', 'asc'))
             ->when($sort === 'newest', fn ($query) => $query->orderBy('created_at', 'desc'))
-            ->paginate(24)
+            ->paginate(36)
             ->withQueryString();
 
         return view('listings.index', compact('listings', 'q', 'sort', 'category', 'categories'));
@@ -49,7 +54,7 @@ class ListingController extends Controller
             && $listing->expires_at->isPast();
 
         abort_if(
-            $listing->status !== 'published' || $isExpired,
+            !in_array($listing->status, ['published', 'reserved'], true) || $isExpired,
             404
         );
 
@@ -88,10 +93,14 @@ class ListingController extends Controller
             ->with(['images', 'location', 'category'])
             ->where('id', '!=', $listing->id)
             ->where('user_id', $listing->user_id)
-            ->where('status', 'published')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', 'published')
+                        ->where(function ($qq) {
+                            $qq->whereNull('expires_at')
+                                ->orWhere('expires_at', '>=', now());
+                        });
+                })->orWhere('status', 'reserved');
             })
             ->latest('created_at')
             ->limit(8)
@@ -100,10 +109,14 @@ class ListingController extends Controller
         $similarListings = Listing::query()
             ->with(['images', 'location', 'category'])
             ->where('id', '!=', $listing->id)
-            ->where('status', 'published')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', 'published')
+                        ->where(function ($qq) {
+                            $qq->whereNull('expires_at')
+                                ->orWhere('expires_at', '>=', now());
+                        });
+                })->orWhere('status', 'reserved');
             })
             ->when($listing->category_id, fn ($query) => $query->where('category_id', $listing->category_id))
             ->latest('created_at')

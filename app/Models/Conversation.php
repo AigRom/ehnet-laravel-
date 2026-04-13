@@ -35,7 +35,7 @@ class Conversation extends Model
      */
     public function listing(): BelongsTo
     {
-        return $this->belongsTo(Listing::class)->withTrashed();
+        return $this->belongsTo(Listing::class);
     }
 
     /**
@@ -89,12 +89,18 @@ class Conversation extends Model
     /**
      * Kõik aktiivsed tehingud selles vestluses.
      *
-     * Aktiivseks loeme interest ja reserved staatusega tehingud.
+     * Uue flow järgi loeme aktiivseks:
+     * - interest
+     * - reserved
+     * - awaiting_confirmation
+     *
+     * Need on kõik tehingud, mis on veel protsessis
+     * ega ole lõplikult lõpetatud või katkestatud.
      */
     public function openTrades(): HasMany
     {
         return $this->hasMany(Trade::class)
-            ->whereIn('status', ['interest', 'reserved']);
+            ->whereIn('status', ['interest', 'reserved', 'awaiting_confirmation']);
     }
 
     /**
@@ -103,7 +109,7 @@ class Conversation extends Model
     public function latestOpenTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
-            ->whereIn('status', ['interest', 'reserved'])
+            ->whereIn('status', ['interest', 'reserved', 'awaiting_confirmation'])
             ->latestOfMany();
     }
 
@@ -114,6 +120,16 @@ class Conversation extends Model
     {
         return $this->hasOne(Trade::class)
             ->where('status', 'reserved')
+            ->latestOfMany();
+    }
+
+    /**
+     * Viimane ostja kinnitust ootav tehing selles vestluses.
+     */
+    public function latestAwaitingConfirmationTrade(): HasOne
+    {
+        return $this->hasOne(Trade::class)
+            ->where('status', 'awaiting_confirmation')
             ->latestOfMany();
     }
 
@@ -257,7 +273,7 @@ class Conversation extends Model
     /**
      * Kas vestluses on aktiivne tehing.
      *
-     * Aktiivseks loeme interest või reserved staatusega tehingu.
+     * Aktiivseks loeme interest, reserved või awaiting_confirmation staatusega tehingu.
      */
     public function hasOpenTrade(): bool
     {
@@ -270,6 +286,9 @@ class Conversation extends Model
      * Eelistus:
      * 1. viimane aktiivne tehing
      * 2. viimane tehing üldse
+     *
+     * Kuna awaiting_confirmation kuulub nüüd aktiivsete hulka,
+     * võetakse see samuti õigesti arvesse.
      */
     public function currentTrade(): ?Trade
     {
@@ -288,6 +307,10 @@ class Conversation extends Model
      * Kas antud kasutaja võib selles vestluses uusi sõnumeid saata.
      *
      * Sõnumite saatmine on suletud, kui kuulutus puudub või on kustutatud.
+     *
+     * NB! Praegu jääb see lihtsaks:
+     * kui vestlus on olemas ja kuulutus pole kustutatud, võivad osapooled jätkata suhtlust
+     * ka awaiting_confirmation etapis.
      */
     public function canUserSendMessages(User $user): bool
     {

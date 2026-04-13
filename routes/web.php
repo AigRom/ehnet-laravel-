@@ -18,7 +18,7 @@ use App\Http\Controllers\Public\UserProfileController;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\Trade\TradeController;
 use App\Http\Controllers\Trade\ReviewController;
-
+use App\Http\Controllers\User\PurchaseController;
 /*
 |--------------------------------------------------------------------------
 | Avalikud lehed
@@ -224,6 +224,14 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{listing}/relist', [UserListingController::class, 'relistMine'])->name('listings.mine.relist');
     });
 
+        /*
+    |--------------------------------------------------------------------------
+    | Minu ostud
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/my/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+    Route::get('/my/purchases/{trade}', [PurchaseController::class, 'show'])->name('purchases.show');
+
     /*
     |--------------------------------------------------------------------------
     | Lemmik kuulutused
@@ -231,4 +239,4 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/favorites', [UserListingController::class, 'favorites'])
         ->name('favorites.index');
-});
+    });
