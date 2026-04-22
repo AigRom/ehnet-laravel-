@@ -28,6 +28,8 @@
     $editAction = route('listings.mine.edit', $listing);
     $completeTradeAction = $reservedTrade ? route('messages.complete', $reservedTrade->conversation_id) : null;
     $cancelTradeAction = $reservedTrade ? route('messages.trades.cancel', [$reservedTrade->conversation_id, $reservedTrade]) : null;
+
+    $loginAction = route('login', ['redirect' => url()->current()]);
 @endphp
 
 <div class="space-y-4">
@@ -135,17 +137,10 @@
             @else
                 @if($isPublished)
                     <a
-                        href="{{ route('login') }}"
+                        href="{{ $loginAction }}"
                         class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
                     >
-                        {{ __('Logi sisse, et saata sõnum') }}
-                    </a>
-
-                    <a
-                        href="{{ route('login') }}"
-                        class="inline-flex w-full items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50"
-                    >
-                        {{ __('Logi sisse, et osta') }}
+                        {{ __('Logi sisse, et jätkata') }}
                     </a>
                 @endif
             @endauth

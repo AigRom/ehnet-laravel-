@@ -6,19 +6,8 @@
 
     <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
         <div class="flex items-center justify-between">
-            <a
-                href="{{ url()->previous() }}"
-                class="text-sm text-blue-600 hover:underline"
-            >
-                ← {{ __('Tagasi') }}
-            </a>
+            <x-ui.back-button />
 
-            <a
-                href="{{ route('listings.index') }}"
-                class="text-sm text-zinc-600 hover:underline"
-            >
-                {{ __('Kõik kuulutused') }}
-            </a>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
