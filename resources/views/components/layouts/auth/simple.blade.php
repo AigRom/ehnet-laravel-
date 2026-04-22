@@ -20,7 +20,7 @@
                     <div class="flex h-16 items-center">
                         <a
                             href="{{ route('home') }}"
-                            class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                            class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-0"
                             wire:navigate
                             title="{{ __('Avalehele') }}"
                         >

@@ -22,7 +22,7 @@
         <div class="flex h-16 items-center justify-between">
             {{-- Logo + Brand --}}
             <a href="{{ route('home') }}"
-               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400">
+               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-0">
                 <x-app-logo class="h-10 w-auto" />
                 <!-- <span class="text-lg font-semibold tracking-tight text-zinc-900">
                     EHNET
