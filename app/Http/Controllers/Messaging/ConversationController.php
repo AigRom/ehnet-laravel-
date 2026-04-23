@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Messaging;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Listing;
+use App\Models\Message;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -34,7 +35,12 @@ class ConversationController extends Controller
 
         $conversation->messages()
             ->whereNull('read_at')
-            ->where('sender_id', '!=', $user->id)
+            ->where(function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('type', Message::TYPE_USER)
+                        ->where('sender_id', '!=', $user->id);
+                })->orWhere('type', Message::TYPE_SYSTEM);
+            })
             ->update([
                 'read_at' => now(),
             ]);
@@ -71,6 +77,7 @@ class ConversationController extends Controller
             'listing.location',
             'listing.user.location',
             'listing.reservedTrade.buyer',
+            'listing.awaitingConfirmationTrade.buyer',
             'listing.soldTrade.buyer',
             'listing.latestActiveTrade.conversation',
             'latestTrade',
@@ -173,7 +180,12 @@ class ConversationController extends Controller
             ->withCount([
                 'messages as unread_messages_count' => function ($query) use ($user) {
                     $query->whereNull('read_at')
-                        ->where('sender_id', '!=', $user->id);
+                        ->where(function ($q) use ($user) {
+                            $q->where(function ($qq) use ($user) {
+                                $qq->where('type', Message::TYPE_USER)
+                                    ->where('sender_id', '!=', $user->id);
+                            })->orWhere('type', Message::TYPE_SYSTEM);
+                        });
                 },
             ])
             ->where(function ($query) use ($user) {

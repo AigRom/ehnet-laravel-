@@ -21,9 +21,9 @@ class Message extends Model
     protected $fillable = [
         'conversation_id',
         'sender_id',
-        'type',        // ⬅️ LISATUD
+        'type',
         'body',
-        'meta',        // ⬅️ LISATUD
+        'meta',       
         'read_at',
     ];
 
@@ -32,7 +32,7 @@ class Message extends Model
      */
     protected $casts = [
         'read_at' => 'datetime',
-        'meta' => 'array', // ⬅️ LISATUD
+        'meta' => 'array',
     ];
 
     /**

@@ -31,6 +31,10 @@
         if ($previewText === '' && $lastMessage->hasAttachments()) {
             $previewText = __('Saatis manuse');
         }
+
+        if ($previewText === '' && $lastMessage->isSystem()) {
+            $previewText = __('Süsteemiteade');
+        }
     }
 @endphp
 

@@ -23,7 +23,24 @@
     $canSendMessage = $listing->canBuyerSendMessage($user);
     $canBuyIntent = $listing->canBuyerExpressBuyIntent();
 
-    $messageAction = route('listings.conversation.open', $listing);
+    $existingConversation = null;
+
+    if ($user && $listing->isReservedForUser($user)) {
+        $existingConversation = $listing->conversations()
+            ->where('buyer_id', $user->id)
+            ->where('seller_id', $listing->user_id)
+            ->latest('id')
+            ->first();
+    }
+
+    $messageAction = $existingConversation
+        ? route('messages.show', $existingConversation)
+        : route('listings.conversation.open', $listing);
+
+    $messageLabel = $existingConversation
+        ? __('Ava vestlus')
+        : __('Saada sõnum');
+
     $buyIntentAction = route('listings.buy-intent', $listing);
     $editAction = route('listings.mine.edit', $listing);
     $completeTradeAction = $reservedTrade ? route('messages.complete', $reservedTrade->conversation_id) : null;
@@ -110,16 +127,25 @@
         @else
             @auth
                 @if($canSendMessage)
-                    <form method="POST" action="{{ $messageAction }}">
-                        @csrf
-
-                        <button
-                            type="submit"
+                    @if($existingConversation)
+                        <a
+                            href="{{ $messageAction }}"
                             class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
                         >
-                            {{ __('Saada sõnum') }}
-                        </button>
-                    </form>
+                            {{ $messageLabel }}
+                        </a>
+                    @else
+                        <form method="POST" action="{{ $messageAction }}">
+                            @csrf
+
+                            <button
+                                type="submit"
+                                class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                            >
+                                {{ $messageLabel }}
+                            </button>
+                        </form>
+                    @endif
                 @endif
 
                 @if($canBuyIntent)
