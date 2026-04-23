@@ -1,5 +1,8 @@
 <img
-    src="{{ asset('images/ehnet-logo.png') }}"
-    alt="EHNET"
-    {{ $attributes->merge(['class' => 'h-30 w-auto']) }}
+    src="{{ asset('branding/logo/ehnet-128.png') }}"
+    srcset="{{ asset('branding/logo/ehnet-256.png') }} 2x"
+    alt="EHNET logo"
+    loading="eager"
+    decoding="async"
+    {{ $attributes->merge(['class' => 'h-10 w-auto select-none']) }}
 />
