@@ -9,6 +9,10 @@
         ?? $listing->location?->name_et
         ?? null;
 
+    $shortLocation = $listing->location?->name_et
+        ?? $listing->location?->name
+        ?? $location;
+
     $isReserved = $listing->isReserved();
 @endphp
 
@@ -38,25 +42,38 @@
         </div>
     </div>
 
-    <div class="p-4">
-        <h3 class="line-clamp-2 text-base font-semibold text-zinc-900 group-hover:underline">
+    <div class="p-3 sm:p-4">
+        <h3 class="line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:underline sm:text-base">
             {{ $listing->title }}
         </h3>
 
-        <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600">
-            @if($location)
-                <span>{{ $location }}</span>
-            @endif
-        </div>
+        @if($location)
+            <div class="mt-2 flex items-center gap-1.5 text-xs text-zinc-500 sm:text-sm">
+                <svg class="h-3.5 w-3.5 shrink-0 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21s7-4.5 7-11a7 7 0 0 0-14 0c0 6.5 7 11 7 11Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                </svg>
 
-        <div class="mt-4 flex items-end justify-between">
-            <span class="text-xs text-zinc-500">
+                <span class="truncate">
+                    {{ $shortLocation }}
+                </span>
+            </div>
+        @endif
+
+        <div class="mt-3 flex items-end justify-between gap-3 sm:mt-4">
+            <span class="shrink-0 text-[11px] text-zinc-500 sm:text-xs">
                 {{ optional($listing->published_at)->format('d.m.Y') ?? '' }}
             </span>
 
-            <span class="text-sm font-semibold text-zinc-900">
-                {{ $listing->priceLabel() }}
-            </span>
+            <div class="min-w-0 text-right">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+                    {{ __('Hind') }}
+                </div>
+
+                <div class="truncate text-base font-extrabold leading-tight text-emerald-950 sm:text-lg">
+                    {{ $listing->priceLabel() }}
+                </div>
+            </div>
         </div>
     </div>
 </a>

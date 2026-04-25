@@ -23,19 +23,11 @@
 
     <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:space-y-8 md:py-8">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <a
-                href="{{ url()->previous() }}"
-                class="text-sm text-blue-600 hover:underline"
-            >
-                ← {{ __('Tagasi') }}
-            </a>
+            <div class="flex items-center justify-between">
+                <x-ui.back-button />
 
-            <a
-                href="{{ route('listings.index') }}"
-                class="text-sm text-zinc-600 hover:underline"
-            >
-                {{ __('Kõik kuulutused') }}
-            </a>
+            </div>
+
         </div>
 
         <div x-data="{ tab: 'listings' }" class="space-y-6">

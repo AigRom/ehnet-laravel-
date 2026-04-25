@@ -12,7 +12,11 @@
         
     </div>
 
-    <x-listings.search-bar :categories="$categories" />
+    <x-listings.search-bar
+        :categories="$categories"
+        :counties="$counties"
+    />
+    <x-listings.sort-bar :listings="$listings" />
 
     {{-- Grid --}}
     @if($listings->count() > 0)

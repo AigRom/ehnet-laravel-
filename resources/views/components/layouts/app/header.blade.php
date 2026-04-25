@@ -12,83 +12,75 @@
 
     $loginUrl = route('login', ['redirect' => $authRedirect]);
     $registerUrl = route('register', ['redirect' => $authRedirect]);
+
+    $navLink = 'inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 text-base font-semibold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800';
+    $primaryNavLink = 'inline-flex items-center gap-2.5 rounded-2xl bg-emerald-900 px-5 py-3 text-base font-semibold text-white shadow-sm shadow-emerald-950/20 transition hover:bg-emerald-800 hover:shadow-md';
+    $mobileLink = 'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50';
+    $mobilePrimaryLink = 'flex items-center gap-2 rounded-xl bg-emerald-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800';
+
+    $iconClass = 'h-7 w-7 text-emerald-900';
+    $primaryIconClass = 'h-7 w-7 text-white';
+    $mobileIconClass = 'h-6 w-6 text-emerald-900';
+    $mobilePrimaryIconClass = 'h-6 w-6 text-white';
 @endphp
 
 <header
     x-data="{ mobileOpen: false, userOpen: false, mobileUserOpen: false }"
-    class="sticky top-0 z-50 w-full border-b border-zinc-200/70 bg-white/80 backdrop-blur"
+    class="sticky top-0 z-50 w-full border-b border-emerald-950/10 bg-gradient-to-b from-white/95 to-white/85 shadow-sm backdrop-blur-xl"
 >
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 items-center justify-between">
+    <div class="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
+        <div class="flex h-24 items-center justify-between gap-8">
+
             {{-- Logo + Brand --}}
             <a href="{{ route('home') }}"
-               class="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-0">
-                <x-app-logo class="h-10 w-auto" />
-                <!-- <span class="text-lg font-semibold tracking-tight text-zinc-900">
+               class="flex shrink-0 items-center gap-3.5 rounded-xl focus:outline-none focus:ring-0">
+                <x-app-logo class="h-14 w-auto" />
+
+                <span class="text-2xl font-extrabold tracking-tight text-emerald-900">
                     EHNET
-                </span> -->
+                </span>
             </a>
 
             {{-- Desktop nav --}}
-            <nav class="hidden md:flex items-center gap-1">
-                {{-- Kõik kuulutused --}}
-                <a href="{{ route('listings.index') }}"
-                   class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                    <x-icons.squares-2x2 class="h-5 w-5" />
+            <nav class="hidden md:flex flex-1 items-center justify-end gap-2">
+                <a href="{{ route('listings.index') }}" class="{{ $navLink }}">
+                    <x-icons.squares-2x2 class="{{ $iconClass }}" />
                     <span>{{ __('Kõik kuulutused') }}</span>
                 </a>
 
-                {{-- Lisa kuulutus --}}
-                <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}"
-                   class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                    <x-icons.plus-circle class="h-5 w-5" />
-                    <span>{{ __('Lisa kuulutus') }}</span>
-                </a>
-
                 @auth
-                    {{-- Märguanded --}}
-                    <a href="{{ route('home') }}"
-                       class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                        <x-icons.bell class="h-5 w-5" />
-                        <span>{{ __('Märguanded') }}</span>
-                    </a>
-
-                    {{-- Sõnumid --}}
-                    <a href="{{ route('messages.index') }}"
-                       class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                        <div class="relative">
-                            <x-icons.chat-bubble class="h-5 w-5" />
+                    <a href="{{ route('messages.index') }}" class="{{ $navLink }}">
+                        <span class="relative">
+                            <x-icons.chat-bubble class="{{ $iconClass }}" />
 
                             @if(($unreadConversationsCount ?? 0) > 0)
-                                <span class="absolute -right-2 -top-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                                <span class="absolute -right-2 -top-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white">
                                     {{ $unreadConversationsCount > 99 ? '99+' : $unreadConversationsCount }}
                                 </span>
                             @endif
-                        </div>
+                        </span>
 
                         <span>{{ __('Sõnumid') }}</span>
                     </a>
 
-                    {{-- Minu EHNET + Logi välja --}}
+                    {{-- Minu EHNET --}}
                     <div class="relative ml-2"
                          @click.outside="userOpen = false"
                          @keydown.escape.window="userOpen = false">
 
-                        <div class="flex items-center overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-                            {{-- Dashboard link --}}
+                        <div class="flex items-center overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">
                             <a href="{{ route('dashboard') }}"
-                               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                                <x-icons.user-circle class="h-5 w-5" />
+                               class="inline-flex items-center gap-2.5 px-5 py-3 text-base font-semibold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800">
+                                <x-icons.user-circle class="{{ $iconClass }}" />
                                 <span>{{ __('Minu EHNET') }}</span>
                             </a>
 
-                            {{-- Dropdown toggle --}}
                             <button type="button"
                                     @click.prevent="userOpen = !userOpen"
-                                    class="inline-flex items-center justify-center border-l border-zinc-200 px-2.5 py-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                                    class="inline-flex items-center justify-center border-l border-emerald-950/10 px-3.5 py-3 text-emerald-800 transition hover:bg-emerald-50 hover:text-emerald-950"
                                     :aria-expanded="userOpen.toString()"
                                     aria-label="{{ __('Ava kasutajamenüü') }}">
-                                <svg class="h-4 w-4 transition-transform duration-200"
+                                <svg class="h-5 w-5 transition-transform duration-200"
                                      :class="{ 'rotate-180': userOpen }"
                                      viewBox="0 0 20 20"
                                      fill="currentColor"
@@ -103,23 +95,23 @@
                         <div x-cloak
                              x-show="userOpen"
                              x-transition.origin.top.right
-                             class="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg">
+                             class="absolute right-0 mt-3 w-56 overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-xl shadow-emerald-950/10">
                             <div class="px-4 py-3">
-                                <div class="text-sm font-medium text-zinc-900">
+                                <div class="text-sm font-semibold text-emerald-950">
                                     {{ auth()->user()->name ?? __('Kasutaja') }}
                                 </div>
-                                <div class="text-xs text-zinc-500">
+                                <div class="truncate text-xs text-zinc-500">
                                     {{ auth()->user()->email }}
                                 </div>
                             </div>
 
-                            <div class="h-px bg-zinc-200"></div>
+                            <div class="h-px bg-emerald-950/10"></div>
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"
-                                        class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                                    <x-icons.logout class="h-5 w-5" />
+                                        class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800">
+                                    <x-icons.logout class="{{ $mobileIconClass }}" />
                                     <span>{{ __('Logi välja') }}</span>
                                 </button>
                             </form>
@@ -127,30 +119,36 @@
                     </div>
                 @else
                     <div class="ml-2 flex items-center gap-2">
-                        <a href="{{ $loginUrl }}"
-                           class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                            <x-icons.login class="h-5 w-5" />
+                        <a href="{{ $loginUrl }}" class="{{ $navLink }}">
+                            <x-icons.login class="{{ $iconClass }}" />
                             <span>{{ __('Logi sisse') }}</span>
                         </a>
 
-                        <a href="{{ $registerUrl }}"
-                           class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900">
-                            <x-icons.user-plus class="h-5 w-5" />
+                        <a href="{{ $registerUrl }}" class="{{ $navLink }}">
+                            <x-icons.user-plus class="{{ $iconClass }}" />
                             <span>{{ __('Registreeru') }}</span>
                         </a>
                     </div>
                 @endauth
+
+                {{-- Lisa kuulutus paremal eraldi --}}
+                <div class="ml-4">
+                    <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}" class="{{ $primaryNavLink }}">
+                        <x-icons.plus-circle class="{{ $primaryIconClass }}" />
+                        <span>{{ __('Lisa kuulutus') }}</span>
+                    </a>
+                </div>
             </nav>
 
             {{-- Mobile button --}}
             <button type="button"
-                    class="inline-flex items-center justify-center rounded-lg p-2 text-zinc-700 hover:bg-zinc-100 md:hidden"
+                    class="inline-flex items-center justify-center rounded-xl border border-emerald-950/10 bg-white p-2.5 text-emerald-900 shadow-sm transition hover:bg-emerald-50 md:hidden"
                     @click="mobileOpen = !mobileOpen"
-                    aria-label="{{ __('Ava menüü') }}"
-            >
+                    aria-label="{{ __('Ava menüü') }}">
                 <svg x-show="!mobileOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
+
                 <svg x-cloak x-show="mobileOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -159,54 +157,44 @@
     </div>
 
     {{-- Mobile panel --}}
-    <div x-cloak x-show="mobileOpen" x-transition class="border-t border-zinc-200/70 md:hidden">
-        <div class="mx-auto max-w-7xl space-y-1 px-4 py-3 sm:px-6 lg:px-8">
+    <div x-cloak
+         x-show="mobileOpen"
+         x-transition
+         class="border-t border-emerald-950/10 bg-white/95 shadow-lg shadow-emerald-950/5 md:hidden">
+        <div class="mx-auto max-w-7xl space-y-1 px-4 py-4 sm:px-6 lg:px-8">
 
-            <a href="{{ route('listings.index') }}"
-               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                <x-icons.squares-2x2 class="h-5 w-5" />
+            <a href="{{ route('listings.index') }}" class="{{ $mobileLink }}">
+                <x-icons.squares-2x2 class="{{ $mobileIconClass }}" />
                 <span>{{ __('Kõik kuulutused') }}</span>
             </a>
 
-            <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}"
-               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                <x-icons.plus-circle class="h-5 w-5" />
-                <span>{{ __('Lisa kuulutus') }}</span>
-            </a>
-
             @auth
-                <a href="{{ route('home') }}"
-                   class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                    <x-icons.bell class="h-5 w-5" />
-                    <span>{{ __('Märguanded') }}</span>
-                </a>
-
                 <a href="{{ route('messages.index') }}"
-                   class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
+                   class="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50">
                     <span class="flex items-center gap-2">
-                        <x-icons.chat-bubble class="h-5 w-5" />
+                        <x-icons.chat-bubble class="{{ $mobileIconClass }}" />
                         <span>{{ __('Sõnumid') }}</span>
                     </span>
 
                     @if(($unreadConversationsCount ?? 0) > 0)
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
                             {{ $unreadConversationsCount > 99 ? '99+' : $unreadConversationsCount }}
                         </span>
                     @endif
                 </a>
 
-                {{-- Mobile: Minu EHNET + Logi välja --}}
-                <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+                {{-- Mobile: Minu EHNET --}}
+                <div class="mt-3 overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">
                     <div class="flex items-center">
                         <a href="{{ route('dashboard') }}"
-                           class="flex flex-1 items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                            <x-icons.user-circle class="h-5 w-5" />
+                           class="flex flex-1 items-center gap-2 px-3 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50">
+                            <x-icons.user-circle class="{{ $mobileIconClass }}" />
                             <span>{{ __('Minu EHNET') }}</span>
                         </a>
 
                         <button type="button"
                                 @click="mobileUserOpen = !mobileUserOpen"
-                                class="inline-flex items-center justify-center border-l border-zinc-200 px-3 py-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                                class="inline-flex items-center justify-center border-l border-emerald-950/10 px-3 py-3 text-emerald-800 transition hover:bg-emerald-50 hover:text-emerald-950"
                                 :aria-expanded="mobileUserOpen.toString()"
                                 aria-label="{{ __('Ava kasutajamenüü') }}">
                             <svg class="h-4 w-4 transition-transform duration-200"
@@ -221,31 +209,38 @@
                         </button>
                     </div>
 
-                    <div x-cloak x-show="mobileUserOpen" x-transition class="border-t border-zinc-200">
+                    <div x-cloak x-show="mobileUserOpen" x-transition class="border-t border-emerald-950/10">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit"
-                                    class="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                                <x-icons.logout class="h-5 w-5" />
+                                    class="flex w-full items-center gap-2 px-3 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50">
+                                <x-icons.logout class="{{ $mobileIconClass }}" />
                                 <span>{{ __('Logi välja') }}</span>
                             </button>
                         </form>
                     </div>
                 </div>
             @else
-                <a href="{{ $loginUrl }}"
-                   class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                    <x-icons.login class="h-5 w-5" />
-                    <span>{{ __('Logi sisse') }}</span>
-                </a>
+                <div class="mt-3 grid gap-1 border-t border-emerald-950/10 pt-3">
+                    <a href="{{ $loginUrl }}" class="{{ $mobileLink }}">
+                        <x-icons.login class="{{ $mobileIconClass }}" />
+                        <span>{{ __('Logi sisse') }}</span>
+                    </a>
 
-                <a href="{{ $registerUrl }}"
-                   class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">
-                    <x-icons.user-plus class="h-5 w-5" />
-                    <span>{{ __('Registreeru') }}</span>
-                </a>
+                    <a href="{{ $registerUrl }}" class="{{ $mobileLink }}">
+                        <x-icons.user-plus class="{{ $mobileIconClass }}" />
+                        <span>{{ __('Registreeru') }}</span>
+                    </a>
+                </div>
             @endauth
 
+            {{-- Lisa kuulutus mobiilis all --}}
+            <div class="mt-3 border-t border-emerald-950/10 pt-3">
+                <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}" class="{{ $mobilePrimaryLink }}">
+                    <x-icons.plus-circle class="{{ $mobilePrimaryIconClass }}" />
+                    <span>{{ __('Lisa kuulutus') }}</span>
+                </a>
+            </div>
         </div>
     </div>
 </header>
