@@ -15,9 +15,12 @@ class MessageAttachment extends Model
         'message_id',
         'disk',
         'path',
+        'thumb_path',
         'original_name',
         'mime_type',
         'size',
+        'width',
+        'height',
         'type',
     ];
 
@@ -42,7 +45,7 @@ class MessageAttachment extends Model
      */
     public function isFile(): bool
     {
-        return !$this->isImage();
+        return ! $this->isImage();
     }
 
     /**
@@ -51,6 +54,15 @@ class MessageAttachment extends Model
     public function url(): string
     {
         return Storage::disk($this->disk)->url($this->path);
+    }
+
+    /**
+     * Tagastab thumbnail URL-i.
+     * Kui thumbnail puudub, kasutab suuremat pilti.
+     */
+    public function thumbUrl(): string
+    {
+        return Storage::disk($this->disk)->url($this->thumb_path ?: $this->path);
     }
 
     /**

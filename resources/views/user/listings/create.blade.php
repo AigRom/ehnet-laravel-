@@ -1,22 +1,48 @@
+@php
+    $isBusinessAccount = auth()->user()?->type === 'business'
+        || filled(auth()->user()?->company_name);
+
+    $priceMode = old(
+        'price_mode',
+        old('price') === '0'
+            ? 'free'
+            : (old('price') === null || old('price') === '' ? 'deal' : 'price')
+    );
+@endphp
+
 <x-layouts.app.public :title="__('Lisa kuulutus')">
-    <div class="mx-auto max-w-3xl space-y-6">
+    <div class="mx-auto max-w-5xl space-y-6">
 
         {{-- Header --}}
-        <div class="space-y-2">
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900">
-                {{ __('Lisa kuulutus') }}
-            </h1>
+        <div class="rounded-[2rem] border border-emerald-950/10 bg-white/85 p-6 shadow-xl shadow-emerald-950/5 backdrop-blur sm:p-8">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <div class="mb-3 inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 ring-1 ring-emerald-900/10">
+                        {{ __('Kuulutuse lisamine') }}
+                    </div>
 
-            <p class="text-sm text-zinc-500">
-                {{ __('Lisa pildid ja põhiinfo. Hiljem saad kuulutust alati täiendada.') }}
-            </p>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-emerald-950 sm:text-4xl">
+                        {{ __('Lisa kuulutus') }}
+                    </h1>
+
+                    <p class="mt-3 max-w-2xl text-base font-medium leading-7 text-zinc-600">
+                        {{ __('Lisa pildid ja põhiinfo. Hiljem saad kuulutust alati muuta või täiendada.') }}
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-900/10">
+                    {{ __('Kuni 10 pilti') }}
+                </div>
+            </div>
         </div>
 
-        <form method="POST"
-              action="{{ route('listings.store') }}"
-              class="space-y-6"
-              enctype="multipart/form-data"
-              novalidate>
+        <form
+            method="POST"
+            action="{{ route('listings.store') }}"
+            class="space-y-6"
+            enctype="multipart/form-data"
+            novalidate
+        >
             @csrf
 
             <input type="hidden" name="submission_token" value="{{ $submissionToken }}">
@@ -25,20 +51,21 @@
             {{-- Card: Pildid --}}
             <div
                 x-data="listingImagesCreate()"
-                class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-3"
+                class="space-y-4 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6"
             >
-                <div class="flex items-center justify-between gap-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <div class="text-base font-semibold text-zinc-900">
+                        <h2 class="text-xl font-extrabold text-emerald-950">
                             {{ __('Pildid') }}
-                        </div>
-                        <div class="text-sm text-zinc-500">
-                            {{ __('Lisa kuni 10 pilti. Esimene pilt on kaanepilt.') }}
-                        </div>
+                        </h2>
+
+                        <p class="mt-1 text-sm font-medium leading-6 text-zinc-500">
+                            {{ __('Lisa kuni 10 pilti. Esimene pilt on kuulutuse kaanepilt.') }}
+                        </p>
                     </div>
 
-                    <div class="text-xs text-zinc-500 text-right">
-                        {{ __('Järjekorda muuda nuppudega ↑ ↓') }}
+                    <div class="rounded-2xl bg-stone-50 px-3 py-2 text-xs font-bold text-zinc-500 ring-1 ring-emerald-950/10">
+                        {{ __('Järjekorda saad muuta pildi all olevate nuppudega') }}
                     </div>
                 </div>
 
@@ -56,65 +83,78 @@
                 <input type="hidden" name="images_order" id="images_order" x-model="imagesOrderJson">
 
                 @error('images')
-                    <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ $message }}</span>
+                    <p class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                        {{ $message }}
                     </p>
                 @enderror
 
                 @error('images.*')
-                    <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ $message }}</span>
+                    <p class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                        {{ $message }}
                     </p>
                 @enderror
 
-                <div data-listing-images-grid class="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                <div data-listing-images-grid class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                     <template x-for="(item, index) in items" :key="item.uid">
-                        <div class="relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
-                            <img
-                                :src="item.preview"
-                                :alt="item.file.name"
-                                class="h-full w-full cursor-zoom-in object-cover"
-                                @click="openModal(index)"
-                            >
+                        <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-emerald-950/10">
+                            {{-- Pilt --}}
+                            <div class="group relative aspect-square bg-stone-100">
+                                <img
+                                    :src="item.preview"
+                                    :alt="item.file.name"
+                                    class="h-full w-full cursor-zoom-in object-cover transition duration-300 group-hover:scale-[1.03]"
+                                    @click="openModal(index)"
+                                >
 
-                            <div class="absolute left-1 top-1 rounded-lg bg-black/60 px-2 py-1 text-[10px] text-white">
-                                <span x-text="index === 0 ? 'Kaanepilt' : `#${index + 1}`"></span>
+                                <div class="absolute bottom-2 left-2 rounded-xl bg-emerald-950/85 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur">
+                                    <template x-if="index === 0">
+                                        <span>{{ __('Kaanepilt') }}</span>
+                                    </template>
+
+                                    <template x-if="index !== 0">
+                                        <span x-text="`#${index + 1}`"></span>
+                                    </template>
+                                </div>
                             </div>
 
-                            <div class="absolute right-1 top-1 flex gap-1">
+                            {{-- Tegevusnupud --}}
+                            <div class="grid grid-cols-3 gap-2 border-t border-emerald-950/10 bg-white p-2">
                                 <button
                                     type="button"
-                                    class="flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-xs text-white disabled:opacity-40"
+                                    class="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-emerald-950/10 bg-stone-50 px-2 text-emerald-950 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                                     @click="moveUp(index)"
                                     :disabled="index === 0"
-                                    title="Liiguta üles"
+                                    title="{{ __('Liiguta ettepoole') }}"
+                                    aria-label="{{ __('Liiguta ettepoole') }}"
                                 >
-                                    ↑
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 3.25a.75.75 0 0 1 .53.22l4.25 4.25a.75.75 0 0 1-1.06 1.06L10.75 5.81V16a.75.75 0 0 1-1.5 0V5.81L6.28 8.78a.75.75 0 0 1-1.06-1.06l4.25-4.25a.75.75 0 0 1 .53-.22Z" clip-rule="evenodd" />
+                                    </svg>
                                 </button>
 
                                 <button
                                     type="button"
-                                    class="flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-xs text-white disabled:opacity-40"
+                                    class="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-emerald-950/10 bg-stone-50 px-2 text-emerald-950 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                                     @click="moveDown(index)"
                                     :disabled="index === items.length - 1"
-                                    title="Liiguta alla"
+                                    title="{{ __('Liiguta tahapoole') }}"
+                                    aria-label="{{ __('Liiguta tahapoole') }}"
                                 >
-                                    ↓
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 16.75a.75.75 0 0 1-.53-.22l-4.25-4.25a.75.75 0 1 1 1.06-1.06l2.97 2.97V4a.75.75 0 0 1 1.5 0v10.19l2.97-2.97a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-.53.22Z" clip-rule="evenodd" />
+                                    </svg>
                                 </button>
 
                                 <button
                                     type="button"
-                                    class="flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-sm text-white"
+                                    class="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-red-200 bg-red-50 px-2 text-red-700 transition hover:bg-red-100"
                                     @click="remove(index)"
-                                    title="Eemalda"
+                                    title="{{ __('Eemalda') }}"
+                                    aria-label="{{ __('Eemalda') }}"
                                 >
-                                    ×
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -124,31 +164,37 @@
                         x-show="items.length < maxImages"
                         type="button"
                         @click="$refs.input.value = null; $refs.input.click()"
-                        class="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-white text-zinc-500 hover:text-zinc-700"
+                        class="flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-emerald-900/20 bg-emerald-50/40 text-emerald-900 transition hover:border-emerald-900/35 hover:bg-emerald-50 focus:outline-none focus:ring-4 focus:ring-emerald-900/10"
                     >
-                        <div class="flex flex-col items-center gap-1">
-                            <div class="text-3xl leading-none">+</div>
-                            <div class="text-xs">{{ __('Lisa') }}</div>
+                        <div class="flex flex-col items-center gap-2">
+                            <svg class="h-9 w-9" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M10.75 4a.75.75 0 0 0-1.5 0v5.25H4a.75.75 0 0 0 0 1.5h5.25V16a.75.75 0 0 0 1.5 0v-5.25H16a.75.75 0 0 0 0-1.5h-5.25V4Z" />
+                            </svg>
+
+                            <span class="text-sm font-extrabold">
+                                {{ __('Lisa pilt') }}
+                            </span>
                         </div>
                     </button>
                 </div>
 
                 {{-- Modal --}}
                 <div
+                    x-cloak
                     x-show="modalOpen"
                     x-transition.opacity
                     @keydown.window.escape="closeModal()"
                     @keydown.window.arrow-left="if (modalOpen) prevModal()"
                     @keydown.window.arrow-right="if (modalOpen) nextModal()"
                     @click.self="closeModal()"
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                    class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/85 p-4 backdrop-blur-sm"
                     style="display: none;"
                 >
                     <div class="relative w-full max-w-5xl">
                         <button
                             type="button"
                             @click="closeModal()"
-                            class="absolute -top-12 right-0 rounded-lg bg-black/40 px-3 py-2 text-sm text-white hover:bg-black/60"
+                            class="absolute -top-14 right-0 inline-flex items-center justify-center rounded-2xl bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/20"
                         >
                             {{ __('Sulge') }}
                         </button>
@@ -156,24 +202,30 @@
                         <button
                             type="button"
                             @click="prevModal()"
-                            class="absolute left-0 top-1/2 flex h-10 w-10 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 md:-translate-x-10"
+                            class="absolute left-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-2xl bg-white/10 text-white backdrop-blur transition hover:bg-white/20 md:-translate-x-14"
+                            aria-label="{{ __('Eelmine pilt') }}"
                         >
-                            ‹
+                            <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L9.06 10l3.71 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.08.02Z" clip-rule="evenodd" />
+                            </svg>
                         </button>
 
                         <button
                             type="button"
                             @click="nextModal()"
-                            class="absolute right-0 top-1/2 flex h-10 w-10 translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 md:translate-x-10"
+                            class="absolute right-0 top-1/2 z-10 inline-flex h-11 w-11 translate-x-2 -translate-y-1/2 items-center justify-center rounded-2xl bg-white/10 text-white backdrop-blur transition hover:bg-white/20 md:translate-x-14"
+                            aria-label="{{ __('Järgmine pilt') }}"
                         >
-                            ›
+                            <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.08-.02Z" clip-rule="evenodd" />
+                            </svg>
                         </button>
 
-                        <div class="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                        <div class="overflow-hidden rounded-[2rem] bg-black/30 ring-1 ring-white/10">
                             <img :src="modalImageSrc()" class="h-[75vh] w-full object-contain" alt="">
                         </div>
 
-                        <div class="mt-3 text-center text-sm text-white/80">
+                        <div class="mt-3 text-center text-sm font-semibold text-white/80">
                             <span x-text="modalCounterText()"></span>
                         </div>
                     </div>
@@ -181,14 +233,20 @@
             </div>
 
             {{-- Card: Põhiinfo --}}
-            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-5">
-                <div class="text-base font-semibold text-zinc-900">
-                    {{ __('Põhiinfo') }}
+            <div class="space-y-6 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
+                <div>
+                    <h2 class="text-xl font-extrabold text-emerald-950">
+                        {{ __('Põhiinfo') }}
+                    </h2>
+
+                    <p class="mt-1 text-sm font-medium text-zinc-500">
+                        {{ __('Täida kuulutuse peamised andmed võimalikult selgelt.') }}
+                    </p>
                 </div>
 
                 {{-- Title --}}
                 <div>
-                    <label for="title" class="mb-2 block text-sm font-medium text-zinc-700">
+                    <label for="title" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Pealkiri') }}
                     </label>
 
@@ -199,62 +257,54 @@
                         value="{{ old('title') }}"
                         required
                         maxlength="140"
-                        placeholder="Nt. Kipsplaatide jäägid"
+                        autocomplete="off"
+                        placeholder="{{ __('Nt. Kipsplaatide jäägid') }}"
                         @class([
-                            'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition',
-                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100' => !$errors->has('title'),
+                            'block w-full rounded-2xl bg-stone-50 px-4 py-3.5 text-base font-medium text-emerald-950 placeholder:text-zinc-400 outline-none transition focus:bg-white',
+                            'border border-emerald-950/10 focus:border-emerald-900/30 focus:ring-4 focus:ring-emerald-900/10' => !$errors->has('title'),
                             'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' => $errors->has('title'),
                         ])
                     >
 
                     @error('title')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Condition (optional) --}}
+                {{-- Condition --}}
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-zinc-700">
-                        {{ __('Seisukord') }} <span class="text-xs text-zinc-500">{{ __('(valikuline)') }}</span>
+                    <label class="mb-2 block text-sm font-bold text-emerald-950">
+                        {{ __('Seisukord') }}
+                        <span class="font-medium text-zinc-500">{{ __('(valikuline)') }}</span>
                     </label>
 
                     @php $cond = old('condition'); @endphp
 
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="condition" value="new" @checked($cond === 'new')>
-                            <span class="text-sm leading-snug">{{ __('Uus') }}</span>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input type="radio" name="condition" value="new" @checked($cond === 'new') class="h-4 w-4 accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Uus') }}</span>
                         </label>
 
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="condition" value="used" @checked($cond === 'used')>
-                            <span class="text-sm leading-snug">{{ __('Kasutatud') }}</span>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input type="radio" name="condition" value="used" @checked($cond === 'used') class="h-4 w-4 accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Kasutatud') }}</span>
                         </label>
 
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="condition" value="leftover" @checked($cond === 'leftover')>
-                            <span class="text-sm leading-snug">{{ __('Jääk') }}</span>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input type="radio" name="condition" value="leftover" @checked($cond === 'leftover') class="h-4 w-4 accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Jääk') }}</span>
                         </label>
                     </div>
 
                     @error('condition')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Category --}}
                 <div>
-                    <label for="category_id" class="mb-2 block text-sm font-medium text-zinc-700">
+                    <label for="category_id" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Kategooria') }}
                     </label>
 
@@ -263,8 +313,8 @@
                         name="category_id"
                         required
                         @class([
-                            'w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition',
-                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100' => !$errors->has('category_id'),
+                            'w-full rounded-2xl bg-stone-50 px-4 py-3.5 text-base font-medium text-emerald-950 outline-none transition focus:bg-white',
+                            'border border-emerald-950/10 focus:border-emerald-900/30 focus:ring-4 focus:ring-emerald-900/10' => !$errors->has('category_id'),
                             'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' => $errors->has('category_id'),
                         ])
                     >
@@ -277,12 +327,7 @@
                     </select>
 
                     @error('category_id')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -301,6 +346,7 @@
                         useMyLocation() {
                             if (!this.myLocationId) return;
                             Livewire.dispatch('loc:set', { id: this.myLocationId });
+
                             const el = document.getElementById('location_label');
                             if (el) el.value = this.myLocationLabel || '';
                         }
@@ -329,141 +375,204 @@
                     >
 
                     @if($userLocationId)
-                        <div class="mt-2 text-sm text-zinc-500">{{ __('või') }}</div>
-                        <button
-                            type="button"
-                            @click="useMyLocation()"
-                            class="mt-2 inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200"
-                        >
-                            {{ __('Kasuta minu asukohta') }}
-                        </button>
+                        <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <span class="text-sm font-medium text-zinc-500">
+                                {{ __('või') }}
+                            </span>
+
+                            <button
+                                type="button"
+                                @click="useMyLocation()"
+                                class="inline-flex items-center justify-center rounded-2xl border border-emerald-950/10 bg-white px-4 py-2.5 text-sm font-bold text-emerald-950 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/10"
+                            >
+                                {{ __('Kasuta minu asukohta') }}
+                            </button>
+                        </div>
                     @endif
 
                     @error('location_id')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Kättesaamine --}}
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-zinc-700">
-                        {{ __('Kättesaamine') }} <span class="text-xs text-zinc-500">{{ __('(võid valida mitu)') }}</span>
+                    <label class="mb-2 block text-sm font-bold text-emerald-950">
+                        {{ __('Kättesaamine') }}
+                        <span class="font-medium text-zinc-500">{{ __('(võid valida mitu)') }}</span>
                     </label>
 
                     @php
                         $delivery = old('delivery_options', []);
-                        if (!is_array($delivery)) $delivery = [];
+                        if (! is_array($delivery)) {
+                            $delivery = [];
+                        }
                     @endphp
 
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 p-3">
-                            <input type="checkbox" name="delivery_options[]" value="pickup" @checked(in_array('pickup', $delivery, true))>
-                            <span class="text-sm">{{ __('Järeletulemine') }}</span>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 p-4 transition hover:bg-emerald-50/50">
+                            <input type="checkbox" name="delivery_options[]" value="pickup" @checked(in_array('pickup', $delivery, true)) class="h-4 w-4 rounded accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Järeletulemine') }}</span>
                         </label>
 
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 p-3">
-                            <input type="checkbox" name="delivery_options[]" value="seller_delivery" @checked(in_array('seller_delivery', $delivery, true))>
-                            <span class="text-sm">{{ __('Transpordi võimalus') }}</span>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 p-4 transition hover:bg-emerald-50/50">
+                            <input type="checkbox" name="delivery_options[]" value="seller_delivery" @checked(in_array('seller_delivery', $delivery, true)) class="h-4 w-4 rounded accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Transpordi võimalus') }}</span>
                         </label>
 
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 p-3">
-                            <input type="checkbox" name="delivery_options[]" value="courier" @checked(in_array('courier', $delivery, true))>
-                            <span class="text-sm">{{ __('Saadan kulleriga või pakiautomaati') }}</span>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 p-4 transition hover:bg-emerald-50/50">
+                            <input type="checkbox" name="delivery_options[]" value="courier" @checked(in_array('courier', $delivery, true)) class="h-4 w-4 rounded accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Saadan kulleriga või pakiautomaati') }}</span>
                         </label>
 
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 p-3">
-                            <input type="checkbox" name="delivery_options[]" value="agreement" @checked(in_array('agreement', $delivery, true))>
-                            <span class="text-sm">{{ __('Lepime kokku') }}</span>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 p-4 transition hover:bg-emerald-50/50">
+                            <input type="checkbox" name="delivery_options[]" value="agreement" @checked(in_array('agreement', $delivery, true)) class="h-4 w-4 rounded accent-emerald-900">
+                            <span class="text-sm font-bold text-emerald-950">{{ __('Lepime kokku') }}</span>
                         </label>
                     </div>
 
                     @error('delivery_options')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
 
                     @error('delivery_options.*')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Price mode --}}
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-zinc-700">
+                <div
+                    x-data="{
+                        mode: @js($priceMode),
+                        syncPrice() {
+                            const price = this.$refs.price;
+
+                            if (!price) return;
+
+                            if (this.mode === 'deal') {
+                                price.value = '';
+                            }
+
+                            if (this.mode === 'free') {
+                                price.value = '0';
+                            }
+                        }
+                    }"
+                    x-init="syncPrice()"
+                >
+                    <label class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Hind') }}
                     </label>
 
-                    @php
-                        $priceMode = old('price_mode', old('price') === '0' ? 'free' : (old('price') === null || old('price') === '' ? 'deal' : 'price'));
-                    @endphp
-
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3" x-data="{ mode: @js($priceMode) }">
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="price_mode" value="deal" x-model="mode">
-                            <span class="text-sm leading-snug">{{ __('Kokkuleppel') }}</span>
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input
+                                type="radio"
+                                name="price_mode"
+                                value="price"
+                                x-model="mode"
+                                @change="syncPrice()"
+                                class="h-4 w-4 accent-emerald-900"
+                            >
+                            <span class="text-sm font-bold text-emerald-950">
+                                {{ __('Hind') }}
+                            </span>
                         </label>
 
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="price_mode" value="free" x-model="mode">
-                            <span class="text-sm leading-snug">{{ __('Tasuta') }}</span>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input
+                                type="radio"
+                                name="price_mode"
+                                value="free"
+                                x-model="mode"
+                                @change="syncPrice()"
+                                class="h-4 w-4 accent-emerald-900"
+                            >
+                            <span class="text-sm font-bold text-emerald-950">
+                                {{ __('Tasuta') }}
+                            </span>
                         </label>
 
-                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3">
-                            <input type="radio" name="price_mode" value="price" x-model="mode">
-                            <span class="text-sm leading-snug">{{ __('Hind') }}</span>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border border-emerald-950/10 bg-stone-50 px-4 py-3 transition hover:bg-emerald-50/50">
+                            <input
+                                type="radio"
+                                name="price_mode"
+                                value="deal"
+                                x-model="mode"
+                                @change="syncPrice()"
+                                class="h-4 w-4 accent-emerald-900"
+                            >
+                            <span class="text-sm font-bold text-emerald-950">
+                                {{ __('Kokkuleppel') }}
+                            </span>
                         </label>
 
-                        <div class="sm:col-span-3" x-show="mode === 'price'">
-                            <label for="price" class="mb-2 block text-sm font-medium text-zinc-700">
+                        <div class="sm:col-span-3" x-show="mode === 'price'" x-transition>
+                            <label for="price" class="mb-2 mt-3 block text-sm font-bold text-emerald-950">
                                 {{ __('Summa (EUR)') }}
                             </label>
 
                             <input
+                                x-ref="price"
                                 id="price"
                                 name="price"
-                                type="number"
+                                type="text"
                                 value="{{ old('price') }}"
-                                step="0.01"
-                                min="0"
-                                placeholder="Nt. 25.00"
+                                inputmode="decimal"
+                                autocomplete="off"
+                                placeholder="{{ __('Nt. 25,00 või 25.00') }}"
                                 @class([
-                                    'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition',
-                                    'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100' => !$errors->has('price'),
+                                    'block w-full rounded-2xl bg-stone-50 px-4 py-3.5 text-base font-medium text-emerald-950 placeholder:text-zinc-400 outline-none transition focus:bg-white',
+                                    'border border-emerald-950/10 focus:border-emerald-900/30 focus:ring-4 focus:ring-emerald-900/10' => !$errors->has('price'),
                                     'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' => $errors->has('price'),
                                 ])
                             >
+
+                            @if($isBusinessAccount)
+                                <label
+                                    class="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-950/10 bg-emerald-50/40 px-4 py-3 transition hover:bg-emerald-50"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="vat_included"
+                                        value="1"
+                                        @checked(old('vat_included'))
+                                        x-bind:disabled="mode !== 'price'"
+                                        class="mt-1 h-4 w-4 rounded accent-emerald-900"
+                                    >
+
+                                    <span>
+                                        <span class="block text-sm font-bold text-emerald-950">
+                                            {{ __('Hind sisaldab käibemaksu') }}
+                                        </span>
+
+                                        <span class="mt-0.5 block text-xs font-medium leading-5 text-zinc-500">
+                                            {{ __('Märgi see, kui sisestatud hind on lõpphind koos käibemaksuga.') }}
+                                        </span>
+                                    </span>
+                                </label>
+                            @endif
                         </div>
 
                         <input type="hidden" name="price_normalized" x-bind:value="mode">
                     </div>
 
                     @error('price')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    @error('price_mode')
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    @error('vat_included')
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Description --}}
                 <div>
-                    <label for="description" class="mb-2 block text-sm font-medium text-zinc-700">
+                    <label for="description" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Kirjeldus') }}
                     </label>
 
@@ -471,83 +580,54 @@
                         id="description"
                         name="description"
                         maxlength="5000"
-                        rows="6"
-                        placeholder="Kirjelda kogust, mõõte, seisukorda ja kättesaamise tingimusi."
+                        rows="7"
+                        placeholder="{{ __('Kirjelda kogust, mõõte, seisukorda ja kättesaamise tingimusi.') }}"
                         @class([
-                            'block w-full rounded-xl bg-white p-3 text-sm text-zinc-900 outline-none transition',
-                            'border border-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100' => !$errors->has('description'),
+                            'block w-full resize-none rounded-2xl bg-stone-50 px-4 py-3.5 text-base font-medium leading-7 text-emerald-950 placeholder:text-zinc-400 outline-none transition focus:bg-white',
+                            'border border-emerald-950/10 focus:border-emerald-900/30 focus:ring-4 focus:ring-emerald-900/10' => !$errors->has('description'),
                             'border border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' => $errors->has('description'),
                         ])
                     >{{ old('description') }}</textarea>
 
                     @error('description')
-                        <p class="mt-1 flex items-center gap-1 text-sm font-medium text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0ZM9 6a1 1 0 1 1 2 0v4a1 1 0 1 1-2 0V6Zm1 8a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 14Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $message }}</span>
-                        </p>
+                        <p class="mt-2 text-sm font-bold text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
 
             {{-- Actions --}}
-            <div class="flex flex-col gap-3">
-                <button
-                    type="button"
-                    id="openListingPreview"
-                    class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200"
-                >
-                    {{ __('Kuulutuse eelvaade') }}
-                </button>
-
-                <x-listings.preview />
-
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
+                <div class="flex flex-col gap-3">
                     <button
-                        type="submit"
-                        class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                        type="button"
+                        id="openListingPreview"
+                        class="inline-flex w-full items-center justify-center rounded-2xl border border-emerald-950/10 bg-white px-5 py-3.5 text-base font-extrabold text-emerald-950 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/10"
                     >
-                        {{ __('Avalda') }}
+                        {{ __('Kuulutuse eelvaade') }}
                     </button>
 
-                    <button
-                        type="submit"
-                        id="saveDraftBtn"
-                        class="inline-flex w-full items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-                    >
-                        {{ __('Salvesta mustandina') }}
-                    </button>
+                    <x-listings.preview />
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <button
+                            type="submit"
+                            onclick="document.getElementById('formAction').value = 'publish'"
+                            class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-900 px-5 py-3.5 text-base font-extrabold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-800 hover:shadow-xl hover:shadow-emerald-950/25 focus:outline-none focus:ring-4 focus:ring-emerald-900/20"
+                        >
+                            {{ __('Avalda') }}
+                        </button>
+
+                        <button
+                            type="submit"
+                            id="saveDraftBtn"
+                            onclick="document.getElementById('formAction').value = 'draft'"
+                            class="inline-flex w-full items-center justify-center rounded-2xl border border-emerald-950/10 bg-stone-50 px-5 py-3.5 text-base font-extrabold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/10"
+                        >
+                            {{ __('Salvesta mustandina') }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </form>
-
-        <script>
-        document.addEventListener('DOMContentLoaded', () => {
-          const draftBtn = document.getElementById('saveDraftBtn');
-          const actionInput = document.getElementById('formAction');
-
-          if (draftBtn && actionInput) {
-            draftBtn.addEventListener('click', () => { actionInput.value = 'draft'; });
-          }
-
-          const priceInput = document.getElementById('price');
-          const radios = document.querySelectorAll('input[name="price_mode"]');
-
-          function applyPriceMode() {
-            const checked = document.querySelector('input[name="price_mode"]:checked')?.value || 'deal';
-            if (checked === 'deal') {
-              if (priceInput) priceInput.value = '';
-            }
-            if (checked === 'free') {
-              if (priceInput) priceInput.value = '0';
-            }
-          }
-
-          radios.forEach(r => r.addEventListener('change', applyPriceMode));
-          applyPriceMode();
-        });
-        </script>
-
     </div>
 </x-layouts.app.public>

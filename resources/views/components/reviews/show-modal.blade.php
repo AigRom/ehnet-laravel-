@@ -49,8 +49,9 @@
                     {{ $reviewerName }} → {{ $reviewedName }}
                 </div>
 
-                <div class="text-lg font-semibold text-zinc-900">
-                    ⭐ {{ $review->rating }}
+                <div class="flex items-center gap-1.5 text-lg font-semibold text-zinc-900">
+                    <x-icons.star class="h-5 w-5 text-amber-500" />
+                    <span>{{ $review->rating }}</span>
                 </div>
 
                 @if($review->comment)

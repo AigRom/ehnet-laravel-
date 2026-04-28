@@ -53,24 +53,25 @@
     "
     class="relative"
 >
-    <div class="relative rounded-xl bg-white px-2.5 py-2 sm:px-3 sm:py-3">
-        <div class="absolute right-2 top-2 z-10" @click.outside="openMenu = false">
+    <div class="relative rounded-2xl border border-emerald-950/10 bg-white px-3 py-3 shadow-sm sm:px-4 sm:py-4">
+        <div class="absolute right-3 top-3 z-10" @click.outside="openMenu = false">
             <button
                 type="button"
                 @click="openMenu = !openMenu"
                 :aria-expanded="openMenu.toString()"
                 aria-haspopup="true"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-950/10 bg-white text-zinc-500 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/10"
                 title="{{ __('Vestluse valikud') }}"
+                aria-label="{{ __('Vestluse valikud') }}"
             >
-                <x-icons.dots-vertical class="h-4 w-4" />
+                <x-icons.dots-vertical class="h-6 w-6" />
             </button>
 
             <div
                 x-cloak
                 x-show="openMenu"
                 x-transition.origin.top.right
-                class="absolute right-0 top-10 z-30 w-56 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-lg"
+                class="absolute right-0 top-12 z-30 w-60 overflow-hidden rounded-2xl border border-emerald-950/10 bg-white p-1.5 shadow-xl shadow-emerald-950/10"
             >
                 <div class="py-1">
                     <a
@@ -84,7 +85,7 @@
                     </a>
                 </div>
 
-                <div class="my-1 border-t border-zinc-100"></div>
+                <div class="my-1 border-t border-emerald-950/10"></div>
 
                 <div class="py-1">
                     @if($hideConversationAction)
@@ -141,7 +142,7 @@
                     @endif
                 </div>
 
-                <div class="my-1 border-t border-zinc-100"></div>
+                <div class="my-1 border-t border-emerald-950/10"></div>
 
                 <div class="py-1">
                     <x-ui.dropdown-item
@@ -155,24 +156,24 @@
             </div>
         </div>
 
-        <div class="flex items-start gap-3 pr-9">
+        <div class="flex items-start gap-3 pr-14">
             <x-ui.avatar :user="$user" size="h-12 w-12 sm:h-14 sm:w-14" />
 
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h3 class="text-sm font-semibold text-zinc-900 sm:text-base">
+                    <h3 class="text-base font-extrabold text-emerald-950 sm:text-lg">
                         {{ $user->name ?? __('Kasutaja') }}
                     </h3>
 
                     @if($roleLabel)
-                        <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 sm:text-xs">
+                        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-900 sm:text-xs">
                             {{ $roleLabel }}
                         </span>
                     @endif
                 </div>
 
                 @if($hasMeta)
-                    <div class="mt-1 space-y-0.5 text-xs text-zinc-500 sm:text-sm">
+                    <div class="mt-1 space-y-0.5 text-xs font-medium text-zinc-500 sm:text-sm">
                         @if($joinedYear)
                             <div>
                                 {{ __('Kasutaja alates :year', ['year' => $joinedYear]) }}
@@ -189,15 +190,17 @@
 
                 <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
                     @if($hasReviews)
-                        <span class="font-semibold text-zinc-900">
-                            ⭐ {{ number_format($scoreValue, 1, ',', ' ') }}
+                        <span class="inline-flex items-center gap-1 font-bold text-emerald-950">
+                            <x-icons.star class="h-4 w-4 text-amber-500" />
+
+                            {{ number_format($scoreValue, 1, ',', ' ') }}
                         </span>
 
-                        <span class="text-zinc-500">
+                        <span class="font-medium text-zinc-500">
                             {{ trans_choice(':count hinnang|:count hinnangut', $reviewsCountValue, ['count' => $reviewsCountValue]) }}
                         </span>
                     @else
-                        <span class="text-zinc-500">
+                        <span class="font-medium text-zinc-500">
                             {{ __('Tagasiside puudub') }}
                         </span>
                     @endif
@@ -206,13 +209,13 @@
                 @if($isBlockedByMe || $hasMessagingBlock)
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         @if($isBlockedByMe)
-                            <div class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                            <div class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
                                 {{ __('Oled selle kasutaja blokeerinud') }}
                             </div>
                         @endif
 
                         @if($hasMessagingBlock)
-                            <div class="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700">
+                            <div class="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-700">
                                 {{ __('Selle kasutajaga ei saa praegu uusi sõnumeid vahetada') }}
                             </div>
                         @endif

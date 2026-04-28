@@ -70,8 +70,9 @@ class EmailRegistrationController extends Controller
             ->first();
 
         if (! $pending) {
-            return redirect()->route('register')
-                ->with('status', 'See registreerimislink on vigane või aegunud.');
+            return redirect()
+                ->route('register')
+                ->with('error', 'See registreerimislink on vigane või aegunud.');
         }
 
         return view('livewire.auth.complete-registration', [
@@ -94,8 +95,9 @@ class EmailRegistrationController extends Controller
             ->first();
 
         if (! $pending) {
-            return redirect()->route('register')
-                ->with('status', 'See registreerimislink on vigane või aegunud.');
+            return redirect()
+                ->route('register')
+                ->with('error', 'See registreerimislink on vigane või aegunud.');
         }
 
         $data = $request->validated();

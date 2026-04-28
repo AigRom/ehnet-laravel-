@@ -5,15 +5,20 @@ namespace App\Http\Controllers\Messaging;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Models\MessageAttachment;
+use App\Services\Messaging\MessageAttachmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class MessageController extends Controller
 {
-    public function storeInConversation(Request $request, Conversation $conversation): RedirectResponse
-    {
+    public function storeInConversation(
+        Request $request,
+        Conversation $conversation,
+        MessageAttachmentService $attachmentService
+    ): RedirectResponse {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -40,7 +45,7 @@ class MessageController extends Controller
             'attachments.*' => [
                 'file',
                 'max:10240',
-                'extensions:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,zip',
+                'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,zip',
             ],
         ]);
 
@@ -62,36 +67,52 @@ class MessageController extends Controller
             return back()->with('error', 'Sama sõnum saadeti juba.');
         }
 
-        DB::transaction(function () use ($request, $conversation, $user, $body) {
-            $message = Message::create([
-                'conversation_id' => $conversation->id,
-                'sender_id' => $user->id,
-                'type' => Message::TYPE_USER,
-                'body' => $body !== '' ? $body : null,
-            ]);
+        $storedFiles = [];
 
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('messages/attachments', 'public');
+        try {
+            DB::transaction(function () use (
+                $request,
+                $conversation,
+                $user,
+                $body,
+                $attachmentService,
+                &$storedFiles
+            ) {
+                $message = Message::create([
+                    'conversation_id' => $conversation->id,
+                    'sender_id' => $user->id,
+                    'type' => Message::TYPE_USER,
+                    'body' => $body !== '' ? $body : null,
+                ]);
 
-                    $mimeType = $file->getMimeType();
-                    $isImage = is_string($mimeType) && str_starts_with($mimeType, 'image/');
+                if ($request->hasFile('attachments')) {
+                    foreach ($request->file('attachments') as $file) {
+                        $attachment = $attachmentService->store($file, $message->id);
 
-                    MessageAttachment::create([
-                        'message_id' => $message->id,
-                        'disk' => 'public',
-                        'path' => $path,
-                        'original_name' => $file->getClientOriginalName(),
-                        'mime_type' => $mimeType,
-                        'size' => $file->getSize(),
-                        'type' => $isImage ? 'image' : 'file',
-                    ]);
+                        $storedFiles[] = [
+                            'disk' => $attachment->disk,
+                            'path' => $attachment->path,
+                        ];
+
+                        if ($attachment->thumb_path) {
+                            $storedFiles[] = [
+                                'disk' => $attachment->disk,
+                                'path' => $attachment->thumb_path,
+                            ];
+                        }
+                    }
                 }
+
+                $conversation->unhideForBoth();
+                $conversation->touch();
+            });
+        } catch (Throwable $e) {
+            foreach ($storedFiles as $storedFile) {
+                Storage::disk($storedFile['disk'])->delete($storedFile['path']);
             }
 
-            $conversation->unhideForBoth();
-            $conversation->touch();
-        });
+            throw $e;
+        }
 
         return redirect()
             ->route('messages.show', $conversation)

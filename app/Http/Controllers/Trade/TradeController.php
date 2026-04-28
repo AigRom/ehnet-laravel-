@@ -19,7 +19,7 @@ class TradeController extends Controller
 
         abort_unless($user, 403);
 
-        if ($user->id === $listing->user_id) {
+        if ((int) $user->id === (int) $listing->user_id) {
             return back()->with('error', 'Enda kuulutuse puhul ei saa ostusoovi esitada.');
         }
 
@@ -27,7 +27,7 @@ class TradeController extends Controller
             return back()->with('error', 'Selle kasutajaga ei saa enam suhelda.');
         }
 
-        if (! $listing->canAcceptTradeInterest()) {
+        if ($listing->owner_hidden_at !== null || ! $listing->canAcceptTradeInterest()) {
             return back()->with('error', 'Selle kuulutuse puhul ei saa enam ostusoovi esitada.');
         }
 
@@ -51,7 +51,7 @@ class TradeController extends Controller
                 'listing_id' => $listing->id,
                 'seller_id' => $conversation->seller_id,
                 'buyer_id' => $conversation->buyer_id,
-                'status' => 'interest',
+                'status' => Trade::STATUS_INTEREST,
             ]);
 
             $this->createSystemMessage(
@@ -87,7 +87,7 @@ class TradeController extends Controller
             return back()->with('error', 'Kuulutus ei ole enam saadaval.');
         }
 
-        if (! $listing->canAcceptTradeInterest()) {
+        if ($listing->owner_hidden_at !== null || ! $listing->canAcceptTradeInterest()) {
             return back()->with('error', 'Selle kuulutuse puhul ei saa enam ostusoovi esitada.');
         }
 
@@ -101,7 +101,7 @@ class TradeController extends Controller
                 'listing_id' => $listing->id,
                 'seller_id' => $conversation->seller_id,
                 'buyer_id' => $conversation->buyer_id,
-                'status' => 'interest',
+                'status' => Trade::STATUS_INTEREST,
             ]);
 
             $this->createSystemMessage(
@@ -135,7 +135,7 @@ class TradeController extends Controller
             return back()->with('error', 'Kuulutus ei ole enam saadaval.');
         }
 
-        if (! $listing->canAcceptTradeReservation()) {
+        if ($listing->owner_hidden_at !== null || ! $listing->canAcceptTradeReservation()) {
             return back()->with('error', 'Seda kuulutust ei saa enam broneerida.');
         }
 
@@ -149,13 +149,13 @@ class TradeController extends Controller
             return back()->with('error', 'Seda tehingut ei saa enam broneerida.');
         }
 
-        if ($listing->hasReservedTrade() && (! $listing->reservedTrade || $listing->reservedTrade->id !== $trade->id)) {
+        if ($listing->hasReservedTrade() && (! $listing->reservedTrade || (int) $listing->reservedTrade->id !== (int) $trade->id)) {
             return back()->with('error', 'Kuulutus on juba teisele ostjale broneeritud.');
         }
 
         DB::transaction(function () use ($conversation, $listing, $trade, $user) {
             $trade->update([
-                'status' => 'reserved',
+                'status' => Trade::STATUS_RESERVED,
                 'reserved_at' => now(),
                 'contact_revealed_at' => now(),
             ]);
@@ -207,7 +207,7 @@ class TradeController extends Controller
 
         DB::transaction(function () use ($conversation, $trade, $user) {
             $trade->update([
-                'status' => 'awaiting_confirmation',
+                'status' => Trade::STATUS_AWAITING_CONFIRMATION,
                 'awaiting_confirmation_at' => now(),
             ]);
 
@@ -237,7 +237,7 @@ class TradeController extends Controller
         abort_unless($conversation->isBuyer($user), 403);
 
         $trade = $conversation->trades()
-            ->where('status', 'awaiting_confirmation')
+            ->where('status', Trade::STATUS_AWAITING_CONFIRMATION)
             ->latest('id')
             ->first();
 
@@ -251,7 +251,7 @@ class TradeController extends Controller
 
         DB::transaction(function () use ($conversation, $trade, $user) {
             $trade->update([
-                'status' => 'completed',
+                'status' => Trade::STATUS_COMPLETED,
                 'completed_at' => now(),
                 'buyer_confirmed_received_at' => now(),
             ]);
@@ -262,12 +262,35 @@ class TradeController extends Controller
                 'sold_trade_id' => $trade->id,
             ]);
 
-            $conversation->openTrades()
+            $otherOpenTrades = Trade::query()
+                ->where('listing_id', $trade->listing_id)
                 ->where('id', '!=', $trade->id)
-                ->update([
-                    'status' => 'cancelled',
+                ->whereIn('status', Trade::ACTIVE_STATUSES)
+                ->with('conversation')
+                ->get();
+
+            foreach ($otherOpenTrades as $otherTrade) {
+                $otherTrade->update([
+                    'status' => Trade::STATUS_CANCELLED,
                     'cancelled_at' => now(),
                 ]);
+
+                if ($otherTrade->conversation) {
+                    $this->createSystemMessage(
+                        $otherTrade->conversation_id,
+                        'Kuulutus müüdi teisele ostjale ja see ostusoov katkestati automaatselt.',
+                        [
+                            'event' => 'trade_cancelled_listing_sold',
+                            'trade_id' => $otherTrade->id,
+                            'listing_id' => $trade->listing_id,
+                            'actor_user_id' => $user->id,
+                        ]
+                    );
+
+                    $otherTrade->conversation->unhideForBoth();
+                    $otherTrade->conversation->touch();
+                }
+            }
 
             $this->createSystemMessage(
                 $conversation->id,
@@ -292,7 +315,7 @@ class TradeController extends Controller
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
-        abort_unless($trade->conversation_id === $conversation->id, 404);
+        abort_unless((int) $trade->conversation_id === (int) $conversation->id, 404);
 
         if (! $conversation->isSeller($user) && ! $conversation->isBuyer($user)) {
             abort(403);
@@ -308,22 +331,35 @@ class TradeController extends Controller
             $previousStatus = $trade->status;
 
             $trade->update([
-                'status' => 'cancelled',
+                'status' => Trade::STATUS_CANCELLED,
                 'cancelled_at' => now(),
             ]);
 
-            if ($listing && $listing->isReserved() && ! $listing->hasReservedTrade()) {
-                $listing->update([
-                    'status' => 'published',
-                ]);
+            if ($listing && $listing->isReserved()) {
+                $hasLockedTrade = Trade::query()
+                    ->where('listing_id', $listing->id)
+                    ->whereIn('status', [
+                        Trade::STATUS_RESERVED,
+                        Trade::STATUS_AWAITING_CONFIRMATION,
+                    ])
+                    ->exists();
+
+                if (! $hasLockedTrade) {
+                    $listing->update([
+                        'status' => 'published',
+                    ]);
+                }
             }
 
             $cancelMessage = match ($previousStatus) {
-                'interest' => $conversation->isSeller($user)
+                Trade::STATUS_INTEREST => $conversation->isSeller($user)
                     ? 'Müüja lükkas ostusoovi tagasi.'
                     : 'Ostja võttis ostusoovi tagasi.',
-                'reserved' => 'Broneering tühistati.',
-                'awaiting_confirmation' => 'Tehing katkestati enne ostja kinnitust.',
+
+                Trade::STATUS_RESERVED => 'Broneering tühistati.',
+
+                Trade::STATUS_AWAITING_CONFIRMATION => 'Tehing katkestati enne ostja kinnitust.',
+
                 default => 'Tehing katkestati.',
             };
 

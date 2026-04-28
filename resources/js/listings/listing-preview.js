@@ -13,9 +13,6 @@ function initListingPreview() {
     const catEl = document.getElementById('category_id');
     const priceEl = document.getElementById('price');
 
-    const isOpen = () =>
-        modal.classList.contains('flex') && !modal.classList.contains('hidden');
-
     const show = () => {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -29,6 +26,14 @@ function initListingPreview() {
     const textOrDash = (value) => {
         const v = String(value ?? '').trim();
         return v !== '' ? v : '—';
+    };
+
+    const getPriceMode = () => {
+        return (
+            document.querySelector('input[name="price_mode"]:checked')?.value ||
+            document.querySelector('input[name="price_normalized"]')?.value ||
+            'deal'
+        );
     };
 
     const getCategoryLabel = () => {
@@ -61,10 +66,7 @@ function initListingPreview() {
     };
 
     const getPriceLabel = () => {
-        const mode =
-            document.querySelector('input[name="price_mode"]:checked')?.value ||
-            document.querySelector('input[name="price_normalized"]')?.value ||
-            'deal';
+        const mode = getPriceMode();
 
         if (mode === 'free') return 'Tasuta';
         if (mode === 'deal') return 'Kokkuleppel';
@@ -75,6 +77,17 @@ function initListingPreview() {
         if (n === 0) return 'Tasuta';
 
         return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
+    };
+
+    const getVatText = () => {
+        const mode = getPriceMode();
+        const vatCheckbox = document.querySelector('input[name="vat_included"]');
+
+        if (mode !== 'price' || !vatCheckbox || !vatCheckbox.checked) {
+            return '';
+        }
+
+        return 'Hind sisaldab käibemaksu';
     };
 
     const getConditionLabel = () => {
@@ -122,6 +135,7 @@ function initListingPreview() {
                     category: getCategoryLabel(),
                     location: getLocationLabel(),
                     price: getPriceLabel(),
+                    vatText: getVatText(),
                     condition: getConditionLabel(),
                     delivery: getDeliveryLabels(),
                 },

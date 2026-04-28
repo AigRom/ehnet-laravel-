@@ -1,4 +1,8 @@
-<x-layouts.app.public :title="__('Vestlus')">
+<x-layouts.app.public
+    :title="__('Vestlus')"
+    :mobile-fullscreen="true"
+    :container="false"
+>
     <x-messaging.message-center
         :conversations="$conversations"
         :active-conversation="$conversation"

@@ -117,27 +117,42 @@
             default => __('Katkesta tehing'),
         }
         : __('Katkesta tehing');
+
+    $primaryAction = 'inline-flex items-center justify-center rounded-2xl bg-emerald-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-950/20 transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/20 sm:text-sm';
+
+    $secondaryAction = 'inline-flex items-center justify-center rounded-2xl border border-emerald-950/10 bg-white px-4 py-2.5 text-xs font-bold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/10 sm:text-sm';
+
+    $warningAction = 'inline-flex items-center justify-center rounded-2xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-200 sm:text-sm';
+
+    $dangerAction = 'inline-flex items-center justify-center rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100 sm:text-sm';
+
+    $reviewAction = 'inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-200 sm:text-sm';
 @endphp
 
-<div class="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
-    <div class="grid gap-4 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} lg:block lg:h-full lg:min-h-0">
-            <x-messaging.conversation-list
-                :conversations="$conversations"
-                :active-conversation="$activeConversation"
-            />
+<div class="mx-auto w-full max-w-[1500px] px-0 py-0 md:px-4 md:py-6 lg:px-6">
+    <div class="grid min-w-0 gap-0 md:gap-4 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
+
+        {{-- Conversation list --}}
+        <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} min-w-0 lg:block lg:h-full lg:min-h-0">
+            <div class="min-w-0 h-full lg:min-h-0">
+                <x-messaging.conversation-list
+                    :conversations="$conversations"
+                    :active-conversation="$activeConversation"
+                />
+            </div>
         </div>
 
+        {{-- Conversation --}}
         <section
             x-data="{ showReviewModal: false }"
-            class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} lg:flex min-h-0 h-[calc(100vh-4.5rem)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm sm:h-[calc(100vh-5rem)] lg:h-full"
+            class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} min-w-0 h-[100dvh] min-h-0 flex-col overflow-hidden border-0 bg-white shadow-none md:h-[calc(100dvh-5rem)] md:rounded-[1.75rem] md:border md:border-emerald-950/10 md:shadow-xl md:shadow-emerald-950/5 lg:flex lg:h-full"
         >
             @if($hasActiveConversation)
-                <div class="border-b border-zinc-200 px-3 py-3 sm:px-4 sm:py-3">
+                <div class="shrink-0 border-b border-emerald-950/10 bg-white px-3 py-3 sm:px-4">
                     <div class="mb-3 flex items-center lg:hidden">
                         <x-ui.back-button
                             :href="route('messages.index')"
-                            color="emerald"
+                            color="light"
                         />
                     </div>
 
@@ -169,7 +184,7 @@
                     </div>
 
                     @if($listing && $listing->isDeletedStatus())
-                        <div class="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:text-sm">
+                        <div class="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700 sm:text-sm">
                             {{ __('Sõnumite saatmine ja tehingu jätkamine on suletud, sest kuulutus on kustutatud.') }}
                         </div>
                     @endif
@@ -181,10 +196,7 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-50 sm:text-sm"
-                                    >
+                                    <button type="submit" class="{{ $secondaryAction }}">
                                         {{ __('Soovin osta') }}
                                     </button>
                                 </form>
@@ -195,10 +207,7 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 sm:text-sm"
-                                    >
+                                    <button type="submit" class="{{ $warningAction }}">
                                         {{ __('Broneeri sellele ostjale') }}
                                     </button>
                                 </form>
@@ -209,10 +218,7 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 sm:text-sm"
-                                    >
+                                    <button type="submit" class="{{ $primaryAction }}">
                                         {{ __('Märgi üleantuks') }}
                                     </button>
                                 </form>
@@ -223,10 +229,7 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:text-sm"
-                                    >
+                                    <button type="submit" class="{{ $primaryAction }}">
                                         {{ __('Kinnita kauba kättesaamine') }}
                                     </button>
                                 </form>
@@ -237,10 +240,7 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 sm:text-sm"
-                                    >
+                                    <button type="submit" class="{{ $dangerAction }}">
                                         {{ $cancelTradeLabel }}
                                     </button>
                                 </form>
@@ -253,7 +253,7 @@
                             <button
                                 type="button"
                                 @click="showReviewModal = true"
-                                class="inline-flex items-center justify-center rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 sm:text-sm"
+                                class="{{ $reviewAction }}"
                             >
                                 {{ __('Jäta tagasiside') }}
                             </button>
@@ -270,15 +270,17 @@
                 <x-messaging.chat-thread :conversation="$activeConversation" />
 
                 @if($canSendMessages)
-                    <x-messaging.chat-compose
-                        :conversation="$activeConversation"
-                        :has-messaging-block="$hasMessagingBlock"
-                        :is-blocked-by-me="$isBlockedByMe"
-                        :unblock-user-action="$unblockUserAction"
-                    />
+                    <div class="shrink-0">
+                        <x-messaging.chat-compose
+                            :conversation="$activeConversation"
+                            :has-messaging-block="$hasMessagingBlock"
+                            :is-blocked-by-me="$isBlockedByMe"
+                            :unblock-user-action="$unblockUserAction"
+                        />
+                    </div>
                 @else
-                    <div class="border-t border-zinc-200 bg-zinc-50 px-3 py-3 sm:px-4 sm:py-4">
-                        <div class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+                    <div class="shrink-0 border-t border-emerald-950/10 bg-stone-50 px-3 py-3 sm:px-4 sm:py-4">
+                        <div class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-600">
                             {{ __('Selles vestluses ei saa enam uusi sõnumeid saata.') }}
                         </div>
                     </div>
@@ -286,15 +288,15 @@
             @else
                 <div class="flex h-full flex-1 items-center justify-center p-8">
                     <div class="max-w-md text-center">
-                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-900">
                             <x-icons.chat-bubble class="h-8 w-8" />
                         </div>
 
-                        <h2 class="text-lg font-semibold text-zinc-900">
+                        <h2 class="text-lg font-bold text-emerald-950">
                             {{ __('Vali vestlus') }}
                         </h2>
 
-                        <p class="mt-2 text-sm text-zinc-500">
+                        <p class="mt-2 text-sm leading-6 text-zinc-500">
                             {{ __('Vali vasakult vestlus, et näha sõnumeid ja vastata.') }}
                         </p>
                     </div>

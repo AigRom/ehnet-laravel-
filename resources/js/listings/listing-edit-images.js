@@ -14,7 +14,7 @@ document.addEventListener('alpine:init', () => {
                     kind: 'existing',
                     id: Number(img.id),
                     src: String(img.src),
-                    preview: String(img.src),
+                    preview: img.thumb ? String(img.thumb) : String(img.src),
                     name: img.name ? String(img.name) : '',
                 }));
 
@@ -48,6 +48,7 @@ document.addEventListener('alpine:init', () => {
 
         handleFiles(event) {
             const selected = Array.from(event.target.files || []);
+
             if (!selected.length) return;
 
             let freeSlots = this.maxImages - this.visibleItems().length;
@@ -64,11 +65,14 @@ document.addEventListener('alpine:init', () => {
                 if (freeSlots <= 0) break;
                 if (this.isDuplicateNew(file)) continue;
 
+                const preview = URL.createObjectURL(file);
+
                 this.items.push({
                     uid: this.makeUid(file),
                     kind: 'new',
                     file,
-                    preview: URL.createObjectURL(file),
+                    src: preview,
+                    preview,
                     name: file.name,
                 });
 
@@ -119,6 +123,7 @@ document.addEventListener('alpine:init', () => {
         visibleIndexToRealIndex(visibleIndex) {
             const visible = this.visibleItems();
             const target = visible[visibleIndex];
+
             if (!target) return -1;
 
             return this.items.findIndex((item) => item.uid === target.uid);
@@ -139,6 +144,7 @@ document.addEventListener('alpine:init', () => {
             this.items[realB] = temp;
 
             this.items = [...this.items];
+
             this.rebuildInputFiles();
         },
 
@@ -159,6 +165,7 @@ document.addEventListener('alpine:init', () => {
 
         moveDown(visibleIndex) {
             const visible = this.visibleItems();
+
             if (visibleIndex >= visible.length - 1) return;
 
             const realA = this.visibleIndexToRealIndex(visibleIndex);
@@ -176,6 +183,7 @@ document.addEventListener('alpine:init', () => {
         remove(visibleIndex) {
             const visible = this.visibleItems();
             const target = visible[visibleIndex];
+
             if (!target) return;
 
             if (target.kind === 'existing') {
@@ -217,6 +225,7 @@ document.addEventListener('alpine:init', () => {
 
         openModal(visibleIndex) {
             const visible = this.visibleItems();
+
             if (!visible[visibleIndex]) return;
 
             this.activeModalIndex = visibleIndex;
@@ -230,6 +239,7 @@ document.addEventListener('alpine:init', () => {
 
         prevModal() {
             const visible = this.visibleItems();
+
             if (!visible.length || this.activeModalIndex === null) return;
 
             this.activeModalIndex =
@@ -240,6 +250,7 @@ document.addEventListener('alpine:init', () => {
 
         nextModal() {
             const visible = this.visibleItems();
+
             if (!visible.length || this.activeModalIndex === null) return;
 
             this.activeModalIndex =
@@ -255,7 +266,7 @@ document.addEventListener('alpine:init', () => {
                 return '';
             }
 
-            return visible[this.activeModalIndex].preview;
+            return visible[this.activeModalIndex].src || visible[this.activeModalIndex].preview;
         },
 
         modalCounterText() {

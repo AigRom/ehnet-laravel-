@@ -256,6 +256,15 @@ class Conversation extends Model
         return null;
     }
 
+    public function readColumnFor(User $user): ?string
+    {
+        if ($this->isSeller($user)) {
+            return 'seller_read_at';
+        }
+
+        return 'buyer_read_at';
+    }
+
     /**
      * Kas selle vestluse kahe osapoole vahel on sõnumiblokk.
      */

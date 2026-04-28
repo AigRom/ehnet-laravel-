@@ -8,6 +8,7 @@ use App\Models\Listing;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,16 +34,15 @@ class ConversationController extends Controller
         abort_unless($conversation->hasParticipant($user), 404);
         abort_if($conversation->isHiddenFor($user), 404);
 
+        $readColumn = $conversation->readColumnFor($user);
+
         $conversation->messages()
-            ->whereNull('read_at')
+            ->whereNull($readColumn)
             ->where(function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('type', Message::TYPE_USER)
-                        ->where('sender_id', '!=', $user->id);
-                })->orWhere('type', Message::TYPE_SYSTEM);
+                $this->applyReadableMessagesForUser($query, $user);
             })
             ->update([
-                'read_at' => now(),
+                $readColumn => now(),
             ]);
 
         $conversation->load([
@@ -179,13 +179,7 @@ class ConversationController extends Controller
             ])
             ->withCount([
                 'messages as unread_messages_count' => function ($query) use ($user) {
-                    $query->whereNull('read_at')
-                        ->where(function ($q) use ($user) {
-                            $q->where(function ($qq) use ($user) {
-                                $qq->where('type', Message::TYPE_USER)
-                                    ->where('sender_id', '!=', $user->id);
-                            })->orWhere('type', Message::TYPE_SYSTEM);
-                        });
+                    $this->applyUnreadMessagesForUser($query, $user);
                 },
             ])
             ->where(function ($query) use ($user) {
@@ -198,5 +192,38 @@ class ConversationController extends Controller
                 });
             })
             ->latest('updated_at');
+    }
+
+    private function applyUnreadMessagesForUser(Builder|HasMany $query, User $user): void
+    {
+        $query
+            ->where(function ($q) use ($user) {
+                $q->where(function ($sellerQuery) use ($user) {
+                    $sellerQuery
+                        ->whereHas('conversation', function ($conversationQuery) use ($user) {
+                            $conversationQuery->where('seller_id', $user->id);
+                        })
+                        ->whereNull('seller_read_at');
+                })->orWhere(function ($buyerQuery) use ($user) {
+                    $buyerQuery
+                        ->whereHas('conversation', function ($conversationQuery) use ($user) {
+                            $conversationQuery->where('buyer_id', $user->id);
+                        })
+                        ->whereNull('buyer_read_at');
+                });
+            })
+            ->where(function ($q) use ($user) {
+                $this->applyReadableMessagesForUser($q, $user);
+            });
+    }
+
+    private function applyReadableMessagesForUser(Builder|HasMany $query, User $user): void
+    {
+        $query
+            ->where('type', Message::TYPE_SYSTEM)
+            ->orWhere(function ($q) use ($user) {
+                $q->where('type', Message::TYPE_USER)
+                    ->where('sender_id', '!=', $user->id);
+            });
     }
 }

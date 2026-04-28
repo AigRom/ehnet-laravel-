@@ -2,30 +2,30 @@
     @php
         $status = $currentStatus ?? request('status', 'all');
         $sort = $currentSort ?? request('sort', 'newest');
-        $query = $currentQuery ?? request('q');
+        $query = $currentQuery ?? request('q', '');
         $categoryId = $currentCategoryId ?? request('category_id');
-        $baseParams = request()->except('page');
+        $hasCategoryFilter = filled($categoryId);
+
+        $baseParams = request()->except('page', 'purchase');
+
+        $activeTrade = $activeTrade ?? $purchases->first();
+        $activeTradeId = $activeTrade?->id;
     @endphp
 
-    <div class="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-0">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900">
-                    {{ __('Minu ostud') }}
-                </h1>
-                <p class="mt-1 text-sm text-zinc-500">
-                    {{ __('Jälgi oma ostusoove, broneeringuid ja lõpetatud tehinguid.') }}
-                </p>
-            </div>
+    <div class="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        {{-- Header --}}
+        <div class="flex flex-col gap-3">
+            <x-ui.back-button
+                :href="route('dashboard')"
+                :label="__('Minu EHNET')"
+            />
 
-            <a
-                href="{{ route('listings.index') }}"
-                class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200"
-            >
-                {{ __('Sirvi kuulutusi') }}
-            </a>
+            <h1 class="text-3xl font-extrabold tracking-tight text-emerald-950">
+                {{ __('Minu ostud') }}
+            </h1>
         </div>
 
+        {{-- Status pills --}}
         <div class="flex flex-wrap gap-2">
             <x-ui.filter-pill
                 :href="route('purchases.index', array_merge($baseParams, ['status' => 'all']))"
@@ -70,30 +70,37 @@
             </x-ui.filter-pill>
         </div>
 
-        <form method="GET" action="{{ route('purchases.index') }}" class="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+        {{-- Compact filters --}}
+        <form
+            method="GET"
+            action="{{ route('purchases.index') }}"
+            class="rounded-[1.5rem] border border-emerald-950/10 bg-white p-3 shadow-sm sm:p-4"
+        >
+            <div class="grid grid-cols-1 gap-2 md:grid-cols-12">
                 <div class="md:col-span-4">
-                    <label class="mb-1 block text-sm font-medium text-zinc-700">
-                        {{ __('Võtmesõna') }}
+                    <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">
+                        {{ __('Otsi') }}
                     </label>
+
                     <input
                         type="text"
                         name="q"
                         value="{{ $query }}"
                         placeholder="{{ __('Nt. kipsplaat') }}"
-                        class="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        class="h-11 w-full rounded-2xl border border-emerald-950/10 bg-stone-50 px-3 text-sm font-medium text-emerald-950 outline-none transition placeholder:text-zinc-400 focus:border-emerald-900/30 focus:bg-white focus:ring-4 focus:ring-emerald-900/10"
                     >
                 </div>
 
-                <div class="md:col-span-3">
-                    <label class="mb-1 block text-sm font-medium text-zinc-700">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">
                         {{ __('Staatus') }}
                     </label>
+
                     <select
                         name="status"
-                        class="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        class="h-11 w-full rounded-2xl border border-emerald-950/10 bg-stone-50 px-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-900/30 focus:bg-white focus:ring-4 focus:ring-emerald-900/10"
                     >
-                        <option value="all" @selected($status === 'all')>{{ __('Kõik ostud') }}</option>
+                        <option value="all" @selected($status === 'all')>{{ __('Kõik') }}</option>
                         <option value="interest" @selected($status === 'interest')>{{ __('Ostusoovid') }}</option>
                         <option value="reserved" @selected($status === 'reserved')>{{ __('Broneeritud') }}</option>
                         <option value="awaiting_confirmation" @selected($status === 'awaiting_confirmation')>{{ __('Ootan kinnitust') }}</option>
@@ -103,16 +110,28 @@
                 </div>
 
                 <div class="md:col-span-3">
-                    <label class="mb-1 block text-sm font-medium text-zinc-700">
+                    <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">
                         {{ __('Kategooria') }}
                     </label>
+
                     <select
                         name="category_id"
-                        class="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        @class([
+                            'h-11 w-full rounded-2xl px-3 text-sm font-medium outline-none transition focus:ring-4',
+                            'border border-emerald-900 bg-emerald-900 text-white focus:border-emerald-800 focus:bg-emerald-900 focus:ring-emerald-900/20' => $hasCategoryFilter,
+                            'border border-emerald-950/10 bg-stone-50 text-emerald-950 focus:border-emerald-900/30 focus:bg-white focus:ring-emerald-900/10' => ! $hasCategoryFilter,
+                        ])
                     >
-                        <option value="">{{ __('Kõik kategooriad') }}</option>
+                        <option value="" class="bg-white text-emerald-950">
+                            {{ __('Kõik kategooriad') }}
+                        </option>
+
                         @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" @selected((string) $categoryId === (string) $cat->id)>
+                            <option
+                                value="{{ $cat->id }}"
+                                class="bg-white text-emerald-950"
+                                @selected((string) $categoryId === (string) $cat->id)
+                            >
                                 {{ $cat->name_et }}
                             </option>
                         @endforeach
@@ -120,39 +139,27 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-zinc-700">
+                    <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">
                         {{ __('Sorteeri') }}
                     </label>
+
                     <select
                         name="sort"
-                        class="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        class="h-11 w-full rounded-2xl border border-emerald-950/10 bg-stone-50 px-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-900/30 focus:bg-white focus:ring-4 focus:ring-emerald-900/10"
                     >
-                        <option value="newest" @selected($sort === 'newest')>{{ __('Uuemad ees') }}</option>
-                        <option value="oldest" @selected($sort === 'oldest')>{{ __('Vanemad ees') }}</option>
+                        <option value="newest" @selected($sort === 'newest')>{{ __('Uuemad') }}</option>
+                        <option value="oldest" @selected($sort === 'oldest')>{{ __('Vanemad') }}</option>
                         <option value="price_asc" @selected($sort === 'price_asc')>{{ __('Hind kasvav') }}</option>
                         <option value="price_desc" @selected($sort === 'price_desc')>{{ __('Hind kahanev') }}</option>
                     </select>
                 </div>
-            </div>
 
-            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="text-sm text-zinc-500">
-                    {{ __('Filtreeri ja halda oma oste kiiremini.') }}
-                </div>
-
-                <div class="flex gap-2">
-                    <a
-                        href="{{ route('purchases.index') }}"
-                        class="inline-flex items-center justify-center rounded-2xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-                    >
-                        {{ __('Lähtesta') }}
-                    </a>
-
+                <div class="md:col-span-1 md:flex md:items-end">
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+                        class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-emerald-900 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/20"
                     >
-                        {{ __('Rakenda filtrid') }}
+                        {{ __('Otsi') }}
                     </button>
                 </div>
             </div>
@@ -160,147 +167,124 @@
 
         @if($purchases->isEmpty())
             @if(!$hasAnyPurchases)
-                <div class="rounded-3xl border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
-                    <p class="text-base font-medium text-zinc-800">
+                <div class="rounded-[2rem] border border-dashed border-emerald-950/15 bg-white p-8 text-center shadow-sm">
+                    <p class="text-base font-bold text-emerald-950">
                         {{ __('Sul pole veel oste ega ostusoove.') }}
                     </p>
-                    <p class="mt-2 text-sm text-zinc-500">
+
+                    <p class="mt-2 text-sm font-medium text-zinc-500">
                         {{ __('Sirvi kuulutusi ja alusta vestlust, et oma esimesed ostud teha.') }}
                     </p>
 
                     <a
                         href="{{ route('listings.index') }}"
-                        class="mt-5 inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                        wire:navigate
+                        class="mt-5 inline-flex items-center justify-center rounded-2xl bg-emerald-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-800"
                     >
                         {{ __('Sirvi kuulutusi') }}
                     </a>
                 </div>
             @else
-                <div class="rounded-3xl border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
-                    <p class="text-base font-medium text-zinc-800">
+                <div class="rounded-[2rem] border border-dashed border-emerald-950/15 bg-white p-8 text-center shadow-sm">
+                    <p class="text-base font-bold text-emerald-950">
                         {{ __('Selle otsingu või filtriga tulemusi ei leitud.') }}
                     </p>
-                    <p class="mt-2 text-sm text-zinc-500">
+
+                    <p class="mt-2 text-sm font-medium text-zinc-500">
                         {{ __('Proovi teisi filtreid või kuva kõik ostud.') }}
                     </p>
 
                     <a
                         href="{{ route('purchases.index') }}"
-                        class="mt-5 inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+                        class="mt-5 inline-flex items-center justify-center rounded-2xl bg-emerald-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-800"
                     >
                         {{ __('Näita kõiki oste') }}
                     </a>
                 </div>
             @endif
         @else
-            <div class="space-y-3">
-                @foreach($purchases as $trade)
-                    @php
-                        $listing = $trade->listing;
-                        $seller = $trade->seller;
+            <div class="grid gap-5 lg:grid-cols-[430px_minmax(0,1fr)]">
+                {{-- Left list --}}
+                <section class="min-w-0 space-y-3">
+                    <div class="space-y-2">
+                        @foreach($purchases as $trade)
+                            @php
+                                $isActiveTrade = (int) $activeTradeId === (int) $trade->id;
 
-                        $statusLabel = match ($trade->status) {
-                            'interest' => __('Ostusoov'),
-                            'reserved' => __('Broneeritud'),
-                            'awaiting_confirmation' => __('Ootan kinnitust'),
-                            'completed' => __('Lõpetatud'),
-                            'cancelled' => __('Katkestatud'),
-                            default => __('—'),
-                        };
+                                $desktopParams = array_merge(request()->query(), [
+                                    'purchase' => $trade->id,
+                                ]);
+                            @endphp
 
-                        $statusClasses = match ($trade->status) {
-                            'interest' => 'border-sky-200 bg-sky-100 text-sky-800',
-                            'reserved' => 'border-amber-200 bg-amber-100 text-amber-800',
-                            'awaiting_confirmation' => 'border-violet-200 bg-violet-100 text-violet-800',
-                            'completed' => 'border-emerald-200 bg-emerald-100 text-emerald-800',
-                            'cancelled' => 'border-zinc-200 bg-zinc-100 text-zinc-700',
-                            default => 'border-zinc-200 bg-zinc-100 text-zinc-700',
-                        };
+                            {{-- Mobile: opens show page --}}
+                            <a
+                                href="{{ route('purchases.show', $trade) }}"
+                                class="block lg:hidden"
+                            >
+                                @include('user.purchases.partials.list-card', [
+                                    'trade' => $trade,
+                                    'isActive' => false,
+                                ])
+                            </a>
 
-                        $dateText =
-                            $trade->buyer_confirmed_received_at?->format('d.m.Y')
-                            ?? $trade->completed_at?->format('d.m.Y')
-                            ?? $trade->awaiting_confirmation_at?->format('d.m.Y')
-                            ?? $trade->reserved_at?->format('d.m.Y')
-                            ?? $trade->created_at?->format('d.m.Y')
-                            ?? '—';
+                            {{-- Desktop: changes right panel --}}
+                            <a
+                                href="{{ route('purchases.index', $desktopParams) }}"
+                                class="hidden lg:block"
+                                wire:navigate
+                            >
+                                @include('user.purchases.partials.list-card', [
+                                    'trade' => $trade,
+                                    'isActive' => $isActiveTrade,
+                                ])
+                            </a>
+                        @endforeach
+                    </div>
 
-                        $helpText = match ($trade->status) {
-                            'reserved' => __('Broneering aktiivne'),
-                            'awaiting_confirmation' => __('Ootab sinu kinnitust'),
-                            'completed' => __('Tehing lõpetatud'),
-                            default => null,
-                        };
-
-                        $helpClasses = match ($trade->status) {
-                            'reserved' => 'text-amber-600',
-                            'awaiting_confirmation' => 'text-violet-600',
-                            'completed' => 'text-emerald-600',
-                            default => 'text-zinc-500',
-                        };
-                    @endphp
-
-                    <a
-                        href="{{ route('purchases.show', $trade) }}"
-                        class="group block rounded-2xl border border-zinc-200 bg-white p-3 transition hover:border-zinc-300 hover:shadow-sm"
-                    >
-                        <div class="flex gap-4">
-                            <div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
-                                <img
-                                    src="{{ $listing?->coverThumbUrlOrPlaceholder() ?? asset('images/placeholder.png') }}"
-                                    class="h-full w-full object-cover"
-                                    alt=""
-                                >
-                            </div>
-
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="min-w-0">
-                                        <div class="truncate font-medium text-zinc-900 group-hover:underline">
-                                            {{ $listing?->title ?? __('Kuulutus on eemaldatud') }}
-                                        </div>
-
-                                        <div class="mt-1 text-sm text-zinc-500">
-                                            {{ $listing?->priceLabel() ?? __('—') }}
-                                            @if($listing?->location)
-                                                • {{ $listing->location->name }}
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap {{ $statusClasses }}">
-                                        {{ $statusLabel }}
-                                    </span>
+                    @if(method_exists($purchases, 'links') && $purchases->hasPages())
+                        <div class="rounded-[1.5rem] border border-emerald-950/10 bg-white px-4 py-4 shadow-sm">
+                            <div class="space-y-3">
+                                <div class="text-sm font-medium text-zinc-500">
+                                    {{ __('Kuvatakse') }}
+                                    <span class="font-bold text-emerald-950">{{ $purchases->firstItem() }}</span>
+                                    –
+                                    <span class="font-bold text-emerald-950">{{ $purchases->lastItem() }}</span>
+                                    {{ __('kokku') }}
+                                    <span class="font-bold text-emerald-950">{{ $purchases->total() }}</span>
+                                    {{ __('ostust') }}
                                 </div>
 
-                                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                                    <span>
-                                        {{ __('Müüja') }}:
-                                        {{ $seller?->company_name ?? $seller?->name ?? '—' }}
-                                    </span>
-
-                                    <span>
-                                        {{ __('Kuupäev') }}:
-                                        {{ $dateText }}
-                                    </span>
-
-                                    @if($helpText)
-                                        <span class="{{ $helpClasses }}">
-                                            {{ $helpText }}
-                                        </span>
-                                    @endif
+                                <div class="min-w-0 overflow-x-auto">
+                                    {{ $purchases->onEachSide(1)->links() }}
                                 </div>
                             </div>
                         </div>
-                    </a>
-                @endforeach
-            </div>
+                    @endif
+                </section>
 
-            @if(method_exists($purchases, 'links'))
-                <div>
-                    {{ $purchases->links() }}
-                </div>
-            @endif
+                {{-- Right detail --}}
+                <section class="hidden min-w-0 lg:block">
+                    <div class="sticky top-28 rounded-[2rem] border border-emerald-950/10 bg-white/80 p-4 shadow-xl shadow-emerald-950/5 backdrop-blur">
+                        @if($activeTrade)
+                            @include('user.purchases.partials.detail-panel', [
+                                'trade' => $activeTrade,
+                            ])
+                        @else
+                            <div class="flex min-h-[420px] items-center justify-center rounded-[1.5rem] border border-dashed border-emerald-950/15 bg-white p-8 text-center">
+                                <div>
+                                    <p class="text-base font-bold text-emerald-950">
+                                        {{ __('Vali ost') }}
+                                    </p>
+
+                                    <p class="mt-2 text-sm font-medium text-zinc-500">
+                                        {{ __('Detailvaade kuvatakse siin, kui vasakult ost valida.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </section>
+            </div>
         @endif
     </div>
 </x-layouts.app.public>

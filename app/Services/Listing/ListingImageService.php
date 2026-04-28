@@ -26,30 +26,31 @@ class ListingImageService
         try {
             $image = $this->imageManager->read($file);
 
-            // originaalmõõdud enne resize'i
             $width = $image->width();
             $height = $image->height();
 
-            // LARGE
             $large = clone $image;
             $large->scaleDown(width: 1600);
 
             $largePath = $this->generatePath('large');
+
             Storage::disk($this->disk)->put(
                 $largePath,
                 (string) $large->toJpeg(82)
             );
+
             $storedPaths[] = $largePath;
 
-            // THUMB
             $thumb = clone $image;
             $thumb->scaleDown(width: 500);
 
             $thumbPath = $this->generatePath('thumb');
+
             Storage::disk($this->disk)->put(
                 $thumbPath,
                 (string) $thumb->toJpeg(75)
             );
+
             $storedPaths[] = $thumbPath;
 
             return ListingImage::create([
@@ -70,6 +71,21 @@ class ListingImageService
 
             throw $e;
         }
+    }
+
+    public function delete(ListingImage $image): void
+    {
+        $disk = $image->disk ?: $this->disk;
+
+        if ($image->path) {
+            Storage::disk($disk)->delete($image->path);
+        }
+
+        if ($image->thumb_path) {
+            Storage::disk($disk)->delete($image->thumb_path);
+        }
+
+        $image->delete();
     }
 
     protected function generatePath(string $type): string

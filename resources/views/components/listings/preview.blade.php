@@ -11,6 +11,7 @@
         condition: '—',
         delivery: [],
         price: 'Kokkuleppel',
+        vatText: '',
         images: [],
         idx: 0,
 
@@ -32,6 +33,7 @@
         condition = $event.detail?.condition ?? '—';
         delivery = Array.isArray($event.detail?.delivery) ? $event.detail.delivery : [];
         price = $event.detail?.price ?? 'Kokkuleppel';
+        vatText = $event.detail?.vatText ?? $event.detail?.vat_text ?? '';
     "
     x-on:listing-preview-images.window="
         images = Array.isArray($event.detail?.images) ? $event.detail.images : [];
@@ -72,14 +74,18 @@
                                     class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white hover:bg-black/55"
                                     x-on:click="prev()"
                                     x-show="images.length > 1"
-                                >‹</button>
+                                >
+                                    ‹
+                                </button>
 
                                 <button
                                     type="button"
                                     class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white hover:bg-black/55"
                                     x-on:click="next()"
                                     x-show="images.length > 1"
-                                >›</button>
+                                >
+                                    ›
+                                </button>
 
                                 <div class="overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-100">
                                     <img
@@ -129,11 +135,20 @@
                                     </div>
                                 </div>
 
-                                <div class="flex justify-between">
-                                    <div class="text-xs text-zinc-500 uppercase">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="text-xs uppercase text-zinc-500">
                                         {{ __('Hind') }}
                                     </div>
-                                    <div class="text-lg font-semibold text-zinc-900" x-text="price"></div>
+
+                                    <div class="text-right">
+                                        <div class="text-lg font-semibold text-zinc-900" x-text="price"></div>
+
+                                        <div
+                                            x-show="vatText"
+                                            class="mt-1 text-xs font-medium text-zinc-500"
+                                            x-text="vatText"
+                                        ></div>
+                                    </div>
                                 </div>
 
                                 <div class="h-px bg-zinc-200"></div>
@@ -150,13 +165,18 @@
                                         {{ __('Tarneviis') }}
                                     </div>
 
-                                    <div class="flex flex-wrap gap-2 mt-1" x-show="delivery.length > 0">
+                                    <div class="mt-1 flex flex-wrap gap-2" x-show="delivery.length > 0">
                                         <template x-for="(lbl, i) in delivery" :key="i">
-                                            <span class="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700" x-text="lbl"></span>
+                                            <span
+                                                class="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700"
+                                                x-text="lbl"
+                                            ></span>
                                         </template>
                                     </div>
 
-                                    <div class="text-sm text-zinc-500" x-show="delivery.length === 0">—</div>
+                                    <div class="text-sm text-zinc-500" x-show="delivery.length === 0">
+                                        —
+                                    </div>
                                 </div>
                             </div>
                         </div>

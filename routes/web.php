@@ -19,6 +19,7 @@ use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\Trade\TradeController;
 use App\Http\Controllers\Trade\ReviewController;
 use App\Http\Controllers\User\PurchaseController;
+use App\Http\Controllers\Messaging\MessageAttachmentController;
 /*
 |--------------------------------------------------------------------------
 | Avalikud lehed
@@ -146,6 +147,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
         ->name('messages.store');
 
+    Route::get('/messages/attachments/{attachment}/download', [MessageAttachmentController::class, 'download'])
+        ->name('messages.attachments.download');
+
     /*
     |--------------------------------------------------------------------------
     | Tehingud (Trade)
@@ -231,6 +235,7 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/my/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
     Route::get('/my/purchases/{trade}', [PurchaseController::class, 'show'])->name('purchases.show');
+    Route::patch('/my/purchases/{trade}/hide', [PurchaseController::class, 'hide'])->name('purchases.hide')->middleware('auth');
 
     /*
     |--------------------------------------------------------------------------

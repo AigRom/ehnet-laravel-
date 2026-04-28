@@ -25,6 +25,8 @@ class Message extends Model
         'body',
         'meta',       
         'read_at',
+        'seller_read_at',
+        'buyer_read_at',
     ];
 
     /**
@@ -32,6 +34,8 @@ class Message extends Model
      */
     protected $casts = [
         'read_at' => 'datetime',
+        'seller_read_at' => 'datetime',
+        'buyer_read_at' => 'datetime',
         'meta' => 'array',
     ];
 

@@ -4,13 +4,12 @@
         $soldTrade = $soldTrade ?? null;
     @endphp
 
-    <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
+    <div class="mx-auto w-full max-w-[1500px] space-y-6 py-6 md:py-8">
         <div class="flex items-center justify-between">
             <x-ui.back-button />
-
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
             <div class="min-w-0">
                 <x-listings.detail
                     mode="db"
@@ -18,7 +17,7 @@
                 />
             </div>
 
-            <div class="space-y-4">
+            <aside class="space-y-4">
                 <x-listings.seller-card
                     :seller="$listing->user"
                     :listing="$listing"
@@ -30,7 +29,7 @@
                     :reserved-trade="$reservedTrade"
                     :sold-trade="$soldTrade"
                 />
-            </div>
+            </aside>
         </div>
 
         @if($sellerListings->isNotEmpty())
@@ -48,7 +47,7 @@
                     </p>
                 </div>
 
-                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                     @foreach($sellerListings as $sellerListing)
                         <x-listings.card :listing="$sellerListing" />
                     @endforeach
@@ -68,7 +67,7 @@
                     </p>
                 </div>
 
-                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                     @foreach($similarListings as $similarListing)
                         <x-listings.card :listing="$similarListing" />
                     @endforeach

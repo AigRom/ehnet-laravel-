@@ -214,64 +214,65 @@
         </div>
     </div>
 
-    <div
-        x-show="zoomOpen"
-        x-cloak
-        x-transition.opacity
-        class="fixed inset-0 z-[60]"
-        aria-modal="true"
-        role="dialog"
-    >
-        <div class="absolute inset-0 bg-black/80" x-on:click="closeZoom()"></div>
+    <template x-teleport="body">
+        <div
+            x-show="zoomOpen"
+            x-cloak
+            x-transition.opacity
+            class="fixed inset-0 z-[9999]"
+            aria-modal="true"
+            role="dialog"
+            style="display: none;"
+        >
+            <div class="absolute inset-0 bg-black/85 backdrop-blur-sm" x-on:click="closeZoom()"></div>
 
-        <div class="absolute inset-0 flex items-center justify-center p-4 md:p-8">
-            <div class="relative w-full max-w-6xl">
-                <button
-                    type="button"
-                    class="absolute -top-12 right-0 rounded-xl bg-white/10 px-3 py-2 text-sm text-white backdrop-blur hover:bg-white/20 md:-top-14"
-                    x-on:click="closeZoom()"
-                >
-                    ✕ {{ __('Sulge') }}
-                </button>
+            <div class="absolute inset-0 flex items-center justify-center p-4 md:p-8">
+                <div class="relative flex h-full w-full max-w-7xl items-center justify-center">
+                    <button
+                        type="button"
+                        class="absolute right-0 top-0 z-20 rounded-2xl bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
+                        x-on:click="closeZoom()"
+                    >
+                        ✕ {{ __('Sulge') }}
+                    </button>
 
-                <button
-                    type="button"
-                    class="absolute left-0 top-1/2 flex h-11 w-11 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 md:-translate-x-12"
-                    x-on:click="prev()"
-                    x-show="imgs.length > 1"
-                    aria-label="Eelmine pilt"
-                >
-                    ‹
-                </button>
+                    <button
+                        type="button"
+                        class="absolute left-0 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-3xl text-white backdrop-blur transition hover:bg-white/20 md:left-4"
+                        x-on:click.stop="prev()"
+                        x-show="imgs.length > 1"
+                        aria-label="Eelmine pilt"
+                    >
+                        ‹
+                    </button>
 
-                <button
-                    type="button"
-                    class="absolute right-0 top-1/2 flex h-11 w-11 translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 md:translate-x-12"
-                    x-on:click="next()"
-                    x-show="imgs.length > 1"
-                    aria-label="Järgmine pilt"
-                >
-                    ›
-                </button>
+                    <button
+                        type="button"
+                        class="absolute right-0 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-3xl text-white backdrop-blur transition hover:bg-white/20 md:right-4"
+                        x-on:click.stop="next()"
+                        x-show="imgs.length > 1"
+                        aria-label="Järgmine pilt"
+                    >
+                        ›
+                    </button>
 
-                <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20">
                     <img
                         :src='imgs[idx] && imgs[idx].full ? imgs[idx].full : "/images/placeholder.png"'
-                        class="h-[75vh] w-full select-none object-contain"
+                        class="max-h-[88vh] max-w-full select-none rounded-3xl object-contain shadow-2xl"
                         alt=""
                         draggable="false"
                         loading="lazy"
                         decoding="async"
                         x-on:error='$el.src = "/images/placeholder.png"'
                     >
-                </div>
 
-                <div class="mt-3 text-center text-sm text-white/80" x-show="imgs.length">
-                    <span x-text="(idx + 1) + ' / ' + imgs.length"></span>
-                    <span class="mx-2">•</span>
-                    <span class="text-white/60">{{ __('ESC sulgeb') }}</span>
+                    <div class="absolute bottom-0 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/35 px-4 py-2 text-center text-sm text-white/80 backdrop-blur" x-show="imgs.length">
+                        <span x-text="(idx + 1) + ' / ' + imgs.length"></span>
+                        <span class="mx-2">•</span>
+                        <span class="text-white/60">{{ __('ESC sulgeb') }}</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </template>
 </div>

@@ -23,7 +23,16 @@
     ])->filter()->implode(' '));
 
     $email = $user->email;
-    $phone = $user->phone;
+
+    $phone = trim((string) $user->phone);
+
+    $phoneDisplay = $phone !== ''
+        ? (str_starts_with($phone, '+') ? $phone : '+' . $phone)
+        : null;
+
+    $phoneHref = $phoneDisplay
+        ? preg_replace('/\s+/', '', $phoneDisplay)
+        : null;
 @endphp
 
 <div
@@ -45,7 +54,7 @@
             :class="{ 'rotate-180': open }"
         >
             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.512a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
             </svg>
         </span>
     </button>
@@ -104,17 +113,17 @@
                 </div>
             @endif
 
-            @if($phone)
+            @if($phoneDisplay)
                 <div class="min-w-0">
                     <dt class="text-[10px] uppercase tracking-wide text-zinc-500">
                         {{ __('Tel') }}
                     </dt>
                     <dd>
                         <a
-                            href="tel:{{ preg_replace('/\s+/', '', $phone) }}"
+                            href="tel:{{ $phoneHref }}"
                             class="block truncate font-medium text-emerald-700 hover:text-emerald-800"
                         >
-                            {{ $phone }}
+                            {{ $phoneDisplay }}
                         </a>
                     </dd>
                 </div>
