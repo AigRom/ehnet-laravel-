@@ -47,9 +47,20 @@
 
     $buyIntentAction = route('listings.buy-intent', $listing);
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tagasisuunamine
+    |--------------------------------------------------------------------------
+    |
+    | Kasutame suhtelist URL-i, mitte fullUrl/current URL-i.
+    | See väldib mobiilis 127.0.0.1 / localhost / IP aadressi segadust.
+    |
+    */
+    $currentRelativeUrl = request()->getRequestUri();
+
     $editAction = route('listings.mine.edit', [
         'listing' => $listing,
-        'return_to' => request()->fullUrl(),
+        'return_to' => $currentRelativeUrl,
     ]);
 
     $completeTradeAction = $reservedTrade
@@ -60,7 +71,9 @@
         ? route('messages.trades.cancel', [$reservedTrade->conversation_id, $reservedTrade])
         : null;
 
-    $loginAction = route('login', ['redirect' => url()->current()]);
+    $loginAction = route('login', [
+        'redirect' => $currentRelativeUrl,
+    ]);
 
     $primaryButton = 'inline-flex w-full items-center justify-center rounded-2xl bg-emerald-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-800 hover:shadow-xl hover:shadow-emerald-950/25 focus:outline-none focus:ring-4 focus:ring-emerald-900/20';
 

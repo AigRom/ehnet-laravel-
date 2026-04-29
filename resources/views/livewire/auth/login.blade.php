@@ -4,14 +4,12 @@
     | Redirect pärast sisselogimist
     |--------------------------------------------------------------------------
     |
-    | Kui kasutaja tuli login-lehele näiteks kaitstud lehelt või kuulutuse
-    | lisamise voost, salvestame redirect parameetri sessiooni.
-    | Pärast edukat sisselogimist saab Laravel kasutaja õigesse kohta tagasi suunata.
+    | View-failis ei muuda me enam sessiooni.
+    | Kui redirect parameeter on olemas, saadame selle login POST päringuga kaasa.
+    | Login controller saab selle põhjal kasutaja õigesse kohta suunata.
     |
     */
-    if (request('redirect')) {
-        session(['url.intended' => request('redirect')]);
-    }
+    $redirectTo = request('redirect');
 @endphp
 
 <x-layouts.auth>
@@ -115,6 +113,10 @@
                 >
                     @csrf
 
+                    @if ($redirectTo)
+                        <input type="hidden" name="redirect" value="{{ $redirectTo }}">
+                    @endif
+
                     {{-- Email --}}
                     <div>
                         <label for="email" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
@@ -154,7 +156,6 @@
                             @if (Route::has('password.request'))
                                 <a
                                     href="{{ route('password.request') }}"
-                                    wire:navigate
                                     class="text-sm font-bold text-emerald-800 transition hover:text-emerald-900 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300"
                                 >
                                     {{ __('Unustasid parooli?') }}
@@ -232,8 +233,7 @@
                     <span>{{ __('Sul ei ole veel kontot?') }}</span>
 
                     <a
-                        href="{{ route('register') }}"
-                        wire:navigate
+                        href="{{ route('register', $redirectTo ? ['redirect' => $redirectTo] : []) }}"
                         class="ml-1 font-bold text-emerald-900 transition hover:text-emerald-700 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
                         {{ __('Registreeru siin') }}

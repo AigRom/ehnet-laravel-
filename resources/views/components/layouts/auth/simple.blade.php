@@ -7,7 +7,7 @@
 
     <body class="min-h-screen antialiased bg-gradient-to-br from-stone-100 via-emerald-50 to-lime-50 text-zinc-900 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900 dark:text-zinc-100">
         {{-- Üldine toast auth lehtede jaoks --}}
-        
+
         <div class="relative min-h-screen overflow-hidden">
             {{-- Tausta blurid --}}
             <div class="pointer-events-none absolute inset-0">
@@ -22,7 +22,6 @@
                     <a
                         href="{{ route('home') }}"
                         class="inline-flex items-center gap-4 rounded-xl focus:outline-none focus:ring-0"
-                        wire:navigate
                         title="{{ __('Avalehele') }}"
                     >
                         <x-app-logo class="h-14 w-auto text-emerald-700 sm:h-16" />
@@ -34,7 +33,6 @@
 
                     <a
                         href="{{ route('home') }}"
-                        wire:navigate
                         class="inline-flex items-center justify-center rounded-2xl border border-emerald-950/10 bg-white/80 px-4 py-2.5 text-sm font-bold text-emerald-950 shadow-sm backdrop-blur transition hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:px-5"
                     >
                         {{ __('Avalehele') }}
@@ -51,5 +49,14 @@
         </div>
 
         @livewireScripts
+
+        {{-- Chrome / mobile back-forward cache kaitse auth-lehtedel --}}
+        <script>
+            window.addEventListener('pageshow', function (event) {
+                if (event.persisted) {
+                    window.location.reload();
+                }
+            });
+        </script>
     </body>
 </html>
