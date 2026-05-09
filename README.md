@@ -27,27 +27,32 @@ Ava fail:
 C:\xampp\php\php.ini
 ```
 
-Leia rida:
+Leia read:
 
 ```ini
 ;extension=gd
+;extension=zip
 ```
 
-Eemalda rea algusest semikoolon:
+Eemalda mõlema rea algusest semikoolon:
 
 ```ini
 extension=gd
+extension=zip
 ```
 
-Salvesta fail ja taaskäivita XAMPP-is Apache.
+Salvesta fail.
+
+Seejärel taaskäivita XAMPP-is Apache ja ava uus PowerShelli aken.
 
 Kontrolli PowerShellis:
 
 ```powershell
 php -m | findstr gd
+php -m | findstr zip
 ```
 
-Kui kuvatakse `gd`, on extension lubatud.
+Kui kuvatakse `gd` ja `zip`, on vajalikud extensionid lubatud.
 
 ## 3. Kontrolli, et käsud töötavad
 
@@ -58,16 +63,10 @@ git --version
 php -v
 composer --version
 node -v
-npm -v
+npm.cmd -v
 ```
 
 Kui `npm` ei tööta, kasuta edaspidi `npm.cmd`.
-
-Näiteks:
-
-```powershell
-npm.cmd -v
-```
 
 ## 4. Klooni projekt GitHubist
 
