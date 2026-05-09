@@ -41,9 +41,7 @@ extension=gd
 extension=zip
 ```
 
-Salvesta fail.
-
-Seejärel taaskäivita XAMPP-is Apache ja ava uus PowerShelli aken.
+Salvesta fail. Seejärel taaskäivita XAMPP-is Apache ja ava uus PowerShelli aken.
 
 Kontrolli PowerShellis:
 
@@ -98,19 +96,25 @@ composer install
 npm.cmd install
 ```
 
-## 8. Loo `.env` fail
+## 8. Ehita frontend
+
+```powershell
+npm.cmd run build
+```
+
+## 9. Loo `.env` fail
 
 ```powershell
 copy .env.example .env
 ```
 
-## 9. Genereeri rakenduse võti
+## 10. Genereeri rakenduse võti
 
 ```powershell
 php artisan key:generate
 ```
 
-## 10. Loo andmebaas
+## 11. Loo andmebaas
 
 Kui MySQL root kasutajal parooli ei ole:
 
@@ -130,7 +134,7 @@ Andmebaasi nimi:
 ehnet
 ```
 
-## 11. Kontrolli `.env` faili
+## 12. Kontrolli `.env` faili
 
 `.env` failis peavad olema vähemalt järgmised seaded:
 
@@ -163,37 +167,25 @@ Kui MySQL kasutajal on parool, lisa see reale:
 DB_PASSWORD=sinu_parool
 ```
 
-## 12. Loo andmebaasi tabelid ja algandmed
+## 13. Loo andmebaasi tabelid ja algandmed
 
 ```powershell
 php artisan migrate:fresh --seed
 ```
 
-## 13. Loo storage link
+## 14. Loo storage link
 
 ```powershell
 php artisan storage:link
 ```
 
-## 14. Puhasta cache
+## 15. Puhasta cache
 
 ```powershell
 php artisan optimize:clear
 ```
 
-## 15. Käivita frontend
-
-Ava esimene PowerShelli aken projekti kaustas:
-
-```powershell
-npm.cmd run dev
-```
-
-Jäta see aken avatuks.
-
 ## 16. Käivita Laravel server
-
-Ava teine PowerShelli aken projekti kaustas:
 
 ```powershell
 php artisan serve
@@ -205,7 +197,7 @@ Ava brauseris:
 http://127.0.0.1:8000
 ```
 
-## 17. Registreerimislingi leidmine
+## 17. Registreerimis- ja parooli taastamise lingi leidmine
 
 Kuna e-kirjad salvestatakse logisse, ava fail:
 
@@ -213,7 +205,9 @@ Kuna e-kirjad salvestatakse logisse, ava fail:
 storage/logs/laravel.log
 ```
 
-Sealt leiab registreerimise lõpetamise lingi.
+Sealt leiab registreerimise lõpetamise lingi ja parooli taastamise lingi.
+
+Kui logifailis on mitu e-kirja, otsi kõige uuemat kirjet või vastavat kasutaja e-posti aadressi.
 
 ## 18. Kasulikud käsud
 
@@ -224,6 +218,25 @@ npm.cmd run build
 php artisan migrate:fresh --seed
 ```
 
-## Testimine
+Arendusrežiimis Vite käivitamiseks võib kasutada:
 
-Käesolevas versioonis testiti rakendust manuaalselt. Automaattestid on planeeritud järgmisse arendusetappi.
+```powershell
+npm.cmd run dev
+```
+
+Sellisel juhul peab `npm.cmd run dev` terminaliaken jääma avatuks.
+
+## 14. Testkasutajad
+
+Seeder loob rakendusse testkasutajad ja näidiskuulutused.
+
+| Kasutaja | E-post | Parool |
+|---|---|---|
+| Martin Saar | martin.saar@ehnet.test | Parool123 |
+| Katrin Mägi | katrin.magi@ehnet.test | Parool123 |
+| Rasmus Tamm | rasmus.tamm@ehnet.test | Parool123 |
+| NordEhitus OÜ | info@nordehitus.test | Parool123 |
+| Roheline Renoveerimine OÜ | info@rohereno.test | Parool123 |
+| KoduMaterjalid OÜ | info@kodumaterjalid.test | Parool123 |
+
+Need kasutajad on mõeldud ainult lokaalseks testimiseks.
