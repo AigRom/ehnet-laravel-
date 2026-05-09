@@ -72,8 +72,7 @@ Kui `npm` ei tööta, kasuta edaspidi `npm.cmd`.
 cd C:\
 mkdir Projektid
 cd Projektid
-git clone https://github.com/AigRom/ehnet-laravel-.git
-cd ehnet
+git clone https://github.com/AigRom/ehnet.git
 ```
 
 ## 5. Ava projekt VS Code’is
