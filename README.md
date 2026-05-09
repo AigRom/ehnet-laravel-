@@ -7,10 +7,15 @@ Paigalda arvutisse:
 - Visual Studio Code - https://code.visualstudio.com/thank-you?dv=win64user
 - Git - https://git-scm.com/install/windows
 - XAMPP - https://www.apachefriends.org/
+<<<<<<< HEAD
 - Composer - https://getcomposer.org/download/  
   Lae alla `Composer-Setup.exe` ja paigalda Windowsi installeriga. Paigaldamisel vali PHP asukohaks `C:\xampp\php\php.exe`.
 - Node.js LTS - https://nodejs.org/en/download  
   Lae alla ja paigalda Windowsi installeriga. Node.js paigaldusega tuleb kaasa ka npm.
+=======
+- Composer - https://getcomposer.org/download/ - Composer-Setup.exe (lae alla ja paigalda Windowsi installeriga. Paigaldamisel vali PHP asukohaks `C:\xampp\php\php.exe`.)
+- Node.js LTS - https://nodejs.org/en/download (Node.js LTS: lae alla ja paigalda Windowsi installeriga. Node.js paigaldusega tuleb kaasa ka npm.)
+>>>>>>> dd4719bfa1a7ae9541dfc7d0b6565f3f46153b6e
 
 XAMPP-is käivita:
 
