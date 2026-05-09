@@ -1,243 +1,150 @@
 # EHNET käivitamise juhend Windowsis
 
-EHNET on Laravelil põhinev veebiplatvorm ehitusmaterjalide ja nende jääkide ostmiseks, müümiseks ning uuesti kasutusse suunamiseks. Projekt valmis lõputöö praktilise osana prototüübina.
+## 1. Paigalda vajalik tarkvara
 
-## 1. Vajalik tarkvara
+Paigalda arvutisse:
 
-Enne projekti käivitamist paigalda arvutisse järgmised programmid.
+- Visual Studio Code
+- Git
+- XAMPP
+- Composer
+- Node.js LTS
 
-### 1.1 Visual Studio Code
-
-Visual Studio Code on vajalik projekti failide vaatamiseks ja muutmiseks.
-
-Pärast paigaldamist saab projekti kausta avada käsuga:
-
-```powershell
-code .
-```
-
-### 1.2 Git
-
-Git on vajalik projekti allalaadimiseks GitHubist.
-
-Kontrolli paigaldust PowerShellis:
-
-```powershell
-git --version
-```
-
-### 1.3 XAMPP
-
-XAMPP sisaldab Apache veebiserverit, MySQL andmebaasi, PHP-d ja phpMyAdmini.
-
-Pärast XAMPP-i paigaldamist ava **XAMPP Control Panel** ja käivita:
+XAMPP-is käivita:
 
 - Apache
 - MySQL
 
-phpMyAdmin avaneb brauseris aadressil:
+## 2. Kontrolli, et käsud töötavad
 
-```text
-http://localhost/phpmyadmin
-```
-
-### 1.4 PHP
-
-PHP tuleb XAMPP-iga kaasa. Selleks, et Laraveli käsud töötaksid PowerShellis, peab PHP olema lisatud Windowsi PATH keskkonnamuutujasse.
-
-XAMPP-i PHP asub tavaliselt siin:
-
-```text
-C:\xampp\php
-```
-
-Kontrolli PowerShellis:
+Ava PowerShell ja käivita:
 
 ```powershell
+git --version
 php -v
-```
-
-Kui kuvatakse PHP versioon, on PHP õigesti seadistatud.
-
-### 1.5 Composer
-
-Composer on vajalik Laraveli PHP pakettide paigaldamiseks.
-
-Kontrolli PowerShellis:
-
-```powershell
 composer --version
-```
-
-Kui Composer küsib paigaldamisel PHP asukohta, vali:
-
-```text
-C:\xampp\php\php.exe
-```
-
-### 1.6 Node.js ja npm
-
-Node.js ja npm on vajalikud frontendi failide jaoks.
-
-Kontrolli PowerShellis:
-
-```powershell
 node -v
 npm -v
 ```
 
-Kui PowerShell ei luba `npm` käsku kasutada, kasuta edaspidi `npm.cmd` varianti.
+Kui `npm` ei tööta, kasuta edaspidi `npm.cmd`.
 
-Näiteks:
-
-```powershell
-npm.cmd install
-npm.cmd run dev
-npm.cmd run build
-```
-
-## 2. Projekti allalaadimine
-
-Ava PowerShell kaustas, kuhu soovid projekti alla laadida.
-
-Näide:
+## 3. Klooni projekt GitHubist
 
 ```powershell
-cd C:\Aigar\Projektid
-```
-
-Klooni projekt GitHubist:
-
-```powershell
-git clone REPOSITOORIUMI_LINK
-```
-
-Liigu projekti kausta:
-
-```powershell
+cd C:\
+mkdir Projektid
+cd Projektid
+git clone SINU_REPO_LINK
 cd ehnet
 ```
 
-Ava projekt Visual Studio Code’is:
+## 4. Ava projekt VS Code’is
 
 ```powershell
 code .
 ```
 
-## 3. PHP sõltuvuste paigaldamine
+Kui see ei tööta, ava VS Code käsitsi ja vali kloonitud projekti kaust.
 
-Käivita projekti kaustas:
+## 5. Paigalda PHP sõltuvused
 
 ```powershell
 composer install
 ```
 
-## 4. JavaScripti sõltuvuste paigaldamine
-
-Käivita:
+## 6. Paigalda JavaScripti sõltuvused
 
 ```powershell
 npm.cmd install
 ```
 
-## 5. Keskkonnafaili loomine
-
-Kopeeri `.env.example` fail uueks `.env` failiks:
+## 7. Loo `.env` fail
 
 ```powershell
 copy .env.example .env
 ```
 
-Genereeri rakenduse võti:
+## 8. Genereeri rakenduse võti
 
 ```powershell
 php artisan key:generate
 ```
 
-## 6. Andmebaasi loomine
+## 9. Loo andmebaas
 
-Ava brauseris phpMyAdmin:
+Kui MySQL root kasutajal parooli ei ole:
+
+```powershell
+C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS ehnet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Või loo andmebaas käsitsi phpMyAdminis:
 
 ```text
 http://localhost/phpmyadmin
 ```
 
-Loo uus andmebaas nimega:
+Andmebaasi nimi:
 
 ```text
 ehnet
 ```
 
-Soovi korral vali võrdluseks:
+## 10. Kontrolli `.env` faili
 
-```text
-utf8mb4_unicode_ci
-```
-
-## 7. Andmebaasi seadistamine
-
-Ava `.env` fail ja kontrolli, et andmebaasi seaded oleksid järgmised:
+`.env` failis peavad olema vähemalt järgmised seaded:
 
 ```env
+APP_NAME=EHNET
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+APP_TIMEZONE=Europe/Tallinn
+APP_LOCALE=et
+
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=ehnet
 DB_USERNAME=root
 DB_PASSWORD=
+
+SESSION_DRIVER=file
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+
+MAIL_MAILER=log
 ```
 
-Kui sinu MySQL kasutajal on parool, lisa see reale:
+Kui MySQL kasutajal on parool, lisa see reale:
 
 ```env
 DB_PASSWORD=sinu_parool
 ```
 
-Kontrolli ka, et rakenduse aadress oleks lokaalse serveri jaoks:
-
-```env
-APP_URL=http://127.0.0.1:8000
-```
-
-Arenduskeskkonnas kasutatakse e-kirjade jaoks logifaili:
-
-```env
-MAIL_MAILER=log
-```
-
-Sellisel juhul ei saadeta e-kirju päriselt välja, vaid need salvestatakse logifaili.
-
-## 8. Andmebaasi tabelite ja algandmete loomine
-
-Käivita:
+## 11. Loo andmebaasi tabelid ja algandmed
 
 ```powershell
 php artisan migrate:fresh --seed
 ```
 
-See loob andmebaasi tabelid ja lisab algandmed.
-
-## 9. Storage lingi loomine
-
-Kuulutuste piltide ja teiste failide kuvamiseks käivita:
+## 12. Loo storage link
 
 ```powershell
 php artisan storage:link
 ```
 
-Kui link on juba olemas, võib Laravel kuvada teate, et link on juba loodud. See ei ole probleem.
-
-## 10. Cache puhastamine
-
-Käivita:
+## 13. Puhasta cache
 
 ```powershell
 php artisan optimize:clear
 ```
 
-## 11. Frontendi käivitamine
+## 14. Käivita frontend
 
-Ava esimene PowerShelli aken projekti kaustas ja käivita:
+Ava esimene PowerShelli aken projekti kaustas:
 
 ```powershell
 npm.cmd run dev
@@ -245,75 +152,39 @@ npm.cmd run dev
 
 Jäta see aken avatuks.
 
-## 12. Laraveli serveri käivitamine
+## 15. Käivita Laravel server
 
-Ava teine PowerShelli aken projekti kaustas ja käivita:
+Ava teine PowerShelli aken projekti kaustas:
 
 ```powershell
 php artisan serve
 ```
 
-Kui server käivitub, kuvatakse aadress umbes sellisel kujul:
+Ava brauseris:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-Ava see aadress brauseris.
+## 16. Registreerimislingi leidmine
 
-## 13. Rakenduse kontrollimine
-
-Pärast käivitamist kontrolli järgmisi samme:
-
-1. avaleht avaneb;
-2. registreerimisvorm avaneb;
-3. kasutaja saab sisestada e-posti aadressi;
-4. registreerimise e-kiri salvestub logifaili;
-5. kasutaja saab registreerimise lõpule viia;
-6. kasutaja saab sisse logida;
-7. kasutaja saab lisada kuulutuse;
-8. kuulutus kuvatakse kuulutuste vaates.
-
-Kui `MAIL_MAILER=log`, asub registreerimise e-kiri failis:
+Kuna e-kirjad salvestatakse logisse, ava fail:
 
 ```text
 storage/logs/laravel.log
 ```
 
-Ava see fail ja otsi sealt registreerimise lõpetamise link.
+Sealt leiab registreerimise lõpetamise lingi.
 
-## 14. Kasulikud käsud
-
-Route’ide kontrollimiseks:
+## 17. Kasulikud käsud
 
 ```powershell
 php artisan route:list
-```
-
-Cache’i puhastamiseks:
-
-```powershell
 php artisan optimize:clear
-```
-
-Frontendi tootmisversiooni ehitamiseks:
-
-```powershell
 npm.cmd run build
-```
-
-Andmebaasi uuesti loomiseks:
-
-```powershell
 php artisan migrate:fresh --seed
 ```
 
-## 15. Testimine
+## Testimine
 
-Käesolevas versioonis testiti rakendust manuaalselt. Kontrolliti registreerimist, sisselogimist, kuulutuste lisamist ja haldamist, vestlusi, ostusoove, tehinguid, lemmikuid, tagasisidet, vormide valideerimist, mobiilivaadet ja ligipääsuõigusi.
-
-Automaattestid on planeeritud järgmisse arendusetappi.
-
-## 16. Märkused
-
-Tegemist on lõputöö raames loodud prototüübiga. Enne avalikku kasutuselevõttu vajab rakendus täiendavat testimist, turvalisuse ülevaatust, kasutajaliidese viimistlust ja haldusliidese arendamist.
+Käesolevas versioonis testiti rakendust manuaalselt. Automaattestid on planeeritud järgmisse arendusetappi.
