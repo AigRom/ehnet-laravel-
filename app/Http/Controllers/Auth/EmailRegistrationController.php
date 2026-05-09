@@ -4,21 +4,21 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompleteRegistrationRequest;
+use App\Mail\CompleteRegistrationMail;
 use App\Models\PendingRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use App\Mail\CompleteRegistrationMail;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
-
-class EmailRegistrationController extends Controller {
-
-    public function store(Request $request) {
+class EmailRegistrationController extends Controller
+{
+    public function store(Request $request)
+    {
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'terms' => ['accepted', 'required'],
-       
+
         ]);
 
         $token = Str::random(64);
@@ -40,7 +40,8 @@ class EmailRegistrationController extends Controller {
             ->withInput($request->only('email'));
     }
 
-    public function showCompleteForm(string $token) {
+    public function showCompleteForm(string $token)
+    {
         $pending = PendingRegistration::where('token', $token)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
@@ -60,7 +61,8 @@ class EmailRegistrationController extends Controller {
         ]);
     }
 
-    public function complete(string $token, CompleteRegistrationRequest $request, CreatesNewUsers $creator) {
+    public function complete(string $token, CompleteRegistrationRequest $request, CreatesNewUsers $creator)
+    {
         $pending = PendingRegistration::where('token', $token)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
@@ -83,7 +85,7 @@ class EmailRegistrationController extends Controller {
             'first_name' => $data['first_name'] ?? null,
             'last_name' => $data['last_name'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
-            'phone' => '+' . $data['phone'],
+            'phone' => '+'.$data['phone'],
             'location_id' => (int) $data['location_id'],
             'company_name' => $data['company_name'] ?? null,
             'company_reg_no' => $data['company_reg_no'] ?? null,

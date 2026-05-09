@@ -10,17 +10,13 @@ class LocationAutocomplete extends Component
 {
     public string $search = '';
 
-    // Livewire parent binding
     #[Modelable]
     public ?int $location_id = null;
 
-    // Klassikalise vormi jaoks
     public ?int $selectedId = null;
 
-    // Hidden input name
     public string $name = 'location_id';
 
-    /** @var array<int, array{id:int,label:string}> */
     public array $results = [];
 
     protected $listeners = [
@@ -32,7 +28,6 @@ class LocationAutocomplete extends Component
     {
         $this->name = $name ?: 'location_id';
 
-        // toeta nii vana initialId kui uut selectedId
         $id = $this->location_id ?: $selectedId ?: $initialId;
 
         if ($id) {
@@ -44,12 +39,12 @@ class LocationAutocomplete extends Component
     {
         $term = mb_strtolower(trim((string) $value));
 
-        // kui kirjutatakse uuesti, tühistame valiku
         $this->selectedId = null;
         $this->location_id = null;
 
         if (mb_strlen($term) < 2) {
             $this->results = [];
+
             return;
         }
 
@@ -61,16 +56,16 @@ class LocationAutocomplete extends Component
             ->where('is_valid', 1)
             ->where(function ($q) use ($namePrefix, $labelPrefixStart, $labelPrefixAfterComma) {
                 $q->whereRaw('LOWER(name_et) LIKE ?', [$namePrefix])
-                  ->orWhereRaw('LOWER(full_label_et) LIKE ?', [$labelPrefixStart])
-                  ->orWhereRaw('LOWER(full_label_et) LIKE ?', [$labelPrefixAfterComma]);
+                    ->orWhereRaw('LOWER(full_label_et) LIKE ?', [$labelPrefixStart])
+                    ->orWhereRaw('LOWER(full_label_et) LIKE ?', [$labelPrefixAfterComma]);
             })
             ->orderByRaw(
-                "CASE
+                'CASE
                     WHEN LOWER(name_et) LIKE ? THEN 0
                     WHEN LOWER(full_label_et) LIKE ? THEN 1
                     WHEN LOWER(full_label_et) LIKE ? THEN 2
                     ELSE 3
-                 END",
+                 END',
                 [$namePrefix, $labelPrefixStart, $labelPrefixAfterComma]
             )
             ->orderBy('full_label_et')

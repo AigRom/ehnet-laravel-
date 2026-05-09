@@ -132,7 +132,6 @@
 <div class="mx-auto w-full max-w-[1500px] px-0 py-0 md:px-4 md:py-6 lg:px-6">
     <div class="grid min-w-0 gap-0 md:gap-4 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
 
-        {{-- Conversation list --}}
         <div class="{{ $showListOnMobile ? 'block' : 'hidden' }} min-w-0 lg:block lg:h-full lg:min-h-0">
             <div class="min-w-0 h-full lg:min-h-0">
                 <x-messaging.conversation-list
@@ -142,7 +141,6 @@
             </div>
         </div>
 
-        {{-- Conversation --}}
         <section
             x-data="{ showReviewModal: false }"
             class="{{ $showConversationOnMobile ? 'flex' : 'hidden' }} min-w-0 h-[100dvh] min-h-0 flex-col overflow-hidden border-0 bg-white shadow-none md:h-[calc(100dvh-5rem)] md:rounded-[1.75rem] md:border md:border-emerald-950/10 md:shadow-xl md:shadow-emerald-950/5 lg:flex lg:h-full"

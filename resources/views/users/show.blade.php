@@ -35,14 +35,14 @@
         </div>
 
         <div x-data="{ tab: 'listings' }" class="space-y-6">
-            
+
                 <x-users.profile-card
                     :user="$profileUser"
                     :role-label="$roleLabel"
                     :joined-year="$joinedYear"
                     class="border-0 bg-transparent p-0 shadow-none"
                 />
-            
+
 
             <div class="rounded-[1.5rem] border border-emerald-950/10 bg-white p-2 shadow-sm">
                 <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">

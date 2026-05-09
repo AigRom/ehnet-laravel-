@@ -42,7 +42,7 @@ document.addEventListener('alpine:init', () => {
                     }
 
                     return `n:${newIndex++}`;
-                })
+                }),
             );
         },
 
@@ -102,7 +102,7 @@ document.addEventListener('alpine:init', () => {
                 item.file &&
                 item.file.name === file.name &&
                 item.file.size === file.size &&
-                item.file.lastModified === file.lastModified
+                item.file.lastModified === file.lastModified,
             );
         },
 
@@ -277,6 +277,6 @@ document.addEventListener('alpine:init', () => {
             }
 
             return `${this.activeModalIndex + 1} / ${visible.length}`;
-        }
+        },
     }));
 });

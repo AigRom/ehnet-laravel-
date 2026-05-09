@@ -39,7 +39,6 @@
             @click.stop
             class="relative z-10 w-full max-w-xl overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/20"
         >
-            {{-- Header --}}
             <div class="border-b border-emerald-950/10 bg-emerald-50/60 px-6 py-5 sm:px-7">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">

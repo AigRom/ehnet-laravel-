@@ -43,7 +43,6 @@
     <div class="flex min-h-full w-full items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-6">
         <div class="w-full max-w-4xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl">
 
-            {{-- HEADER --}}
             <div class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white/90 p-4 backdrop-blur">
                 <div class="text-base font-semibold text-zinc-900">
                     {{ __('Kuulutuse eelvaade') }}
@@ -58,14 +57,11 @@
                 </button>
             </div>
 
-            {{-- CONTENT --}}
             <div class="p-4 md:p-6">
                 <div class="space-y-5">
 
-                    {{-- GRID --}}
                     <div class="grid gap-5 md:grid-cols-12">
 
-                        {{-- IMAGE --}}
                         <div class="space-y-3 md:col-span-7">
                             <div class="relative">
 
@@ -96,7 +92,6 @@
                                 </div>
                             </div>
 
-                            {{-- THUMBS --}}
                             <div class="grid grid-cols-4 gap-2 sm:grid-cols-6" x-show="images.length > 1">
                                 <template x-for="(src, i) in images" :key="i">
                                     <button
@@ -121,7 +116,6 @@
                             </div>
                         </div>
 
-                        {{-- INFO --}}
                         <div class="md:col-span-5">
                             <div class="space-y-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
 
@@ -182,7 +176,6 @@
                         </div>
                     </div>
 
-                    {{-- DESCRIPTION --}}
                     <div class="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
                         <div class="mb-2 text-sm font-medium text-zinc-800">
                             {{ __('Kirjeldus') }}

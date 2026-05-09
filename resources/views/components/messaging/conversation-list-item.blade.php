@@ -54,7 +54,6 @@
     class="group block rounded-2xl border p-2.5 transition sm:p-3 {{ $cardClasses }}"
 >
     <div class="flex min-w-0 items-start gap-3">
-        {{-- Listing image / placeholder --}}
         <div class="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-stone-100 ring-1 ring-emerald-950/10 sm:h-16 sm:w-16">
             @if($coverImage)
                 <img
@@ -71,7 +70,6 @@
             @endif
         </div>
 
-        {{-- Content --}}
         <div class="min-w-0 flex-1">
             <div class="flex min-w-0 items-start gap-2">
                 <div class="min-w-0 flex-1">

@@ -13,7 +13,6 @@
 <x-layouts.app.public :title="__('Lisa kuulutus')">
     <div class="mx-auto max-w-5xl space-y-6">
 
-        {{-- Header --}}
         <div class="rounded-[2rem] border border-emerald-950/10 bg-white/85 p-6 shadow-xl shadow-emerald-950/5 backdrop-blur sm:p-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
@@ -48,7 +47,6 @@
             <input type="hidden" name="submission_token" value="{{ $submissionToken }}">
             <input type="hidden" name="action" id="formAction" value="publish">
 
-            {{-- Card: Pildid --}}
             <div
                 x-data="listingImagesCreate()"
                 class="space-y-4 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6"
@@ -97,7 +95,6 @@
                 <div data-listing-images-grid class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                     <template x-for="(item, index) in items" :key="item.uid">
                         <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-emerald-950/10">
-                            {{-- Pilt --}}
                             <div class="group relative aspect-square bg-stone-100">
                                 <img
                                     :src="item.preview"
@@ -117,7 +114,6 @@
                                 </div>
                             </div>
 
-                            {{-- Tegevusnupud --}}
                             <div class="grid grid-cols-3 gap-2 border-t border-emerald-950/10 bg-white p-2">
                                 <button
                                     type="button"
@@ -178,7 +174,6 @@
                     </button>
                 </div>
 
-                {{-- Modal --}}
                 <div
                     x-cloak
                     x-show="modalOpen"
@@ -232,7 +227,6 @@
                 </div>
             </div>
 
-            {{-- Card: Põhiinfo --}}
             <div class="space-y-6 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-emerald-950">
@@ -244,7 +238,6 @@
                     </p>
                 </div>
 
-                {{-- Title --}}
                 <div>
                     <label for="title" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Pealkiri') }}
@@ -271,7 +264,6 @@
                     @enderror
                 </div>
 
-                {{-- Condition --}}
                 <div>
                     <label class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Seisukord') }}
@@ -302,7 +294,6 @@
                     @enderror
                 </div>
 
-                {{-- Category --}}
                 <div>
                     <label for="category_id" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Kategooria') }}
@@ -331,7 +322,6 @@
                     @enderror
                 </div>
 
-                {{-- Location --}}
                 @php
                     $userLocationId = auth()->user()->location_id ?? null;
                     $initialLocationId = old('location_id') ?? null;
@@ -395,7 +385,6 @@
                     @enderror
                 </div>
 
-                {{-- Kättesaamine --}}
                 <div>
                     <label class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Kättesaamine') }}
@@ -440,7 +429,6 @@
                     @enderror
                 </div>
 
-                {{-- Price mode --}}
                 <div
                     x-data="{
                         mode: @js($priceMode),
@@ -570,7 +558,6 @@
                     @enderror
                 </div>
 
-                {{-- Description --}}
                 <div>
                     <label for="description" class="mb-2 block text-sm font-bold text-emerald-950">
                         {{ __('Kirjeldus') }}
@@ -595,7 +582,6 @@
                 </div>
             </div>
 
-            {{-- Actions --}}
             <div class="rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
                 <div class="flex flex-col gap-3">
                     <button

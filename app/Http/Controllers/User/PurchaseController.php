@@ -31,10 +31,6 @@ class PurchaseController extends Controller
             ->whereNull('buyer_hidden_at')
             ->exists();
 
-        /*
-         * Kuvame ostude nimekirjas ainult iga kuulutuse viimase nähtava ostu-/tehingukirje.
-         * buyer_hidden_at peidetud kirjeid enam nimekirja ega aktiivsesse paneeli ei too.
-         */
         $latestTradeIds = Trade::query()
             ->where('buyer_id', $user->id)
             ->whereNull('buyer_hidden_at')
@@ -86,9 +82,6 @@ class PurchaseController extends Controller
             });
         }
 
-        /*
-         * Aktiivne ost tuleb võtta enne sorteerimise join'e.
-         */
         $activeTradeId = $request->integer('purchase');
         $activeTrade = null;
 

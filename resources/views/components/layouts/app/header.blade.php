@@ -31,7 +31,6 @@
     <div class="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <div class="flex h-24 items-center justify-between gap-8">
 
-            {{-- Logo + Brand --}}
             <a href="{{ route('home') }}"
                class="flex shrink-0 items-center gap-3.5 rounded-xl focus:outline-none focus:ring-0">
                 <x-app-logo class="h-14 w-auto" />
@@ -41,7 +40,6 @@
                 </span>
             </a>
 
-            {{-- Desktop nav --}}
             <nav class="hidden md:flex flex-1 items-center justify-end gap-2">
                 <a href="{{ route('listings.index') }}" class="{{ $navLink }}">
                     <x-icons.squares-2x2 class="{{ $iconClass }}" />
@@ -63,7 +61,6 @@
                         <span>{{ __('Sõnumid') }}</span>
                     </a>
 
-                    {{-- Minu EHNET --}}
                     <div class="relative ml-2"
                          @click.outside="userOpen = false"
                          @keydown.escape.window="userOpen = false">
@@ -131,7 +128,6 @@
                     </div>
                 @endauth
 
-                {{-- Lisa kuulutus paremal eraldi --}}
                 <div class="ml-4">
                     <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}" class="{{ $primaryNavLink }}">
                         <x-icons.plus-circle class="{{ $primaryIconClass }}" />
@@ -140,7 +136,6 @@
                 </div>
             </nav>
 
-            {{-- Mobile button --}}
             <button type="button"
                     class="inline-flex items-center justify-center rounded-xl border border-emerald-950/10 bg-white p-2.5 text-emerald-900 shadow-sm transition hover:bg-emerald-50 md:hidden"
                     @click="mobileOpen = !mobileOpen"
@@ -156,7 +151,6 @@
         </div>
     </div>
 
-    {{-- Mobile panel --}}
     <div x-cloak
          x-show="mobileOpen"
          x-transition
@@ -183,7 +177,6 @@
                     @endif
                 </a>
 
-                {{-- Mobile: Minu EHNET --}}
                 <div class="mt-3 overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">
                     <div class="flex items-center">
                         <a href="{{ route('dashboard') }}"
@@ -234,7 +227,6 @@
                 </div>
             @endauth
 
-            {{-- Lisa kuulutus mobiilis all --}}
             <div class="mt-3 border-t border-emerald-950/10 pt-3">
                 <a href="{{ auth()->check() ? route('listings.create') : $guestCreateListingUrl }}" class="{{ $mobilePrimaryLink }}">
                     <x-icons.plus-circle class="{{ $mobilePrimaryIconClass }}" />

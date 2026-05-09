@@ -2,7 +2,7 @@
     'action' => url('/listings'),
     'categories' => collect(),
     'counties' => collect(),
-    'variant' => 'panel', // panel | inline
+    'variant' => 'panel',
 ])
 
 @php
@@ -22,7 +22,6 @@
 <form method="GET" action="{{ $action }}" class="{{ $formClasses }}">
     <div class="grid gap-3 lg:grid-cols-12 lg:items-end">
 
-        {{-- SEARCH --}}
         <div class="lg:col-span-5">
             <label class="{{ $fieldLabel }}">
                 {{ __('Mida otsid?') }}
@@ -43,7 +42,6 @@
             </div>
         </div>
 
-        {{-- CATEGORY --}}
         <div class="lg:col-span-3">
             <label class="{{ $fieldLabel }}">
                 {{ __('Kategooria') }}
@@ -60,7 +58,6 @@
             </select>
         </div>
 
-        {{-- COUNTY --}}
         <div class="lg:col-span-3">
             <label class="{{ $fieldLabel }}">
                 {{ __('Maakond') }}
@@ -77,7 +74,6 @@
             </select>
         </div>
 
-        {{-- SEARCH BUTTON --}}
         <div class="lg:col-span-1">
             <button
                 type="submit"

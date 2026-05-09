@@ -15,7 +15,7 @@ class UpdateProfileRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var User $user */
+
         $user = $this->user();
 
         $rules = [
@@ -42,22 +42,18 @@ class UpdateProfileRequest extends FormRequest
 
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
 
-            // eraisik
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
 
-            // ettevõte
             'company_name' => ['nullable', 'string', 'max:255'],
             'company_reg_no' => ['nullable', 'string', 'max:50'],
             'contact_first_name' => ['nullable', 'string', 'max:255'],
             'contact_last_name' => ['nullable', 'string', 'max:255'],
 
-            // avatar
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
         ];
 
-        // dünaamiline valideerimine kasutajatüübi järgi
         if ($user->isCustomer()) {
             $rules['first_name'] = ['required', 'string', 'max:255'];
             $rules['last_name'] = ['required', 'string', 'max:255'];

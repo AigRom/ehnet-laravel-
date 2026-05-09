@@ -3,7 +3,6 @@
         <div class="overflow-hidden rounded-[2.25rem] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/10 dark:border-zinc-800 dark:bg-zinc-900">
             <div class="p-7 sm:p-9 lg:p-12">
 
-                {{-- Header --}}
                 <div class="mb-9 text-center lg:mb-11">
                     <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white shadow-lg shadow-emerald-950/20">
                         <x-icons.key class="h-7 w-7" />
@@ -18,7 +17,6 @@
                     </p>
                 </div>
 
-                {{-- Status --}}
                 @if (session('status'))
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
                         <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
@@ -34,7 +32,6 @@
                     </div>
                 @endif
 
-                {{-- Session error --}}
                 @if (session('error'))
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
                         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -48,7 +45,6 @@
                     </div>
                 @endif
 
-                {{-- Validation error --}}
                 @if ($errors->any())
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
                         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -65,7 +61,6 @@
                 <form method="POST" action="{{ route('password.email') }}" class="space-y-6" novalidate>
                     @csrf
 
-                    {{-- Email --}}
                     <div>
                         <label for="email" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('E-posti aadress') }}
@@ -90,7 +85,6 @@
                         @enderror
                     </div>
 
-                    {{-- Submit --}}
                     <button
                         type="submit"
                         data-test="email-password-reset-link-button"

@@ -13,9 +13,6 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Profiili muutmise vaade.
-     */
     public function edit(Request $request): View
     {
         return view('settings.profile', [
@@ -23,19 +20,13 @@ class ProfileController extends Controller
         ]);
     }
 
-    /**
-     * Konto kustutamise vaade.
-     */
     public function delete(): View
     {
         return view('settings.delete-account');
     }
 
-    /**
-     * Uuendab kasutaja profiiliandmeid ja avatari.
-     */
-    
-    public function update(UpdateProfileRequest $request): RedirectResponse {
+    public function update(UpdateProfileRequest $request): RedirectResponse
+    {
         $user = $request->user();
         $validated = $request->validated();
 
@@ -61,11 +52,6 @@ class ProfileController extends Controller
         return back()->with('status', 'Andmed on edukalt uuendatud.');
     }
 
-    /**
-     * Kustutab kasutaja konto teenuse kaudu.
-     *
-     * Teenus vastutab konto anonümiseerimise / eemaldamise äriloogika eest.
-     */
     public function destroy(Request $request, DeleteUserAccountService $service): RedirectResponse
     {
         $request->validate([
@@ -84,9 +70,6 @@ class ProfileController extends Controller
         return redirect('/');
     }
 
-    /**
-     * Kustutab vana avatari failisüsteemist, kui see on olemas.
-     */
     private function deleteAvatarIfExists(?string $avatarPath): void
     {
         if ($avatarPath) {

@@ -2,7 +2,6 @@
     <div class="mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div class="grid gap-10 md:grid-cols-4">
 
-            {{-- Brand --}}
             <div class="md:col-span-2">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3 lg:gap-4">
                     <img
@@ -22,7 +21,6 @@
                 </p>
             </div>
 
-            {{-- Navigation --}}
             <div>
                 <div class="mt-4 space-y-3">
                     <a href="{{ route('listings.index') }}"
@@ -49,7 +47,6 @@
                 </div>
             </div>
 
-            {{-- Legal / Contact --}}
             <div>
                 <div class="mt-4 space-y-3">
                     <a href="{{ route('terms') }}"

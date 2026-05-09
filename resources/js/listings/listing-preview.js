@@ -109,7 +109,7 @@ function initListingPreview() {
         };
 
         const checked = Array.from(
-            document.querySelectorAll('input[name="delivery_options[]"]:checked')
+            document.querySelectorAll('input[name="delivery_options[]"]:checked'),
         )
             .map((el) => el?.value)
             .filter(Boolean);
@@ -139,7 +139,7 @@ function initListingPreview() {
                     condition: getConditionLabel(),
                     delivery: getDeliveryLabels(),
                 },
-            })
+            }),
         );
     };
 
@@ -149,7 +149,7 @@ function initListingPreview() {
                 detail: {
                     images: collectImagesFromGrid(),
                 },
-            })
+            }),
         );
     };
 

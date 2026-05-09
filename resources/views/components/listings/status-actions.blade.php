@@ -47,15 +47,9 @@
 
     $buyIntentAction = route('listings.buy-intent', $listing);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tagasisuunamine
-    |--------------------------------------------------------------------------
-    |
-    | Kasutame suhtelist URL-i, mitte fullUrl/current URL-i.
-    | See väldib mobiilis 127.0.0.1 / localhost / IP aadressi segadust.
-    |
-    */
+
+
+
     $currentRelativeUrl = request()->getRequestUri();
 
     $editAction = route('listings.mine.edit', [

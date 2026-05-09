@@ -31,6 +31,7 @@ class ListingSeeder extends Seeder
 
         if ($users->isEmpty() || $categories->isEmpty() || $locations->isEmpty()) {
             $this->command->warn('ListingSeeder vajab kasutajaid, kategooriaid ja asukohti.');
+
             return;
         }
 
@@ -89,7 +90,7 @@ class ListingSeeder extends Seeder
                     'user_id' => $user->id,
                     'category_id' => $categories->random()->id,
                     'location_id' => $locations->random()->id,
-                    'title' => $template['title'] . ' #' . $counter,
+                    'title' => $template['title'].' #'.$counter,
                     'description' => $template['description'],
                     'price' => $template['price'],
                     'currency' => 'EUR',
@@ -112,15 +113,15 @@ class ListingSeeder extends Seeder
 
     private function createDemoImage(Listing $listing, int $number): void
     {
-        $directory = 'listings/demo/' . $listing->id;
+        $directory = 'listings/demo/'.$listing->id;
 
         Storage::disk('public')->makeDirectory($directory);
 
-        $filename = 'demo-' . Str::slug($listing->title) . '.jpg';
-        $thumbFilename = 'thumb-' . Str::slug($listing->title) . '.jpg';
+        $filename = 'demo-'.Str::slug($listing->title).'.jpg';
+        $thumbFilename = 'thumb-'.Str::slug($listing->title).'.jpg';
 
-        $path = $directory . '/' . $filename;
-        $thumbPath = $directory . '/' . $thumbFilename;
+        $path = $directory.'/'.$filename;
+        $thumbPath = $directory.'/'.$thumbFilename;
 
         $fullAbsolutePath = Storage::disk('public')->path($path);
         $thumbAbsolutePath = Storage::disk('public')->path($thumbPath);
@@ -153,7 +154,7 @@ class ListingSeeder extends Seeder
         imagefilledrectangle($image, 0, 0, $width, $height, $background);
         imagefilledrectangle($image, 0, 0, $width, 90, $accent);
 
-        imagestring($image, 5, 30, 30, 'EHNET demo kuulutus #' . $number, imagecolorallocate($image, 255, 255, 255));
+        imagestring($image, 5, 30, 30, 'EHNET demo kuulutus #'.$number, imagecolorallocate($image, 255, 255, 255));
         imagestring($image, 5, 40, 150, mb_substr($title, 0, 45), $text);
         imagestring($image, 4, 40, 210, 'Demo-pilt seederiga loodud', $muted);
         imagestring($image, 4, 40, 250, 'Asenda hiljem päris tootepildiga', $muted);

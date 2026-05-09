@@ -12,11 +12,12 @@ use Throwable;
 class MessageAttachmentService
 {
     protected ImageManager $imageManager;
+
     protected string $disk = 'public';
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = new ImageManager(new Driver);
     }
 
     public function store(UploadedFile $file, int $messageId): MessageAttachment
@@ -41,7 +42,6 @@ class MessageAttachmentService
             $originalWidth = $image->width();
             $originalHeight = $image->height();
 
-            // LARGE - vestluses avamiseks
             $large = clone $image;
             $large->scaleDown(width: 1600, height: 1600);
 
@@ -54,7 +54,6 @@ class MessageAttachmentService
 
             $storedPaths[] = $largePath;
 
-            // THUMB - vestluse eelvaate jaoks
             $thumb = clone $image;
             $thumb->scaleDown(width: 500, height: 500);
 
@@ -90,7 +89,7 @@ class MessageAttachmentService
 
     protected function storeFile(UploadedFile $file, int $messageId): MessageAttachment
     {
-        $path = $file->store('messages/files/' . date('Y/m'), $this->disk);
+        $path = $file->store('messages/files/'.date('Y/m'), $this->disk);
 
         return MessageAttachment::create([
             'message_id' => $messageId,
@@ -108,6 +107,6 @@ class MessageAttachmentService
 
     protected function generateImagePath(string $type): string
     {
-        return 'messages/images/' . $type . '/' . date('Y/m') . '/' . uniqid('', true) . '.jpg';
+        return 'messages/images/'.$type.'/'.date('Y/m').'/'.uniqid('', true).'.jpg';
     }
 }

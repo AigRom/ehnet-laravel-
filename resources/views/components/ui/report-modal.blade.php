@@ -1,20 +1,9 @@
 @props([
-    // Alpine muutuja nimi, mis juhib modali nähtavust
     'open' => 'false',
-
-    // Vorm action
     'action' => null,
-
-    // Kelle kohta report tehakse
     'reportedUserId',
-
-    // Millise vestluse kontekstis report tehakse
     'conversationId' => null,
-
-    // Modali pealkiri
     'title' => __('Teata kasutajast'),
-
-    // Selgitav tekst
     'description' => __('Vali põhjus, miks soovid sellest kasutajast teada anda. Teade salvestatakse ülevaatamiseks.'),
 ])
 
@@ -33,7 +22,6 @@
         <form method="POST" action="{{ $action }}">
             @csrf
 
-            {{-- Peidetud väljad reporti sidumiseks --}}
             <input type="hidden" name="reported_user_id" value="{{ $reportedUserId }}">
             <input type="hidden" name="conversation_id" value="{{ $conversationId }}">
 
@@ -51,7 +39,6 @@
                         {{ $description }}
                     </p>
 
-                    {{-- Põhjuse valik --}}
                     <div class="mt-4 space-y-2">
                         <label class="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm">
                             <input
@@ -109,7 +96,6 @@
                         </label>
                     </div>
 
-                    {{-- Lisaselgitus --}}
                     <textarea
                         name="details"
                         rows="4"
@@ -117,7 +103,6 @@
                         class="mt-4 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
                     >{{ old('details') }}</textarea>
 
-                    {{-- Veateated --}}
                     @error('reason')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror

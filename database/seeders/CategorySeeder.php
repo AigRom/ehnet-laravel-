@@ -15,7 +15,7 @@ class CategorySeeder extends Seeder
             ['et' => 'Puitmaterjalid',              'en' => 'Timber',                       'ru' => 'Пиломатериалы'],
             ['et' => 'Viimistlusmaterjalid',        'en' => 'Finishing materials',          'ru' => 'Отделочные материалы'],
             ['et' => 'Sanitaartehnika',             'en' => 'Plumbing',                     'ru' => 'Сантехника'],
-            ['et' => 'Elektrimaterjalid ja valgustid','en' => 'Electrical & Lighting',     'ru' => 'Электрика и освещение'],
+            ['et' => 'Elektrimaterjalid ja valgustid', 'en' => 'Electrical & Lighting',     'ru' => 'Электрика и освещение'],
             ['et' => 'Ehitusplaadid',               'en' => 'Building boards',              'ru' => 'Строительные плиты'],
             ['et' => 'Katusematerjalid',            'en' => 'Roofing materials',            'ru' => 'Кровельные материалы'],
             ['et' => 'Fassaadimaterjalid',          'en' => 'Facade materials',             'ru' => 'Фасадные материалы'],
@@ -33,11 +33,11 @@ class CategorySeeder extends Seeder
             Category::updateOrCreate(
                 ['slug' => Str::slug($cat['et'])],
                 [
-                    'name_et'   => $cat['et'],
-                    'name_en'   => $cat['en'],
-                    'name_ru'   => $cat['ru'],
+                    'name_et' => $cat['et'],
+                    'name_en' => $cat['en'],
+                    'name_ru' => $cat['ru'],
                     'is_active' => true,
-                    'sort_order'=> $index,
+                    'sort_order' => $index,
                 ]
             );
         }

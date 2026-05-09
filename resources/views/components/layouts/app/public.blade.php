@@ -16,10 +16,8 @@
     'min-h-screen overflow-x-hidden' => ! $mobileFullscreen,
     'h-[100dvh] overflow-hidden overscroll-none lg:min-h-screen lg:h-auto lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-auto' => $mobileFullscreen,
 ])>
-    {{-- Üldine toast kogu rakenduse jaoks --}}
     <x-ui.toast />
 
-    {{-- Sticky nav peab olema väljaspool overflow wrapperit --}}
     @if($mobileFullscreen)
         <div class="hidden lg:block">
             <x-layouts.app.header :title="$title" />
@@ -33,7 +31,6 @@
         'min-h-screen' => ! $mobileFullscreen,
         'h-[100dvh] min-h-0 overflow-hidden lg:min-h-screen lg:h-auto lg:overflow-visible' => $mobileFullscreen,
     ])>
-        {{-- Pehmed taustakihid --}}
         <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
             <div class="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-200/60 blur-3xl"></div>
             <div class="absolute top-96 -left-32 h-80 w-80 rounded-full bg-lime-200/50 blur-3xl"></div>

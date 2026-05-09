@@ -3,7 +3,6 @@
         <div class="overflow-hidden rounded-[2.25rem] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/10 dark:border-zinc-800 dark:bg-zinc-900">
             <div class="p-7 sm:p-9 lg:p-12">
 
-                {{-- Header --}}
                 <div class="mb-9 text-center lg:mb-11">
                     <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white shadow-lg shadow-emerald-950/20">
                         <x-icons.user-plus class="h-7 w-7" />
@@ -18,14 +17,12 @@
                     </p>
                 </div>
 
-                {{-- Status --}}
                 @if (session('status'))
                     <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
                         {{ session('status') }}
                     </div>
                 @endif
 
-                {{-- Error --}}
                 @if ($errors->any())
                     <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
                         <div class="font-bold">{{ __('Palun kontrolli sisestatud andmeid.') }}</div>
@@ -35,7 +32,6 @@
                 <form method="POST" action="{{ route('register.complete.post', $token) }}" class="space-y-7" id="completeRegForm" novalidate>
                     @csrf
 
-                    {{-- E-post --}}
                     <div>
                         <label for="email" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('E-post') }}
@@ -51,7 +47,6 @@
                         >
                     </div>
 
-                    {{-- Kasutajanimi --}}
                     <div>
                         <label for="name" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('Kasutajanimi') }}
@@ -80,7 +75,6 @@
                         @enderror
                     </div>
 
-                    {{-- Konto tüüp + vastavad väljad --}}
                     <div x-data="{ accountType: '{{ old('type', 'customer') }}' }" class="space-y-7">
                         <div>
                             <p class="mb-3 text-base font-bold text-emerald-950 dark:text-zinc-100">
@@ -130,7 +124,6 @@
                             @enderror
                         </div>
 
-                        {{-- Eraisiku väljad --}}
                         <div
                             id="privateFields"
                             x-show="accountType === 'customer'"
@@ -189,7 +182,6 @@
                                 @enderror
                             </div>
 
-                            {{-- TODO: tulevikus asendada native date input eestikeelse datepickeriga --}}
                             <div class="sm:col-span-2">
                                 <label for="date_of_birth" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                                     {{ __('Sünniaeg (valikuline)') }}
@@ -215,7 +207,6 @@
                             </div>
                         </div>
 
-                        {{-- Ettevõtte väljad --}}
                         <div
                             id="businessFields"
                             x-show="accountType === 'business'"
@@ -320,7 +311,6 @@
                         </div>
                     </div>
 
-                    {{-- Telefoni number --}}
                     <div>
                         <label for="phone" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('Telefoni number') }}
@@ -357,7 +347,6 @@
                         @enderror
                     </div>
 
-                    {{-- Asukoht --}}
                     <div class="relative overflow-visible">
                         <livewire:location-autocomplete :initial-id="old('location_id')" :wire:key="'loc-'.(old('location_id') ?? 'new')" />
 
@@ -366,7 +355,6 @@
                         </p>
                     </div>
 
-                    {{-- Paroolid --}}
                     <div x-data="{ showPassword: false, showConfirm: false }" class="grid gap-5">
                         <div>
                             <label for="password" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">

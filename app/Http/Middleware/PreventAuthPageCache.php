@@ -18,7 +18,6 @@ class PreventAuthPageCache
             $request->is('register/*') ||
             $request->is('forgot-password') ||
             $request->is('reset-password/*') ||
-            $request->is('two-factor-challenge') ||
             $request->is('logout')
         ) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');

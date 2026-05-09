@@ -3,7 +3,6 @@
         <div class="overflow-hidden rounded-[2.25rem] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/10 dark:border-zinc-800 dark:bg-zinc-900">
             <div class="p-7 sm:p-9 lg:p-12">
 
-                {{-- Header --}}
                 <div class="mb-9 text-center lg:mb-11">
                     <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white shadow-lg shadow-emerald-950/20">
                         <x-icons.key class="h-7 w-7" />
@@ -18,14 +17,12 @@
                     </p>
                 </div>
 
-                {{-- Status --}}
                 @if (session('status'))
                     <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
                         {{ session('status') }}
                     </div>
                 @endif
 
-                {{-- Error --}}
                 @if ($errors->any())
                     <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
                         <div class="font-bold">{{ __('Palun kontrolli sisestatud andmeid.') }}</div>
@@ -37,7 +34,6 @@
 
                     <input type="hidden" name="token" value="{{ request()->route('token') }}">
 
-                    {{-- E-post --}}
                     <div>
                         <label for="email" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('E-post') }}
@@ -61,7 +57,6 @@
                         @enderror
                     </div>
 
-                    {{-- Paroolid --}}
                     <div x-data="{ showPassword: false, showConfirm: false }" class="space-y-5">
                         <div>
                             <label for="password" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">

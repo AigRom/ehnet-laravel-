@@ -1,32 +1,13 @@
 @props([
-    // Alpine muutuja nimi, mis juhib modali nähtavust
     'open' => 'false',
-
-    // Modali pealkiri
     'title',
-
-    // Valikuline selgitav tekst
     'description' => null,
-
-    // Valikuline ikoonikomponent, nt "icons.archive"
     'icon' => null,
-
-    // Ikooni ümbritseva ringi stiil
     'iconWrapperClass' => 'bg-zinc-100',
-
-    // Ikooni enda tekstivärv
     'iconClass' => 'text-zinc-600',
-
-    // Tühistamise nupu tekst
     'cancelText' => __('Tühista'),
-
-    // Kinnitamise nupu tekst
     'confirmText' => __('Kinnita'),
-
-    // Kinnitamise nupu klassid
     'confirmButtonClass' => 'bg-zinc-900 text-white hover:bg-zinc-800',
-
-    // Valikuline Alpine @click tegevus kinnitamise nupule
     'confirmClick' => null,
 ])
 
@@ -44,26 +25,22 @@
     >
         <div class="flex items-start gap-3">
             @if($icon)
-                {{-- Ikooni ring modali vasakul poolel --}}
                 <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $iconWrapperClass }}">
                     <x-dynamic-component :component="$icon" class="h-5 w-5 {{ $iconClass }}" />
                 </div>
             @endif
 
             <div class="min-w-0 flex-1">
-                {{-- Modali pealkiri --}}
                 <h3 class="text-base font-semibold text-zinc-900">
                     {{ $title }}
                 </h3>
 
-                {{-- Selgitav tekst, kui see on kaasa antud --}}
                 @if($description)
                     <p class="mt-2 text-sm leading-6 text-zinc-600">
                         {{ $description }}
                     </p>
                 @endif
 
-                {{-- Valikuline lisasisu, nt checkbox või muu vormiväli --}}
                 @if(trim((string) $slot))
                     <div class="mt-4">
                         {{ $slot }}
@@ -72,7 +49,6 @@
             </div>
         </div>
 
-        {{-- Nupurea tegevused --}}
         <div class="mt-6 flex items-center justify-end gap-3">
             <button
                 type="button"

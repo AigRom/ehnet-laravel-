@@ -4,7 +4,6 @@
 ])
 
 <div class="flex h-full min-h-0 flex-col overflow-hidden bg-white lg:rounded-[1.75rem] lg:border lg:border-emerald-950/10 lg:shadow-xl lg:shadow-emerald-950/5">
-    {{-- Header --}}
     <div class="shrink-0 border-b border-emerald-950/10 bg-white px-4 py-4">
         <div class="flex items-center justify-between gap-3">
             <div>
@@ -23,7 +22,6 @@
         </div>
     </div>
 
-    {{-- List --}}
     <div class="min-h-0 flex-1 overflow-y-auto bg-stone-50/70 px-3 py-3 lg:bg-white lg:p-3">
         <div class="space-y-2.5">
             @forelse($conversations as $conversation)

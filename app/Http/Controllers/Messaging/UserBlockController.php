@@ -8,9 +8,10 @@ use App\Models\UserBlock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class UserBlockController extends Controller {
-
-    public function store(Request $request, User $user): RedirectResponse {
+class UserBlockController extends Controller
+{
+    public function store(Request $request, User $user): RedirectResponse
+    {
         $authUser = $request->user();
 
         if ($authUser->id === $user->id) {
@@ -22,7 +23,7 @@ class UserBlockController extends Controller {
             ->where('blocked_user_id', $user->id)
             ->exists();
 
-        if (!$alreadyBlocked) {
+        if (! $alreadyBlocked) {
             UserBlock::create([
                 'blocker_id' => $authUser->id,
                 'blocked_user_id' => $user->id,
@@ -32,7 +33,8 @@ class UserBlockController extends Controller {
         return back()->with('success', 'Kasutaja on blokeeritud.');
     }
 
-    public function destroy(Request $request, User $user): RedirectResponse{
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
         $authUser = $request->user();
 
         UserBlock::query()

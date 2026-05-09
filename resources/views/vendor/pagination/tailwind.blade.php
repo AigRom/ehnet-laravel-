@@ -1,6 +1,5 @@
 @if ($paginator->hasPages())
     <nav role="navigation" aria-label="{{ __('Lehekülgede navigeerimine') }}" class="mt-6">
-        {{-- Mobile --}}
         <div class="flex items-center justify-center gap-3 sm:hidden">
             @if ($paginator->onFirstPage())
                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-300 cursor-not-allowed">
@@ -37,11 +36,9 @@
             @endif
         </div>
 
-        {{-- Desktop --}}
         <div class="hidden sm:flex sm:items-center sm:justify-center">
             <div>
                 <span class="inline-flex items-center gap-2">
-                    {{-- Previous --}}
                     @if ($paginator->onFirstPage())
                         <span
                             aria-disabled="true"
@@ -60,7 +57,6 @@
                         </a>
                     @endif
 
-                    {{-- Elements --}}
                     @foreach ($elements as $element)
                         @if (is_string($element))
                             <span class="px-2 text-zinc-400">
@@ -90,7 +86,6 @@
                         @endif
                     @endforeach
 
-                    {{-- Next --}}
                     @if ($paginator->hasMorePages())
                         <a
                             href="{{ $paginator->nextPageUrl() }}"

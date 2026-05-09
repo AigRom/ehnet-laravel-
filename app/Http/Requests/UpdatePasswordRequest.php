@@ -20,7 +20,7 @@ class UpdatePasswordRequest extends FormRequest
                 'required',
                 'string',
                 'min:8',
-                'confirmed', // password_confirmation peab olema olemas
+                'confirmed',
             ],
         ];
     }

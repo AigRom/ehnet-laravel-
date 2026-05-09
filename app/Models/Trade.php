@@ -9,9 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Trade extends Model
 {
     public const STATUS_INTEREST = 'interest';
+
     public const STATUS_RESERVED = 'reserved';
+
     public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const ACTIVE_STATUSES = [

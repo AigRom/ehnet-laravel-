@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-class MessageController extends Controller {
+class MessageController extends Controller
+{
     public function storeInConversation(
         Request $request,
         Conversation $conversation,

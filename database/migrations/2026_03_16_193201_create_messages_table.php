@@ -6,24 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
 
-            // Millisesse vestlusesse sõnum kuulub
             $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
 
-            // Kes sõnumi saatis
             $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
 
-            // Sõnumi sisu
             $table->text('body');
 
-            // Millal sõnum loeti; null = lugemata
             $table->timestamp('read_at')->nullable();
 
             $table->timestamps();
@@ -32,9 +25,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('messages');

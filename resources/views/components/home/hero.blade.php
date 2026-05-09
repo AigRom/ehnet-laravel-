@@ -11,10 +11,8 @@
 
     <div class="relative mx-auto max-w-[1500px] px-4 pt-3 pb-3 sm:px-6 sm:pt-4 lg:px-8 lg:pt-4 lg:pb-2">
 
-        {{-- Hero main row --}}
         <div class="grid items-center gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
 
-            {{-- Left text --}}
             <div class="relative z-10">
                 <h1 class="max-w-2xl text-4xl font-extrabold leading-tight tracking-tight text-emerald-950 sm:text-5xl lg:text-6xl">
                     Ehitusmaterjalidele
@@ -27,7 +25,6 @@
                 </p>
             </div>
 
-            {{-- Right visual --}}
             <div class="relative z-10 -mt-2 flex justify-center lg:-mt-30 lg:justify-end">
                 <img
                     src="/images/hero/ehnet-hero.png"
@@ -37,10 +34,8 @@
             </div>
         </div>
 
-        {{-- Stats row --}}
         <div class="relative z-10 mt-1 grid gap-4 sm:grid-cols-3 lg:-mt-2 lg:gap-8">
 
-            {{-- Users --}}
             <div class="flex items-center gap-4">
                 <div class="shrink-0 text-emerald-900">
                     <x-icons.stats-users class="h-10 w-10 sm:h-11 sm:w-11" />
@@ -56,7 +51,6 @@
                 </div>
             </div>
 
-            {{-- Listings --}}
             <div class="flex items-center gap-4">
                 <div class="shrink-0 text-emerald-900">
                     <x-icons.stats-listings class="h-10 w-10 sm:h-11 sm:w-11" />
@@ -72,7 +66,6 @@
                 </div>
             </div>
 
-            {{-- CO2 --}}
             <div class="flex items-center gap-4">
                 <div class="shrink-0 text-emerald-900">
                     <x-icons.stats-recycle class="h-10 w-10 sm:h-11 sm:w-11" />
@@ -90,7 +83,6 @@
         </div>
     </div>
 
-    {{-- Search bar --}}
     <div class="relative z-20 mx-auto max-w-[1500px] px-4 pb-4 sm:px-6 lg:px-8 lg:pb-5">
         <x-listings.search-bar :categories="$categories" />
     </div>

@@ -12,16 +12,8 @@ use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    /**
-     * Salvestab tehingu osapoole jäetud tagasiside.
-     *
-     * Tagasisidet saab jätta ainult siis, kui:
-     * - tehing on completed
-     * - ostja on kinnitanud kauba kättesaamise
-     * - kasutaja on selle tehingu osapool
-     * - sama kasutaja pole sellele tehingule juba tagasisidet jätnud
-     */
-    public function store(Request $request, Conversation $conversation, Trade $trade): RedirectResponse {
+    public function store(Request $request, Conversation $conversation, Trade $trade): RedirectResponse
+    {
         abort_unless($trade->conversation_id === $conversation->id, 404);
 
         $user = $request->user();
@@ -55,7 +47,7 @@ class ReviewController extends Controller
 
         $this->createSystemMessage(
             $conversation->id,
-            ($user->name ?? 'Kasutaja') . ' jättis tagasiside.',
+            ($user->name ?? 'Kasutaja').' jättis tagasiside.',
             [
                 'event' => 'review_left',
                 'review_id' => $review->id,

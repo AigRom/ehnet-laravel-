@@ -8,6 +8,7 @@ use Livewire\Component;
 class FavoriteToggle extends Component
 {
     public Listing $listing;
+
     public bool $isFavorited = false;
 
     public function mount(Listing $listing): void
@@ -24,8 +25,9 @@ class FavoriteToggle extends Component
 
     public function toggle(): void
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             $this->dispatch('notify', message: 'Lemmikuks lisamiseks logi sisse.');
+
             return;
         }
 
@@ -34,6 +36,7 @@ class FavoriteToggle extends Component
         if ($this->isFavorited) {
             $user->favorites()->detach($this->listing->id);
             $this->isFavorited = false;
+
             return;
         }
 

@@ -9,22 +9,17 @@ use Illuminate\View\View;
 
 class UserProfileController extends Controller
 {
-    /**
-     * Kuvab avaliku kasutajaprofiili koos aktiivsete kuulutuste ja tagasisidega.
-     */
     public function show(User $user): View
     {
-        // Laeme profiili jaoks vajalikud seosed.
+
         $user->load('location');
 
-        // Loeme kokku avalikult nähtavad aktiivsed kuulutused.
         $user->loadCount([
             'listings as active_listings_count' => function ($query) {
                 $query->publicVisible();
             },
         ]);
 
-        // Kasutaja aktiivsed kuulutused profiili "kuulutused" vaate jaoks.
         $activeListings = Listing::query()
             ->with(['images', 'location', 'category'])
             ->where('user_id', $user->id)
@@ -32,7 +27,6 @@ class UserProfileController extends Controller
             ->latest('created_at')
             ->paginate(24, ['*'], 'listings_page');
 
-        // Kasutajale jäetud tagasisided profiili "tagasiside" vaate jaoks.
         $reviews = $user->reviewsReceived()
             ->with(['reviewer', 'trade'])
             ->latest('created_at')

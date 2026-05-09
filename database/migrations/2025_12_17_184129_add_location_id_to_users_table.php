@@ -1,12 +1,11 @@
 <?php
 
-// database/migrations/xxxx_add_location_id_to_users_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
@@ -16,7 +15,6 @@ return new class extends Migration {
                 ->constrained('locations')
                 ->nullOnDelete();
 
-            // vanad väljad eemaldame
             if (Schema::hasColumn('users', 'city')) {
                 $table->dropColumn('city');
             }
@@ -32,7 +30,6 @@ return new class extends Migration {
             $table->dropForeign(['location_id']);
             $table->dropColumn('location_id');
 
-            // rollbackiks võib tagasi lisada
             $table->string('city')->nullable();
             $table->string('region')->nullable();
         });

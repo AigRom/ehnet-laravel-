@@ -13,7 +13,6 @@
     @endphp
 
     <div class="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        {{-- Header --}}
         <div class="flex flex-col gap-3">
             <x-ui.back-button
                 :href="route('dashboard')"
@@ -25,7 +24,6 @@
             </h1>
         </div>
 
-        {{-- Status pills --}}
         <div class="flex flex-wrap gap-2">
             <x-ui.filter-pill
                 :href="route('purchases.index', array_merge($baseParams, ['status' => 'all']))"
@@ -70,7 +68,6 @@
             </x-ui.filter-pill>
         </div>
 
-        {{-- Compact filters --}}
         <form
             method="GET"
             action="{{ route('purchases.index') }}"
@@ -204,7 +201,6 @@
             @endif
         @else
             <div class="grid gap-5 lg:grid-cols-[430px_minmax(0,1fr)]">
-                {{-- Left list --}}
                 <section class="min-w-0 space-y-3">
                     <div class="space-y-2">
                         @foreach($purchases as $trade)
@@ -216,7 +212,6 @@
                                 ]);
                             @endphp
 
-                            {{-- Mobile: opens show page --}}
                             <a
                                 href="{{ route('purchases.show', $trade) }}"
                                 class="block lg:hidden"
@@ -227,7 +222,6 @@
                                 ])
                             </a>
 
-                            {{-- Desktop: changes right panel --}}
                             <a
                                 href="{{ route('purchases.index', $desktopParams) }}"
                                 class="hidden lg:block"
@@ -262,7 +256,6 @@
                     @endif
                 </section>
 
-                {{-- Right detail --}}
                 <section class="hidden min-w-0 lg:block">
                     <div class="sticky top-28 rounded-[2rem] border border-emerald-950/10 bg-white/80 p-4 shadow-xl shadow-emerald-950/5 backdrop-blur">
                         @if($activeTrade)

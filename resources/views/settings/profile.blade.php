@@ -36,7 +36,6 @@
                     @csrf
                     @method('PATCH')
 
-                    {{-- Profiilipilt --}}
                     <div class="rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-sm sm:p-6">
                         <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex items-center gap-4">
@@ -121,7 +120,6 @@
                         @enderror
                     </div>
 
-                    {{-- Kasutajanimi --}}
                     <div>
                         <label for="name" class="{{ $labelClass }}">
                             {{ __('Kasutajanimi') }}
@@ -150,7 +148,6 @@
                         @enderror
                     </div>
 
-                    {{-- E-post --}}
                     <div>
                         <label for="email" class="{{ $labelClass }}">
                             {{ __('E-post') }}
@@ -172,7 +169,6 @@
                         @enderror
                     </div>
 
-                    {{-- Telefoni number --}}
                     <div>
                         <label for="phone" class="{{ $labelClass }}">
                             {{ __('Telefoni number') }}
@@ -209,7 +205,6 @@
                         @enderror
                     </div>
 
-                    {{-- Asukoht --}}
                     <div class="relative overflow-visible">
                         <livewire:location-autocomplete
                             name="location_id"
@@ -221,7 +216,6 @@
                         @enderror
                     </div>
 
-                    {{-- Eraisiku väljad --}}
                     @if($user->isCustomer())
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div>
@@ -287,7 +281,6 @@
                         </div>
                     @endif
 
-                    {{-- Ettevõtte väljad --}}
                     @if($user->isBusiness())
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div>

@@ -1,56 +1,37 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
-// Kontrollerid
 use App\Http\Controllers\Auth\EmailRegistrationController;
 use App\Http\Controllers\HomeController;
-
 use App\Http\Controllers\Messaging\ConversationController;
+use App\Http\Controllers\Messaging\MessageAttachmentController;
 use App\Http\Controllers\Messaging\MessageController;
 use App\Http\Controllers\Messaging\UserBlockController;
 use App\Http\Controllers\Messaging\UserReportController;
-use App\Http\Controllers\Messaging\MessageAttachmentController;
-
-use App\Http\Controllers\User\PasswordController;
-use App\Http\Controllers\User\ProfileController;
-use App\Http\Controllers\User\ListingController as UserListingController;
-use App\Http\Controllers\User\DashboardController;
-use App\Http\Controllers\User\PurchaseController;
-
 use App\Http\Controllers\Public\ListingController as PublicListingController;
 use App\Http\Controllers\Public\UserProfileController;
-
-use App\Http\Controllers\Trade\TradeController;
 use App\Http\Controllers\Trade\ReviewController;
+use App\Http\Controllers\Trade\TradeController;
+use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\User\ListingController as UserListingController;
+use App\Http\Controllers\User\PasswordController;
+use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\User\PurchaseController;
 use App\Http\Controllers\User\ReviewController as UserReviewController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Avalikud lehed
-|--------------------------------------------------------------------------
-*/
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::prefix('listings')->group(function () {
-    // Kõik kuulutused public-vaates
     Route::get('/', [PublicListingController::class, 'index'])
         ->name('listings.index');
 
-    // Kuulutuse detailvaade
-    // whereNumber väldib olukorda, kus /listings/create püütakse kinni kui {listing}
     Route::get('/{listing}', [PublicListingController::class, 'show'])
         ->whereNumber('listing')
         ->name('listings.show');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Avalik kasutajaprofiil
-|--------------------------------------------------------------------------
-*/
 Route::get('/users/{user}', [UserProfileController::class, 'show'])
     ->whereNumber('user')
     ->name('users.show');
@@ -58,11 +39,6 @@ Route::get('/users/{user}', [UserProfileController::class, 'show'])
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
-/*
-|--------------------------------------------------------------------------
-| EHNET: kaheastmeline registreerimine
-|--------------------------------------------------------------------------
-*/
 Route::middleware('guest')->group(function () {
     Route::get('/register', function () {
         return view('livewire.auth.register');
@@ -78,22 +54,10 @@ Route::middleware('guest')->group(function () {
         ->name('register.complete.post');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Kasutaja dashboard
-|--------------------------------------------------------------------------
-*/
 Route::get('/dashboard', DashboardController::class)
     ->middleware('auth')
     ->name('dashboard');
 
-/*
-|--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-| Logout peab olema POST päring, mitte tavaline GET link.
-|--------------------------------------------------------------------------
-*/
 Route::post('/logout', function (Request $request) {
     Auth::guard('web')->logout();
 
@@ -105,18 +69,8 @@ Route::post('/logout', function (Request $request) {
         ->with('status', 'Oled edukalt välja logitud.');
 })->middleware('auth')->name('logout');
 
-/*
-|--------------------------------------------------------------------------
-| Autenditud kasutaja ala
-|--------------------------------------------------------------------------
-*/
 Route::middleware('auth')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kasutaja seaded
-    |--------------------------------------------------------------------------
-    */
     Route::redirect('/settings', '/settings/profile');
 
     Route::get('/settings/profile', [ProfileController::class, 'edit'])
@@ -137,34 +91,20 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/password', [PasswordController::class, 'update'])
         ->name('user-password.update');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kuulutuse lisamine ja kuulutusega seotud tegevused
-    |--------------------------------------------------------------------------
-    */
     Route::prefix('listings')->group(function () {
         Route::get('/create', [UserListingController::class, 'create'])
             ->name('listings.create');
 
         Route::post('/', [UserListingController::class, 'store'])
             ->name('listings.store');
-
-        // Avab olemasoleva vestluse või loob uue kuulutuse detailvaatest
         Route::post('/{listing}/open-conversation', [ConversationController::class, 'openFromListing'])
             ->whereNumber('listing')
             ->name('listings.conversation.open');
-
-        // Ostja avaldab ostusoovi otse kuulutuse lehelt
         Route::post('/{listing}/buy-intent', [TradeController::class, 'expressInterestFromListing'])
             ->whereNumber('listing')
             ->name('listings.buy-intent');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Sõnumid ja vestlused
-    |--------------------------------------------------------------------------
-    */
     Route::get('/messages', [ConversationController::class, 'index'])
         ->name('messages.index');
 
@@ -184,11 +124,6 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('attachment')
         ->name('messages.attachments.download');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tehingud
-    |--------------------------------------------------------------------------
-    */
     Route::patch('/messages/{conversation}/interest', [TradeController::class, 'expressInterest'])
         ->whereNumber('conversation')
         ->name('messages.interest');
@@ -215,20 +150,10 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('trade')
         ->name('messages.trades.reviews.store');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Vestluse peitmine
-    |--------------------------------------------------------------------------
-    */
     Route::delete('/messages/{conversation}', [ConversationController::class, 'destroy'])
         ->whereNumber('conversation')
         ->name('messages.destroy');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kasutajate blokeerimine
-    |--------------------------------------------------------------------------
-    */
     Route::post('/user-blocks/{user}', [UserBlockController::class, 'store'])
         ->whereNumber('user')
         ->name('user-blocks.store');
@@ -237,19 +162,9 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('user')
         ->name('user-blocks.destroy');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kasutajast teatamine
-    |--------------------------------------------------------------------------
-    */
     Route::post('/user-reports', [UserReportController::class, 'store'])
         ->name('user-reports.store');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Minu kuulutused
-    |--------------------------------------------------------------------------
-    */
     Route::prefix('my-listings')->group(function () {
         Route::get('/', [UserListingController::class, 'mine'])
             ->name('listings.mine');
@@ -291,11 +206,6 @@ Route::middleware('auth')->group(function () {
             ->name('listings.mine.relist');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Minu ostud
-    |--------------------------------------------------------------------------
-    */
     Route::get('/my/purchases', [PurchaseController::class, 'index'])
         ->name('purchases.index');
 
@@ -307,21 +217,10 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('trade')
         ->name('purchases.hide');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Lemmik kuulutused
-    |--------------------------------------------------------------------------
-    */
     Route::get('/favorites', [UserListingController::class, 'favorites'])
         ->name('favorites.index');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tagasiside minu kohta
-    |--------------------------------------------------------------------------
-    */
-
-     Route::get('/my/reviews', [UserReviewController::class, 'received'])
+    Route::get('/my/reviews', [UserReviewController::class, 'received'])
         ->name('reviews.received');
 
 });

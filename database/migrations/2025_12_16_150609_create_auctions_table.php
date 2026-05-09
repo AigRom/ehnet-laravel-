@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('auctions', function (Blueprint $table) {
@@ -22,13 +19,10 @@ return new class extends Migration
             $table->decimal('start_price', 10, 2);
             $table->decimal('min_increment', 10, 2)->default(1.00);
 
-            // null = oksjon algab kohe
-            $table->dateTime('starts_at')->nullable(); // null = kohe
+            $table->dateTime('starts_at')->nullable();
 
-            // oksjonil peab lõpp olema
-            $table->dateTime('ends_at');              // kohustuslik
+            $table->dateTime('ends_at');
 
-            // valikulised tulevikuks
             $table->decimal('reserve_price', 10, 2)->nullable();
             $table->decimal('buy_now_price', 10, 2)->nullable();
 
@@ -38,9 +32,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('auctions');

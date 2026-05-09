@@ -10,8 +10,8 @@
             <x-home.latest-grid :listings="$latest" />
         </div>
 
-        
+
         <x-home.value-panel />
-        
+
     </div>
 </x-layouts.app.public>

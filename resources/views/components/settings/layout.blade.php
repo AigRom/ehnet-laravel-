@@ -4,7 +4,6 @@
 ])
 
 <div class="flex items-start gap-8 max-md:flex-col">
-    {{-- Vasak seadete menüü --}}
     <aside class="w-full pb-4 md:w-[220px]">
         <nav class="space-y-2">
             <a
@@ -40,21 +39,11 @@
                 {{ __('Kustuta konto') }}
             </a>
 
-            {{-- 2FA (hilisemaks kasutuseks) --}}
-            {{--
-            @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
-                <a href="{{ route('two-factor.show') }}">
-                    {{ __('Kaheastmeline autentimine') }}
-                </a>
-            @endif
-            --}}
         </nav>
     </aside>
 
-    {{-- Mobiilivaates eraldaja --}}
     <div class="h-px w-full bg-zinc-200 md:hidden"></div>
 
-    {{-- Parempoolne sisu --}}
     <section class="flex-1 self-stretch max-md:pt-2">
         @if ($heading)
             <h1 class="text-2xl font-bold tracking-tight text-zinc-900">

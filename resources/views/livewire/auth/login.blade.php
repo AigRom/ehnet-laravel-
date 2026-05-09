@@ -1,14 +1,6 @@
 @php
-    /*
-    |--------------------------------------------------------------------------
-    | Redirect pärast sisselogimist
-    |--------------------------------------------------------------------------
-    |
-    | View-failis ei muuda me enam sessiooni.
-    | Kui redirect parameeter on olemas, saadame selle login POST päringuga kaasa.
-    | Login controller saab selle põhjal kasutaja õigesse kohta suunata.
-    |
-    */
+
+
     $redirectTo = request('redirect');
 @endphp
 
@@ -17,7 +9,6 @@
         <div class="overflow-hidden rounded-[2.25rem] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/10 dark:border-zinc-800 dark:bg-zinc-900">
             <div class="p-7 sm:p-9 lg:p-12">
 
-                {{-- Header --}}
                 <div class="mb-9 text-center lg:mb-11">
                     <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white shadow-lg shadow-emerald-950/20">
                         <x-icons.login class="h-7 w-7" />
@@ -28,7 +19,6 @@
                     </h1>
                 </div>
 
-                {{-- Status --}}
                 @if (session('status'))
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
                         <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
@@ -44,7 +34,6 @@
                     </div>
                 @endif
 
-                {{-- Notice --}}
                 @if (request('notice') === 'create_listing')
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
                         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
@@ -58,7 +47,6 @@
                     </div>
                 @endif
 
-                {{-- Error --}}
                 @if ($errors->has('email'))
                     <div class="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
                         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -117,7 +105,6 @@
                         <input type="hidden" name="redirect" value="{{ $redirectTo }}">
                     @endif
 
-                    {{-- Email --}}
                     <div>
                         <label for="email" class="mb-2 block text-base font-bold text-emerald-950 dark:text-zinc-100">
                             {{ __('E-post') }}
@@ -146,7 +133,6 @@
                         ></p>
                     </div>
 
-                    {{-- Password --}}
                     <div>
                         <div class="mb-2 flex items-center justify-between gap-3">
                             <label for="password" class="block text-base font-bold text-emerald-950 dark:text-zinc-100">
@@ -203,7 +189,6 @@
                         ></p>
                     </div>
 
-                    {{-- Remember --}}
                     <div class="flex items-center justify-between gap-4">
                         <label class="inline-flex items-center gap-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
                             <input
@@ -217,7 +202,6 @@
                         </label>
                     </div>
 
-                    {{-- Submit --}}
                     <button
                         type="submit"
                         data-test="login-button"

@@ -1,9 +1,6 @@
 @props([
-    // Session võtmed, mida toast kuulab
     'successKey' => 'success',
     'errorKey' => 'error',
-
-    // Kui kaua toast nähtav on (ms)
     'duration' => 4000,
 ])
 
@@ -61,7 +58,6 @@
                 'border-red-100 ring-red-100/70' => $type === 'error',
             ])
         >
-            {{-- Ülemine värviriba --}}
             <div
                 @class([
                     'h-1.5 w-full',
@@ -72,7 +68,6 @@
 
             <div class="p-4 sm:p-5">
                 <div class="flex items-start gap-4">
-                    {{-- Ikoon --}}
                     <div
                         @class([
                             'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm ring-1',
@@ -91,7 +86,6 @@
                         @endif
                     </div>
 
-                    {{-- Sisu --}}
                     <div class="min-w-0 flex-1">
                         <p
                             @class([
@@ -108,7 +102,6 @@
                         </p>
                     </div>
 
-                    {{-- Sulgemine --}}
                     <button
                         type="button"
                         @click="open = false"
@@ -122,7 +115,6 @@
                 </div>
             </div>
 
-            {{-- Progress bar --}}
             <div class="h-1 w-full bg-zinc-100">
                 <div
                     class="h-1 transition-[width] duration-75 ease-linear"

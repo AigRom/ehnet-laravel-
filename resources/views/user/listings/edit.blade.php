@@ -38,7 +38,6 @@
 <x-layouts.app.public :title="__('Muuda kuulutust')">
     <div class="mx-auto max-w-5xl space-y-6">
 
-        {{-- Header --}}
         <div class="rounded-[2rem] border border-emerald-950/10 bg-white/85 p-6 shadow-xl shadow-emerald-950/5 backdrop-blur sm:p-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
@@ -79,7 +78,6 @@
                 value="{{ $listing->status === 'draft' ? 'draft' : 'publish' }}"
             >
 
-            {{-- Card: Pildid --}}
             <div
                 x-data="listingImagesEdit({
                     existing: @js($existingImages),
@@ -264,7 +262,6 @@
                 </div>
             </div>
 
-            {{-- Card: Põhiinfo --}}
             <div class="space-y-6 rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-emerald-950">
@@ -607,7 +604,6 @@
                 </div>
             </div>
 
-            {{-- Actions --}}
             <div class="rounded-[2rem] border border-emerald-950/10 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <a

@@ -27,10 +27,8 @@ abstract class ListingFormRequest extends FormRequest
         if (is_string($price)) {
             $price = trim($price);
 
-            // Eemaldame tavalised tühikud ja mittekatkevad tühikud
             $price = str_replace([' ', "\xc2\xa0", "\u{00A0}"], '', $price);
 
-            // Lubame komaga hinna: 200,7 -> 200.7
             $price = str_replace(',', '.', $price);
         }
 

@@ -2,17 +2,11 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Üldised valideerimissõnumid
-    |--------------------------------------------------------------------------
-    */
-
     'required' => ':attribute on kohustuslik.',
     'required_if' => ':attribute on kohustuslik.',
     'email' => 'Sisesta korrektne e-posti aadress.',
-    'accepted' => ':attribute on kohustuslik.', //kasutustingimustega nõustumine
-    
+    'accepted' => ':attribute on kohustuslik.',
+
     'min' => [
         'string' => ':attribute peab sisaldama vähemalt :min tähemärki.',
         'numeric' => ':attribute peab olema vähemalt :min.',
@@ -36,15 +30,8 @@ return [
     'file' => ':attribute peab olema fail.',
     'uploaded' => ':attribute üleslaadimine ebaõnnestus.',
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kohandatud sõnumid konkreetsetele väljadele
-    |--------------------------------------------------------------------------
-    */
-
     'custom' => [
 
-        // Pildid
         'images' => [
             'max' => 'Lisada saab maksimaalselt 10 pilti.',
             'array' => 'Pildid peavad olema loend.',
@@ -56,27 +43,18 @@ return [
             'max' => 'Iga pildi maksimaalne suurus on 5 MB.',
         ],
 
-        // Kättesaamine
         'delivery_options.*' => [
             'in' => 'Valitud kättesaamise viis ei ole sobiv.',
         ],
 
-        // Price
         'price' => [
             'numeric' => 'Hind peab olema number.',
             'min' => 'Hind ei tohi olla väiksem kui 0.',
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Väljade inimloetavad nimed
-    |--------------------------------------------------------------------------
-    */
-
     'attributes' => [
 
-        // Kasutaja
         'current_password' => 'praegune parool',
         'name' => 'kasutajanimi',
         'first_name' => 'eesnimi',
@@ -93,9 +71,6 @@ return [
         'email' => 'e-post',
         'terms' => 'Kasutustingimustega nõustumine',
 
-        
-
-        // Kuulutus
         'title' => 'pealkiri',
         'description' => 'kirjeldus',
         'category_id' => 'kategooria',
@@ -110,7 +85,6 @@ return [
         'images_order' => 'piltide järjestus',
         'action' => 'tegevus',
 
-        // Report
         'reason' => 'põhjus',
         'details' => 'selgitus',
     ],

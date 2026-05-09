@@ -15,8 +15,11 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_MODERATOR = 'moderator';
+
     public const ROLE_CUSTOMER = 'customer';
+
     public const ROLE_BUSINESS = 'business';
 
     protected $fillable = [
@@ -133,7 +136,7 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): ?string
     {
         return $this->avatar_path
-            ? asset('storage/' . $this->avatar_path)
+            ? asset('storage/'.$this->avatar_path)
             : null;
     }
 

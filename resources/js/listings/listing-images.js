@@ -9,10 +9,6 @@ document.addEventListener('alpine:init', () => {
             return JSON.stringify(this.items.map((_, index) => index));
         },
 
-        init() {
-            // create lehel algseid pilte ei ole
-        },
-
         handleFiles(event) {
             const selected = Array.from(event.target.files || []);
             if (!selected.length) return;
@@ -61,7 +57,7 @@ document.addEventListener('alpine:init', () => {
                 item.file &&
                 item.file.name === file.name &&
                 item.file.size === file.size &&
-                item.file.lastModified === file.lastModified
+                item.file.lastModified === file.lastModified,
             );
         },
 
@@ -200,6 +196,6 @@ document.addEventListener('alpine:init', () => {
                     URL.revokeObjectURL(item.preview);
                 }
             });
-        }
+        },
     }));
 });

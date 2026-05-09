@@ -31,7 +31,6 @@
     @endphp
 
     <div class="mx-auto w-full max-w-[1500px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {{-- Päis + profiil --}}
         <section class="relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-white shadow-xl shadow-emerald-950/5">
             <div class="pointer-events-none absolute inset-0">
                 <div class="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-200/50 blur-3xl"></div>
@@ -126,7 +125,6 @@
                     </div>
                 </div>
 
-                {{-- Profiil päise sees --}}
                 <div class="lg:col-span-5 xl:col-span-4">
                     <div class="h-full rounded-[2rem] border border-emerald-950/10 bg-white/90 p-5 shadow-lg shadow-emerald-950/5 backdrop-blur sm:p-6">
                         <div class="flex items-start gap-4">
@@ -191,7 +189,6 @@
             </div>
         </section>
 
-        {{-- tegevuskaardid --}}
         <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <a
                 href="{{ route('listings.mine') }}"

@@ -36,19 +36,19 @@ class Listing extends Model
     ];
 
     protected $casts = [
-        'user_id'          => 'integer',
-        'category_id'      => 'integer',
-        'location_id'      => 'integer',
-        'reviewed_by'      => 'integer',
-        'sold_to_user_id'  => 'integer',
-        'sold_trade_id'    => 'integer',
-        'price'            => 'decimal:2',
-        'published_at'     => 'datetime',
-        'expires_at'       => 'datetime',
-        'reviewed_at'      => 'datetime',
+        'user_id' => 'integer',
+        'category_id' => 'integer',
+        'location_id' => 'integer',
+        'reviewed_by' => 'integer',
+        'sold_to_user_id' => 'integer',
+        'sold_trade_id' => 'integer',
+        'price' => 'decimal:2',
+        'published_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'reviewed_at' => 'datetime',
         'delivery_options' => 'array',
-        'vat_included'     => 'boolean',
-        'owner_hidden_at'  => 'datetime',
+        'vat_included' => 'boolean',
+        'owner_hidden_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -375,15 +375,15 @@ class Listing extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
-            'draft'     => 'Mustand',
-            'pending'   => 'Ootel',
+            'draft' => 'Mustand',
+            'pending' => 'Ootel',
             'published' => $this->isPublicVisible() ? 'Aktiivne' : 'Aegunud',
-            'reserved'  => 'Broneeritud',
-            'rejected'  => 'Tagasi lükatud',
-            'archived'  => 'Müügist eemaldatud',
-            'sold'      => 'Müüdud',
-            'deleted'   => 'Kustutatud',
-            default     => '—',
+            'reserved' => 'Broneeritud',
+            'rejected' => 'Tagasi lükatud',
+            'archived' => 'Müügist eemaldatud',
+            'sold' => 'Müüdud',
+            'deleted' => 'Kustutatud',
+            default => '—',
         };
     }
 
@@ -564,16 +564,16 @@ class Listing extends Model
             ? number_format($price, 0, '.', '')
             : number_format($price, 2, '.', '');
 
-        return $formatted . ' €';
+        return $formatted.' €';
     }
 
     public function deliveryOptionsLabels(): array
     {
         $map = [
-            'pickup'          => 'Järeletulemine',
+            'pickup' => 'Järeletulemine',
             'seller_delivery' => 'Transpordi võimalus',
-            'courier'         => 'Saadan kulleriga või pakiautomaati',
-            'agreement'       => 'Lepime kokku',
+            'courier' => 'Saadan kulleriga või pakiautomaati',
+            'agreement' => 'Lepime kokku',
         ];
 
         $opts = is_array($this->delivery_options) ? $this->delivery_options : [];
@@ -588,10 +588,10 @@ class Listing extends Model
     public function conditionLabel(): string
     {
         return match ($this->condition) {
-            'new'      => 'Uus',
-            'used'     => 'Kasutatud',
+            'new' => 'Uus',
+            'used' => 'Kasutatud',
             'leftover' => 'Jääk',
-            default    => '—',
+            default => '—',
         };
     }
 

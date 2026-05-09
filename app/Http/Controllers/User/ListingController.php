@@ -578,7 +578,7 @@ class ListingController extends Controller
 
         $appUrl = rtrim((string) config('app.url'), '/');
 
-        if ($appUrl !== '' && ($returnTo === $appUrl || str_starts_with($returnTo, $appUrl . '/'))) {
+        if ($appUrl !== '' && ($returnTo === $appUrl || str_starts_with($returnTo, $appUrl.'/'))) {
             return $returnTo;
         }
 

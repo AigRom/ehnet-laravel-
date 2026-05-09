@@ -3,7 +3,6 @@
 namespace App\Services\Listing;
 
 use App\Models\Listing;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
 class ListingImageSyncService
@@ -12,10 +11,6 @@ class ListingImageSyncService
         protected ListingImageService $listingImageService,
     ) {}
 
-    /**
-     * @param array<int, UploadedFile> $files
-     * @param array<int, int> $order
-     */
     public function storeForNewListing(Listing $listing, array $files, array $order): void
     {
         if (empty($files)) {
@@ -41,11 +36,6 @@ class ListingImageSyncService
         }
     }
 
-    /**
-     * @param array<int, UploadedFile> $newFiles
-     * @param array<int, int> $deletedIds
-     * @param array<int, mixed> $mixOrder
-     */
     public function syncForExistingListing(Listing $listing, array $newFiles, array $deletedIds, array $mixOrder): void
     {
         $deletedIds = array_values(array_unique(array_filter(

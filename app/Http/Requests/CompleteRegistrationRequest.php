@@ -7,22 +7,15 @@ use Illuminate\Validation\Rule;
 
 class CompleteRegistrationRequest extends FormRequest
 {
-    /**
-     * Lubame kõigil seda requesti kasutada
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Enne valideerimist puhastame sisendit
-     */
     protected function prepareForValidation(): void
     {
         $phone = $this->input('phone');
 
-        // eemaldame telefonist kõik mitte-numbrid
         if ($phone !== null) {
             $phone = preg_replace('/\D+/', '', $phone);
         }
@@ -30,7 +23,6 @@ class CompleteRegistrationRequest extends FormRequest
         $this->merge([
             'phone' => $phone,
 
-            // trim eemaldab alguse/lõpu tühikud
             'name' => is_string($this->input('name')) ? trim($this->input('name')) : $this->input('name'),
             'first_name' => is_string($this->input('first_name')) ? trim($this->input('first_name')) : $this->input('first_name'),
             'last_name' => is_string($this->input('last_name')) ? trim($this->input('last_name')) : $this->input('last_name'),
@@ -43,27 +35,11 @@ class CompleteRegistrationRequest extends FormRequest
         ]);
     }
 
-    /**
-     * Valideerimisreeglid
-     */
     public function rules(): array
     {
         return [
 
-            /*
-            |--------------------------------------------------------------------------
-            | Konto tüüp
-            |--------------------------------------------------------------------------
-            */
-
             'type' => ['required', Rule::in(['customer', 'business'])],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Kasutajanimi
-            |--------------------------------------------------------------------------
-            | Peab olema unikaalne ja koosnema lubatud märkidest
-            */
 
             'name' => [
                 'required',
@@ -73,12 +49,6 @@ class CompleteRegistrationRequest extends FormRequest
                 'alpha_dash',
                 'unique:users,name',
             ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Eraisiku väljad
-            |--------------------------------------------------------------------------
-            */
 
             'first_name' => [
                 'required_if:type,customer',
@@ -99,12 +69,6 @@ class CompleteRegistrationRequest extends FormRequest
                 'date',
                 'before_or_equal:today',
             ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ettevõtte väljad
-            |--------------------------------------------------------------------------
-            */
 
             'contact_first_name' => [
                 'required_if:type,business',
@@ -133,34 +97,16 @@ class CompleteRegistrationRequest extends FormRequest
                 'regex:/^[0-9]{7,20}$/',
             ],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Telefoni number
-            |--------------------------------------------------------------------------
-            */
-
             'phone' => [
                 'required',
                 'regex:/^[0-9]{7,15}$/',
             ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Asukoht
-            |--------------------------------------------------------------------------
-            */
 
             'location_id' => [
                 'required',
                 'integer',
                 'exists:locations,id',
             ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Parool
-            |--------------------------------------------------------------------------
-            */
 
             'password' => [
                 'required',
@@ -177,9 +123,6 @@ class CompleteRegistrationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Eestikeelsed veateated
-     */
     public function messages(): array
     {
         return [
@@ -222,9 +165,6 @@ class CompleteRegistrationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Väljade inimloetavad nimed
-     */
     public function attributes(): array
     {
         return [

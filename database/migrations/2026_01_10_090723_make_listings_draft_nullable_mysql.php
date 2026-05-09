@@ -9,8 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('listings', function (Blueprint $table) {
-            // Laravel default FK nimed:
-            // listings_category_id_foreign, listings_location_id_foreign
+
             $table->dropForeign(['category_id']);
             $table->dropForeign(['location_id']);
         });

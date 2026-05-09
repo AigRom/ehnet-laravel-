@@ -12,7 +12,6 @@
             class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 pr-10"
         />
 
-        {{--  väike rist paremal (tooltip: Tühjenda) --}}
         @if(trim($search) !== '' || $selectedId || $location_id)
             <button
                 type="button"
@@ -27,10 +26,8 @@
         @endif
     </div>
 
-    {{-- hidden field, mis läheb formiga kaasa (POST) --}}
     <input type="hidden" name="{{ $name }}" value="{{ $selectedId ?? $location_id ?? '' }}">
 
-    {{-- Dropdown (näita kui on midagi otsida ja kasutaja pole veel valikut teinud) --}}
     @if(mb_strlen(trim($search)) >= 2 && $selectedId === null)
         <div
             class="absolute left-0 right-0 z-[99999] mt-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg max-h-64 overflow-auto"
@@ -54,7 +51,6 @@
         </div>
     @endif
 
-    {{-- Valideerimisviga --}}
     @error('location_id')
         <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
     @enderror

@@ -6,13 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('listings', function (Blueprint $table) {
-            $table->softDeletes(); // adds deleted_at + index
+            $table->softDeletes();
         });
     }
 

@@ -26,28 +26,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 419);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Kuhu kasutaja pärast uuesti sisselogimist tagasi viia?
-            |--------------------------------------------------------------------------
-            |
-            | Kui 419 tekkis näiteks kuulutuse detailvaates oleva nupu/vormi tõttu,
-            | võtame eelmise lehe brauseri Referer headerist.
-            |
-            */
             $safeRedirect = function (?string $url) use ($request): ?string {
                 if (! $url) {
                     return null;
                 }
 
-                // Lubame suhtelised URL-id, nt /listings/12
                 if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
                     return $url;
                 }
 
                 $host = parse_url($url, PHP_URL_HOST);
 
-                // Lubame ainult sama hosti URL-id
                 if ($host && $host === $request->getHost()) {
                     return $url;
                 }
@@ -57,7 +46,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $redirectTo = $safeRedirect($request->headers->get('referer'));
 
-            // Kui eelmine leht puudub või oli login/logout, siis viime avalehele
             if (! $redirectTo) {
                 $redirectTo = route('home');
             }
@@ -69,14 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 $redirectTo = route('home');
             }
 
-            // Kui kasutaja on tegelikult juba sisse logitud, vii ta tagasi eelmisele lehele
             if (auth()->check()) {
                 return redirect()
                     ->to($redirectTo)
                     ->with('status', 'Sessioon uuendati. Palun proovi tegevust uuesti.');
             }
 
-            // Kui kasutaja pole sees, vii login-lehele ja anna kaasa tagasisuunamise aadress
             return redirect()
                 ->route('login', ['redirect' => $redirectTo])
                 ->with('status', 'Sessioon aegus. Palun logi uuesti sisse.');

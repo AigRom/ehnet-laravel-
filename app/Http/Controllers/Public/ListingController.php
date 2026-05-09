@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Listing;
-use App\Models\Trade;
 use App\Models\Location;
+use App\Models\Trade;
 
 class ListingController extends Controller
 {
@@ -23,8 +23,6 @@ class ListingController extends Controller
             ->orderBy('name_et')
             ->get(['id', 'name_et', 'slug']);
 
-        // EHAK järgi peaks maakond olema level 1.
-        // Kui sul andmebaasis level erineb, muudame selle hiljem ära.
         $counties = Location::query()
             ->where('is_valid', true)
             ->where('level', 1)
@@ -36,13 +34,11 @@ class ListingController extends Controller
         if ($county) {
             $countyCode = (int) $county;
 
-            // Omavalitsused maakonna all
             $municipalityCodes = Location::query()
                 ->where('is_valid', true)
                 ->where('parent_ehak_code', $countyCode)
                 ->pluck('ehak_code');
 
-            // Maakond ise + omavalitsused + nende all olevad asulad
             $countyLocationIds = Location::query()
                 ->where('is_valid', true)
                 ->where(function ($query) use ($countyCode, $municipalityCodes) {
@@ -95,7 +91,7 @@ class ListingController extends Controller
             && $listing->expires_at->isPast();
 
         abort_if(
-            !in_array($listing->status, ['published', 'reserved'], true) || $isExpired,
+            ! in_array($listing->status, ['published', 'reserved'], true) || $isExpired,
             404
         );
 

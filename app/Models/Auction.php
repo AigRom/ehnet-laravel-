@@ -18,13 +18,13 @@ class Auction extends Model
     ];
 
     protected $casts = [
-        'listing_id'     => 'integer',
-        'start_price'    => 'decimal:2',
-        'min_increment'  => 'decimal:2',
-        'reserve_price'  => 'decimal:2',
-        'buy_now_price'  => 'decimal:2',
-        'starts_at'      => 'datetime',
-        'ends_at'        => 'datetime',
+        'listing_id' => 'integer',
+        'start_price' => 'decimal:2',
+        'min_increment' => 'decimal:2',
+        'reserve_price' => 'decimal:2',
+        'buy_now_price' => 'decimal:2',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
     ];
 
     public function listing(): BelongsTo

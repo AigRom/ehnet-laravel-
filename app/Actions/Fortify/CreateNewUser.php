@@ -12,11 +12,6 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
 
-    /**
-     * Validate and create a newly registered user.
-     *
-     * @param array<string, mixed> $input
-     */
     public function create(array $input): User
     {
         Validator::make($input, [
@@ -42,18 +37,15 @@ class CreateNewUser implements CreatesNewUsers
 
             'type' => ['required', Rule::in(['customer', 'business'])],
 
-            // Customer (eraisik)
             'first_name' => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
             'last_name' => ['required_if:type,customer', 'nullable', 'string', 'max:255'],
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
 
-            // Business (ettevõte)
             'company_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
             'company_reg_no' => ['required_if:type,business', 'nullable', 'regex:/^[0-9]{7,20}$/'],
             'contact_first_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
             'contact_last_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
 
-            // Common
             'phone' => ['required', 'string', 'regex:/^\+[0-9]{7,15}$/'],
             'location_id' => ['required', 'integer', 'exists:locations,id'],
         ], [
@@ -95,13 +87,12 @@ class CreateNewUser implements CreatesNewUsers
             : User::ROLE_CUSTOMER;
 
         return User::create([
-            // Kasutaja poolt valitud unikaalne kasutajanimi
+
             'name' => $input['name'],
 
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
 
-            // Profiiliväljad
             'first_name' => $input['first_name'] ?? null,
             'last_name' => $input['last_name'] ?? null,
             'date_of_birth' => $input['date_of_birth'] ?? null,
@@ -114,7 +105,6 @@ class CreateNewUser implements CreatesNewUsers
             'contact_first_name' => $input['contact_first_name'] ?? null,
             'contact_last_name' => $input['contact_last_name'] ?? null,
 
-            // EHNET süsteemiväljad
             'email_verified_at' => now(),
             'role' => $role,
             'is_active' => true,

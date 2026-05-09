@@ -12,11 +12,12 @@ use Throwable;
 class ListingImageService
 {
     protected ImageManager $imageManager;
+
     protected string $disk = 'public';
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = new ImageManager(new Driver);
     }
 
     public function store(UploadedFile $file, int $listingId, int $sortOrder): ListingImage
@@ -90,6 +91,6 @@ class ListingImageService
 
     protected function generatePath(string $type): string
     {
-        return 'listings/' . $type . '/' . date('Y/m') . '/' . uniqid('', true) . '.jpg';
+        return 'listings/'.$type.'/'.date('Y/m').'/'.uniqid('', true).'.jpg';
     }
 }

@@ -6,17 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('locations', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedInteger('ehak_code')->unique(); // Value
-            $table->unsignedInteger('parent_ehak_code')->nullable(); // Parent
-            $table->unsignedTinyInteger('level'); // Level
+            $table->unsignedInteger('ehak_code')->unique();
+            $table->unsignedInteger('parent_ehak_code')->nullable();
+            $table->unsignedTinyInteger('level');
 
             $table->string('name_et');
             $table->string('name_en')->nullable();
@@ -36,9 +33,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('locations');

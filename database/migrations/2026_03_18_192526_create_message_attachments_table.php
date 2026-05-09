@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('message_attachments', function (Blueprint $table) {
@@ -24,7 +21,6 @@ return new class extends Migration
             $table->string('mime_type', 150)->nullable();
             $table->unsignedBigInteger('size')->nullable();
 
-            // image | file
             $table->string('type', 20)->default('file');
 
             $table->timestamps();
@@ -33,9 +29,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('message_attachments');

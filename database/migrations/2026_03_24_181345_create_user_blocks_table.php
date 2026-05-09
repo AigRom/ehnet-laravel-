@@ -11,22 +11,18 @@ return new class extends Migration
         Schema::create('user_blocks', function (Blueprint $table) {
             $table->id();
 
-            // Kasutaja, kes blokkis
             $table->foreignId('blocker_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
 
-            // Kasutaja, kes blokeeriti
             $table->foreignId('blocked_user_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
 
             $table->timestamps();
 
-            // Sama kasutajat ei saa sama inimese poolt mitu korda blokeerida
             $table->unique(['blocker_id', 'blocked_user_id']);
 
-            // Lisame indeksid päringute kiirendamiseks
             $table->index('blocker_id');
             $table->index('blocked_user_id');
         });

@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Conversation extends Model
 {
-    /**
-     * Mass assignment lubatud väljad.
-     */
     protected $fillable = [
         'listing_id',
         'seller_id',
@@ -21,91 +18,53 @@ class Conversation extends Model
         'fully_hidden_at',
     ];
 
-    /**
-     * Castime kuupäevaväljad Carbon kuupäevadeks.
-     */
     protected $casts = [
         'seller_hidden_at' => 'datetime',
         'buyer_hidden_at' => 'datetime',
         'fully_hidden_at' => 'datetime',
     ];
 
-    /**
-     * Kuulutus, mille kohta vestlus käib.
-     */
     public function listing(): BelongsTo
     {
         return $this->belongsTo(Listing::class);
     }
 
-    /**
-     * Müüja ehk kuulutuse omanik.
-     */
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
     }
 
-    /**
-     * Ostja ehk vestluse algataja.
-     */
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    /**
-     * Kõik vestluse sõnumid vanimast uuemani.
-     */
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class)->orderBy('created_at');
     }
 
-    /**
-     * Viimane sõnum vestluses.
-     */
     public function latestMessage(): HasOne
     {
         return $this->hasOne(Message::class)->latestOfMany();
     }
 
-    /**
-     * Kõik selle vestluse tehingukatsed.
-     */
     public function trades(): HasMany
     {
         return $this->hasMany(Trade::class);
     }
 
-    /**
-     * Viimane tehingukatse sõltumata staatusest.
-     */
     public function latestTrade(): HasOne
     {
         return $this->hasOne(Trade::class)->latestOfMany();
     }
 
-    /**
-     * Kõik aktiivsed tehingud selles vestluses.
-     *
-     * Uue flow järgi loeme aktiivseks:
-     * - interest
-     * - reserved
-     * - awaiting_confirmation
-     *
-     * Need on kõik tehingud, mis on veel protsessis
-     * ega ole lõplikult lõpetatud või katkestatud.
-     */
     public function openTrades(): HasMany
     {
         return $this->hasMany(Trade::class)
             ->whereIn('status', ['interest', 'reserved', 'awaiting_confirmation']);
     }
 
-    /**
-     * Viimane aktiivne tehing selles vestluses.
-     */
     public function latestOpenTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
@@ -113,9 +72,6 @@ class Conversation extends Model
             ->latestOfMany();
     }
 
-    /**
-     * Viimane reserveeritud tehing selles vestluses.
-     */
     public function latestReservedTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
@@ -123,9 +79,6 @@ class Conversation extends Model
             ->latestOfMany();
     }
 
-    /**
-     * Viimane ostja kinnitust ootav tehing selles vestluses.
-     */
     public function latestAwaitingConfirmationTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
@@ -133,9 +86,6 @@ class Conversation extends Model
             ->latestOfMany();
     }
 
-    /**
-     * Viimane ostusoovi staatuses tehing selles vestluses.
-     */
     public function latestInterestTrade(): HasOne
     {
         return $this->hasOne(Trade::class)
@@ -143,33 +93,21 @@ class Conversation extends Model
             ->latestOfMany();
     }
 
-    /**
-     * Kontrollib, kas kasutaja kuulub sellesse vestlusesse.
-     */
     public function hasParticipant(User $user): bool
     {
         return $this->seller_id === $user->id || $this->buyer_id === $user->id;
     }
 
-    /**
-     * Kas kasutaja on müüja.
-     */
     public function isSeller(User $user): bool
     {
         return $this->seller_id === $user->id;
     }
 
-    /**
-     * Kas kasutaja on ostja.
-     */
     public function isBuyer(User $user): bool
     {
         return $this->buyer_id === $user->id;
     }
 
-    /**
-     * Kas vestlus on sellele kasutajale peidetud.
-     */
     public function isHiddenFor(User $user): bool
     {
         if ($this->isSeller($user)) {
@@ -183,9 +121,6 @@ class Conversation extends Model
         return false;
     }
 
-    /**
-     * Peidab vestluse konkreetse kasutaja jaoks.
-     */
     public function hideFor(User $user): void
     {
         if ($this->isSeller($user)) {
@@ -198,9 +133,6 @@ class Conversation extends Model
         $this->save();
     }
 
-    /**
-     * Taastab vestluse nähtavuse konkreetse kasutaja jaoks.
-     */
     public function unhideFor(User $user): void
     {
         if ($this->isSeller($user)) {
@@ -213,9 +145,6 @@ class Conversation extends Model
         $this->save();
     }
 
-    /**
-     * Taastab vestluse nähtavuse mõlemale poolele.
-     */
     public function unhideForBoth(): void
     {
         $this->seller_hidden_at = null;
@@ -225,24 +154,17 @@ class Conversation extends Model
         $this->save();
     }
 
-    /**
-     * Sünkroniseerib fully_hidden_at välja.
-     *
-     * Kui mõlemad pooled on vestluse peitnud, märgime selle täielikult peidetuks.
-     */
     public function syncFullyHiddenAt(): void
     {
         if ($this->seller_hidden_at && $this->buyer_hidden_at) {
             $this->fully_hidden_at ??= now();
+
             return;
         }
 
         $this->fully_hidden_at = null;
     }
 
-    /**
-     * Tagastab vestluse teise osapoole antud kasutaja suhtes.
-     */
     public function otherParticipant(User $user): ?User
     {
         if ($this->isSeller($user)) {
@@ -265,40 +187,22 @@ class Conversation extends Model
         return 'buyer_read_at';
     }
 
-    /**
-     * Kas selle vestluse kahe osapoole vahel on sõnumiblokk.
-     */
     public function hasMessagingBlock(User $user): bool
     {
         $otherUser = $this->otherParticipant($user);
 
-        if (!$otherUser) {
+        if (! $otherUser) {
             return false;
         }
 
         return $user->hasMessagingBlockWith($otherUser);
     }
 
-    /**
-     * Kas vestluses on aktiivne tehing.
-     *
-     * Aktiivseks loeme interest, reserved või awaiting_confirmation staatusega tehingu.
-     */
     public function hasOpenTrade(): bool
     {
         return $this->openTrades()->exists();
     }
 
-    /**
-     * Tagastab vestluse hetkel kõige olulisema tehingu.
-     *
-     * Eelistus:
-     * 1. viimane aktiivne tehing
-     * 2. viimane tehing üldse
-     *
-     * Kuna awaiting_confirmation kuulub nüüd aktiivsete hulka,
-     * võetakse see samuti õigesti arvesse.
-     */
     public function currentTrade(): ?Trade
     {
         if ($this->relationLoaded('latestOpenTrade') && $this->latestOpenTrade) {
@@ -312,43 +216,25 @@ class Conversation extends Model
         return $this->latestOpenTrade()->first() ?? $this->latestTrade()->first();
     }
 
-    /**
-     * Kas antud kasutaja võib selles vestluses uusi sõnumeid saata.
-     *
-     * Sõnumite saatmine on suletud, kui kuulutus puudub või on kustutatud.
-     *
-     * NB! Praegu jääb see lihtsaks:
-     * kui vestlus on olemas ja kuulutus pole kustutatud, võivad osapooled jätkata suhtlust
-     * ka awaiting_confirmation etapis.
-     */
     public function canUserSendMessages(User $user): bool
     {
-        if (!$this->hasParticipant($user)) {
+        if (! $this->hasParticipant($user)) {
             return false;
         }
 
-        return $this->listing && !$this->listing->isDeletedStatus();
+        return $this->listing && ! $this->listing->isDeletedStatus();
     }
 
-    /**
-     * Kas antud kasutajale võib näidata tehinguga seotud tegevusnuppe.
-     *
-     * Tehingutegevused peavad olema peidetud, kui:
-     * - kasutaja ei kuulu vestlusesse
-     * - kuulutus puudub
-     * - kuulutus on kustutatud
-     * - osapoolte vahel on sõnumiblokk
-     */
     public function canUserSeeTradeActions(User $user): bool
     {
-        if (!$this->hasParticipant($user)) {
+        if (! $this->hasParticipant($user)) {
             return false;
         }
 
-        if (!$this->listing || $this->listing->isDeletedStatus()) {
+        if (! $this->listing || $this->listing->isDeletedStatus()) {
             return false;
         }
 
-        return !$this->hasMessagingBlock($user);
+        return ! $this->hasMessagingBlock($user);
     }
 }

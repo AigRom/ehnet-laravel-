@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\Location;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
 
         if (! $defaultLocationId) {
             $this->command->warn('LocationSeeder peab enne UserSeederit käima.');
+
             return;
         }
 

@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class TradeController extends Controller
 {
-    public function expressInterestFromListing(Request $request, Listing $listing): RedirectResponse {
+    public function expressInterestFromListing(Request $request, Listing $listing): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($user, 403);
@@ -55,7 +56,7 @@ class TradeController extends Controller
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->buyer?->name ?? 'Kasutaja') . ' saatis sellele kuulutusele ostusoovi.',
+                ($conversation->buyer?->name ?? 'Kasutaja').' saatis sellele kuulutusele ostusoovi.',
                 [
                     'event' => 'trade_interest_created',
                     'trade_id' => $trade->id,
@@ -73,7 +74,8 @@ class TradeController extends Controller
             ->with('success', 'Ostusoov saadeti müüjale.');
     }
 
-    public function expressInterest(Request $request, Conversation $conversation): RedirectResponse {
+    public function expressInterest(Request $request, Conversation $conversation): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -104,7 +106,7 @@ class TradeController extends Controller
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->buyer?->name ?? 'Kasutaja') . ' saatis sellele kuulutusele ostusoovi.',
+                ($conversation->buyer?->name ?? 'Kasutaja').' saatis sellele kuulutusele ostusoovi.',
                 [
                     'event' => 'trade_interest_created',
                     'trade_id' => $trade->id,
@@ -120,7 +122,8 @@ class TradeController extends Controller
         return back()->with('success', 'Ostusoov edastati müüjale.');
     }
 
-    public function reserve(Request $request, Conversation $conversation): RedirectResponse {
+    public function reserve(Request $request, Conversation $conversation): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -163,7 +166,7 @@ class TradeController extends Controller
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->seller?->name ?? 'Kasutaja') . ' broneeris kuulutuse sellele ostjale. Kontaktandmed on nüüd nähtavad mõlemale poolele.',
+                ($conversation->seller?->name ?? 'Kasutaja').' broneeris kuulutuse sellele ostjale. Kontaktandmed on nüüd nähtavad mõlemale poolele.',
                 [
                     'event' => 'trade_reserved',
                     'trade_id' => $trade->id,
@@ -179,7 +182,8 @@ class TradeController extends Controller
         return back()->with('success', 'Kuulutus broneeriti sellele ostjale.');
     }
 
-    public function complete(Request $request, Conversation $conversation): RedirectResponse {
+    public function complete(Request $request, Conversation $conversation): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -209,7 +213,7 @@ class TradeController extends Controller
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->seller?->name ?? 'Kasutaja') . ' märkis, et kaup on üle antud või teele pandud. Ostja saab nüüd kinnitada kauba kättesaamise.',
+                ($conversation->seller?->name ?? 'Kasutaja').' märkis, et kaup on üle antud või teele pandud. Ostja saab nüüd kinnitada kauba kättesaamise.',
                 [
                     'event' => 'trade_awaiting_confirmation',
                     'trade_id' => $trade->id,
@@ -225,7 +229,8 @@ class TradeController extends Controller
         return back()->with('success', 'Tehing märgiti ostja kinnituse ootele.');
     }
 
-    public function confirmReceived(Request $request, Conversation $conversation): RedirectResponse {
+    public function confirmReceived(Request $request, Conversation $conversation): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -289,7 +294,7 @@ class TradeController extends Controller
 
             $this->createSystemMessage(
                 $conversation->id,
-                ($conversation->buyer?->name ?? 'Kasutaja') . ' kinnitas, et kaup on kätte saadud. Tehing on nüüd lõpetatud.',
+                ($conversation->buyer?->name ?? 'Kasutaja').' kinnitas, et kaup on kätte saadud. Tehing on nüüd lõpetatud.',
                 [
                     'event' => 'trade_received_confirmed',
                     'trade_id' => $trade->id,
@@ -305,7 +310,8 @@ class TradeController extends Controller
         return back()->with('success', 'Kinnitasid kauba kättesaamise.');
     }
 
-    public function cancel(Request $request, Conversation $conversation, Trade $trade): RedirectResponse {
+    public function cancel(Request $request, Conversation $conversation, Trade $trade): RedirectResponse
+    {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -375,7 +381,8 @@ class TradeController extends Controller
         return back()->with('success', 'Tehing katkestati.');
     }
 
-    private function createSystemMessage(int $conversationId, string $body, array $meta = []): void {
+    private function createSystemMessage(int $conversationId, string $body, array $meta = []): void
+    {
         Message::create([
             'conversation_id' => $conversationId,
             'sender_id' => null,
