@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-class MessageController extends Controller
-{
+class MessageController extends Controller {
     public function storeInConversation(
         Request $request,
         Conversation $conversation,
@@ -115,7 +114,6 @@ class MessageController extends Controller
         }
 
         return redirect()
-            ->route('messages.show', $conversation)
-            ->with('success', 'Sõnum saadeti edukalt.');
+            ->route('messages.show', $conversation);
     }
 }

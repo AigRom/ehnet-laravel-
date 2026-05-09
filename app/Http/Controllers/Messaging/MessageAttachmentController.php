@@ -8,8 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class MessageAttachmentController extends Controller
-{
+class MessageAttachmentController extends Controller {
     public function download(Request $request, MessageAttachment $attachment): StreamedResponse
     {
         $attachment->loadMissing('message.conversation');

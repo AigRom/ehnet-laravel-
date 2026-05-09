@@ -8,26 +8,17 @@ use App\Models\PendingRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Mail\CompleteRegistrationMail;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
-class EmailRegistrationController extends Controller
-{
-    /**
-     * Registreerimise 1. samm:
-     * küsime e-posti ja tingimustega nõustumise,
-     * loome pending registration kirje ning saadame e-kirjaga lingi.
-     */
-    public function store(Request $request)
-    {
+
+class EmailRegistrationController extends Controller {
+
+    public function store(Request $request) {
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'terms' => ['accepted', 'required'],
-        ], [
-            'email.required' => 'E-posti aadress on kohustuslik.',
-            'email.email' => 'Sisesta korrektne e-posti aadress.',
-            'email.max' => 'E-posti aadress on liiga pikk.',
-            'terms.accepted' => 'Kasutustingimustega nõustumine on kohustuslik.',
-            'terms.required' => 'Kasutustingimustega nõustumine on kohustuslik.',
+       
         ]);
 
         $token = Str::random(64);
@@ -42,26 +33,14 @@ class EmailRegistrationController extends Controller
 
         $link = route('register.complete', $token);
 
-        Mail::raw(
-            "Tere!\n\nKliki alloleval lingil, et lõpetada EHNET konto registreerimine:\n\n{$link}\n\nKui sina ei alustanud registreerimist, võid selle kirja tähelepanuta jätta.",
-            function ($message) use ($data) {
-                $message
-                    ->to($data['email'])
-                    ->subject('EHNET – lõpeta registreerimine');
-            }
-        );
+        Mail::to($data['email'])->send(new CompleteRegistrationMail($link));
 
         return back()
             ->with('status', 'Kinnituse link on saadetud sinu e-posti aadressile.')
             ->withInput($request->only('email'));
     }
 
-    /**
-     * Kuvame registreerimise lõpetamise vormi,
-     * kui token on olemas ja ei ole aegunud.
-     */
-    public function showCompleteForm(string $token)
-    {
+    public function showCompleteForm(string $token) {
         $pending = PendingRegistration::where('token', $token)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
@@ -81,12 +60,7 @@ class EmailRegistrationController extends Controller
         ]);
     }
 
-    /**
-     * Registreerimise 2. samm:
-     * valideerime kõik andmed, loome kasutaja ja logime ta sisse.
-     */
-    public function complete(string $token, CompleteRegistrationRequest $request, CreatesNewUsers $creator)
-    {
+    public function complete(string $token, CompleteRegistrationRequest $request, CreatesNewUsers $creator) {
         $pending = PendingRegistration::where('token', $token)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
@@ -105,36 +79,24 @@ class EmailRegistrationController extends Controller
         $input = [
             'type' => $data['type'],
             'email' => $pending->email,
-
-            // Kasutajanimi / kuvatav nimi
             'name' => $data['name'],
-
-            // Eraisiku väljad
             'first_name' => $data['first_name'] ?? null,
             'last_name' => $data['last_name'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
-
-            // Ühised väljad
             'phone' => '+' . $data['phone'],
             'location_id' => (int) $data['location_id'],
-
-            // Ettevõtte väljad
             'company_name' => $data['company_name'] ?? null,
             'company_reg_no' => $data['company_reg_no'] ?? null,
             'contact_first_name' => $data['contact_first_name'] ?? null,
             'contact_last_name' => $data['contact_last_name'] ?? null,
-
-            // Parool
             'password' => $data['password'],
             'password_confirmation' => $request->input('password_confirmation'),
 
-            // Tingimused olid 1. sammus juba aktsepteeritud
             'terms' => true,
         ];
 
         $user = $creator->create($input);
 
-        // Pending registration enam ei vaja
         $pending->delete();
 
         auth()->login($user);

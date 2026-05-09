@@ -11,6 +11,8 @@ return [
     'required' => ':attribute on kohustuslik.',
     'required_if' => ':attribute on kohustuslik.',
     'email' => 'Sisesta korrektne e-posti aadress.',
+    'accepted' => ':attribute on kohustuslik.', //kasutustingimustega nõustumine
+    
     'min' => [
         'string' => ':attribute peab sisaldama vähemalt :min tähemärki.',
         'numeric' => ':attribute peab olema vähemalt :min.',
@@ -89,6 +91,8 @@ return [
         'password_confirmation' => 'parooli kinnitus',
         'type' => 'konto tüüp',
         'email' => 'e-post',
+        'terms' => 'Kasutustingimustega nõustumine',
+
         
 
         // Kuulutus

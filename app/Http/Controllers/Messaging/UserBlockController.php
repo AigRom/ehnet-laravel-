@@ -8,26 +8,15 @@ use App\Models\UserBlock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class UserBlockController extends Controller
-{
-    /**
-     * Blokeerib teise kasutaja.
-     *
-     * Mõju:
-     * - kasutajad ei saa enam omavahel uusi sõnumeid saata
-     * - olemasolev vestlus jääb alles
-     * - blokeerimine on ühepoolne tegevus (A blokeerib B)
-     */
-    public function store(Request $request, User $user): RedirectResponse
-    {
+class UserBlockController extends Controller {
+
+    public function store(Request $request, User $user): RedirectResponse {
         $authUser = $request->user();
 
-        // Ei luba iseennast blokeerida
         if ($authUser->id === $user->id) {
             return back()->with('error', 'Iseennast ei saa blokeerida.');
         }
 
-        // Kui blokk juba eksisteerib, ei tee midagi
         $alreadyBlocked = UserBlock::query()
             ->where('blocker_id', $authUser->id)
             ->where('blocked_user_id', $user->id)
@@ -43,14 +32,7 @@ class UserBlockController extends Controller
         return back()->with('success', 'Kasutaja on blokeeritud.');
     }
 
-    /**
-     * Eemaldab blokeeringu.
-     *
-     * Mõju:
-     * - kasutajad saavad jälle omavahel sõnumeid vahetada
-     */
-    public function destroy(Request $request, User $user): RedirectResponse
-    {
+    public function destroy(Request $request, User $user): RedirectResponse{
         $authUser = $request->user();
 
         UserBlock::query()

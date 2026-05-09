@@ -25,6 +25,7 @@ use App\Http\Controllers\Public\UserProfileController;
 
 use App\Http\Controllers\Trade\TradeController;
 use App\Http\Controllers\Trade\ReviewController;
+use App\Http\Controllers\User\ReviewController as UserReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -313,4 +314,14 @@ Route::middleware('auth')->group(function () {
     */
     Route::get('/favorites', [UserListingController::class, 'favorites'])
         ->name('favorites.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tagasiside minu kohta
+    |--------------------------------------------------------------------------
+    */
+
+     Route::get('/my/reviews', [UserReviewController::class, 'received'])
+        ->name('reviews.received');
+
 });

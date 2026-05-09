@@ -13,10 +13,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class ConversationController extends Controller
-{
-    public function index(Request $request): View
-    {
+class ConversationController extends Controller {
+    public function index(Request $request): View {
         $user = $request->user();
 
         $conversations = $this->visibleConversationsQuery($user)->get();
@@ -27,8 +25,7 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function show(Request $request, Conversation $conversation): View
-    {
+    public function show(Request $request, Conversation $conversation): View {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -63,8 +60,7 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function showListing(Request $request, Conversation $conversation): View
-    {
+    public function showListing(Request $request, Conversation $conversation): View {
         $user = $request->user();
 
         abort_unless($conversation->hasParticipant($user), 404);
@@ -121,8 +117,7 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function openFromListing(Request $request, Listing $listing): RedirectResponse
-    {
+    public function openFromListing(Request $request, Listing $listing): RedirectResponse {
         $user = $request->user();
 
         abort_unless($user, 403);
@@ -165,8 +160,7 @@ class ConversationController extends Controller
             ->with('success', 'Vestlus peideti sinu vaatest.');
     }
 
-    private function visibleConversationsQuery(User $user): Builder
-    {
+    private function visibleConversationsQuery(User $user): Builder {
         return Conversation::query()
             ->with([
                 'listing',
@@ -194,8 +188,7 @@ class ConversationController extends Controller
             ->latest('updated_at');
     }
 
-    private function applyUnreadMessagesForUser(Builder|HasMany $query, User $user): void
-    {
+    private function applyUnreadMessagesForUser(Builder|HasMany $query, User $user): void {
         $query
             ->where(function ($q) use ($user) {
                 $q->where(function ($sellerQuery) use ($user) {
@@ -217,8 +210,7 @@ class ConversationController extends Controller
             });
     }
 
-    private function applyReadableMessagesForUser(Builder|HasMany $query, User $user): void
-    {
+    private function applyReadableMessagesForUser(Builder|HasMany $query, User $user): void{
         $query
             ->where('type', Message::TYPE_SYSTEM)
             ->orWhere(function ($q) use ($user) {

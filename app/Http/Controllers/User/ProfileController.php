@@ -34,8 +34,8 @@ class ProfileController extends Controller
     /**
      * Uuendab kasutaja profiiliandmeid ja avatari.
      */
-    public function update(UpdateProfileRequest $request): RedirectResponse
-    {
+    
+    public function update(UpdateProfileRequest $request): RedirectResponse {
         $user = $request->user();
         $validated = $request->validated();
 

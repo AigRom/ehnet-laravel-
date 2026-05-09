@@ -8,8 +8,6 @@
                 {{ __('Sirvi ja otsi EHNETi kuulutusi.') }}
             </p>
         </div>
-
-        
     </div>
 
     <x-listings.search-bar
@@ -18,11 +16,9 @@
     />
     <x-listings.sort-bar :listings="$listings" />
 
-    {{-- Grid --}}
     @if($listings->count() > 0)
         <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             @foreach($listings as $listing)
-                {{-- Kui sul on olemas card komponent, kasuta seda --}}
                 <x-listings.card :listing="$listing" />
             @endforeach
         </div>

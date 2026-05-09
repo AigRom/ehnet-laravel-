@@ -21,8 +21,7 @@ class ReviewController extends Controller
      * - kasutaja on selle tehingu osapool
      * - sama kasutaja pole sellele tehingule juba tagasisidet jätnud
      */
-    public function store(Request $request, Conversation $conversation, Trade $trade): RedirectResponse
-    {
+    public function store(Request $request, Conversation $conversation, Trade $trade): RedirectResponse {
         abort_unless($trade->conversation_id === $conversation->id, 404);
 
         $user = $request->user();

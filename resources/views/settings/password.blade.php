@@ -1,154 +1,170 @@
 <x-layouts.app.public :title="__('Muuda parooli')">
-    <section class="w-full">
-        <x-settings.heading />
+    @php
+        $primaryButton = 'inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-900 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-emerald-900/20';
 
-        <x-settings.layout
-            :heading="__('Muuda parooli')"
-            :subheading="__('Kasuta oma konto turvalisuse tagamiseks pikka ja juhuslikku parooli.')"
-        >
-            <form
-                method="POST"
-                action="{{ route('user-password.update') }}"
-                class="mt-6 space-y-6"
-                novalidate
+        $labelClass = 'mb-2 block text-sm font-bold text-emerald-950';
+
+        $inputClass = 'block w-full rounded-2xl border border-emerald-950/10 bg-white px-4 py-3 pr-12 text-sm font-medium text-emerald-950 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-900/30 focus:ring-4 focus:ring-emerald-900/10';
+
+        $eyeButtonClass = 'absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-emerald-900 focus:outline-none';
+
+        $helpClass = 'mt-2 text-xs font-medium text-zinc-500';
+
+        $errorClass = 'mt-2 text-sm font-semibold text-red-600';
+    @endphp
+
+    <div class="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+        <section class="w-full">
+            <x-settings.heading />
+
+            <x-settings.layout
+                :heading="__('Muuda parooli')"
+                :subheading="__('Kasuta oma konto turvalisuse tagamiseks pikka ja juhuslikku parooli.')"
             >
-                @csrf
-                @method('PUT')
+                <form
+                    method="POST"
+                    action="{{ route('user-password.update') }}"
+                    class="mt-6 space-y-6"
+                    novalidate
+                >
+                    @csrf
+                    @method('PUT')
 
-                <div x-data="{ showCurrent: false }">
-                    <label for="current_password" class="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {{ __('Praegune parool') }}
-                    </label>
+                    <div x-data="{ showCurrent: false }">
+                        <label for="current_password" class="{{ $labelClass }}">
+                            {{ __('Praegune parool') }}
+                        </label>
 
-                    <div class="relative">
-                        <input
-                            id="current_password"
-                            name="current_password"
-                            type="password"
-                            x-bind:type="showCurrent ? 'text' : 'password'"
-                            required
-                            autocomplete="current-password"
-                            class="block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
-                        >
+                        <div class="relative">
+                            <input
+                                id="current_password"
+                                name="current_password"
+                                type="password"
+                                x-bind:type="showCurrent ? 'text' : 'password'"
+                                required
+                                autocomplete="current-password"
+                                class="{{ $inputClass }}"
+                            >
 
-                        <button
-                            type="button"
-                            x-on:click="showCurrent = !showCurrent"
-                            class="absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            x-bind:aria-label="showCurrent ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                            x-bind:title="showCurrent ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                        >
-                            <template x-if="showCurrent">
-                                <x-icons.eye class="h-5 w-5" />
-                            </template>
+                            <button
+                                type="button"
+                                x-on:click="showCurrent = !showCurrent"
+                                class="{{ $eyeButtonClass }}"
+                                x-bind:aria-label="showCurrent ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                                x-bind:title="showCurrent ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                            >
+                                <template x-if="showCurrent">
+                                    <x-icons.eye class="h-5 w-5" />
+                                </template>
 
-                            <template x-if="!showCurrent">
-                                <x-icons.eye-off class="h-5 w-5" />
-                            </template>
-                        </button>
+                                <template x-if="!showCurrent">
+                                    <x-icons.eye-off class="h-5 w-5" />
+                                </template>
+                            </button>
+                        </div>
+
+                        @error('current_password')
+                            <p class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    @error('current_password')
-                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
+                    <div x-data="{ showPassword: false }">
+                        <label for="password" class="{{ $labelClass }}">
+                            {{ __('Uus parool') }}
+                        </label>
 
-                <div x-data="{ showPassword: false }">
-                    <label for="password" class="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {{ __('Uus parool') }}
-                    </label>
+                        <div class="relative">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                x-bind:type="showPassword ? 'text' : 'password'"
+                                required
+                                autocomplete="new-password"
+                                class="{{ $inputClass }}"
+                            >
 
-                    <div class="relative">
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            x-bind:type="showPassword ? 'text' : 'password'"
-                            required
-                            autocomplete="new-password"
-                            class="block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
-                        >
+                            <button
+                                type="button"
+                                x-on:click="showPassword = !showPassword"
+                                class="{{ $eyeButtonClass }}"
+                                x-bind:aria-label="showPassword ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                                x-bind:title="showPassword ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                            >
+                                <template x-if="showPassword">
+                                    <x-icons.eye class="h-5 w-5" />
+                                </template>
 
-                        <button
-                            type="button"
-                            x-on:click="showPassword = !showPassword"
-                            class="absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            x-bind:aria-label="showPassword ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                            x-bind:title="showPassword ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                        >
-                            <template x-if="showPassword">
-                                <x-icons.eye class="h-5 w-5" />
-                            </template>
+                                <template x-if="!showPassword">
+                                    <x-icons.eye-off class="h-5 w-5" />
+                                </template>
+                            </button>
+                        </div>
 
-                            <template x-if="!showPassword">
-                                <x-icons.eye-off class="h-5 w-5" />
-                            </template>
-                        </button>
-                    </div>
-
-                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        {{ __('Kasuta vähemalt 8 märki ning eelista tugevat ja raskesti äraarvatavat parooli.') }}
-                    </p>
-
-                    @error('password')
-                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div x-data="{ showConfirm: false }">
-                    <label for="password_confirmation" class="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {{ __('Korda uut parooli') }}
-                    </label>
-
-                    <div class="relative">
-                        <input
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            type="password"
-                            x-bind:type="showConfirm ? 'text' : 'password'"
-                            required
-                            autocomplete="new-password"
-                            class="block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
-                        >
-
-                        <button
-                            type="button"
-                            x-on:click="showConfirm = !showConfirm"
-                            class="absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            x-bind:aria-label="showConfirm ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                            x-bind:title="showConfirm ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
-                        >
-                            <template x-if="showConfirm">
-                                <x-icons.eye class="h-5 w-5" />
-                            </template>
-
-                            <template x-if="!showConfirm">
-                                <x-icons.eye-off class="h-5 w-5" />
-                            </template>
-                        </button>
-                    </div>
-
-                    @error('password_confirmation')
-                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <button
-                        type="submit"
-                        data-test="update-password-button"
-                        class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-900/40"
-                    >
-                        {{ __('Salvesta') }}
-                    </button>
-
-                    @if (session('status') === 'password-updated')
-                        <p class="text-sm text-emerald-600 dark:text-emerald-400">
-                            {{ __('Salvestatud.') }}
+                        <p class="{{ $helpClass }}">
+                            {{ __('Kasuta vähemalt 8 märki ning eelista tugevat ja raskesti äraarvatavat parooli.') }}
                         </p>
-                    @endif
-                </div>
-            </form>
-        </x-settings.layout>
-    </section>
+
+                        @error('password')
+                            <p class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div x-data="{ showConfirm: false }">
+                        <label for="password_confirmation" class="{{ $labelClass }}">
+                            {{ __('Korda uut parooli') }}
+                        </label>
+
+                        <div class="relative">
+                            <input
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                type="password"
+                                x-bind:type="showConfirm ? 'text' : 'password'"
+                                required
+                                autocomplete="new-password"
+                                class="{{ $inputClass }}"
+                            >
+
+                            <button
+                                type="button"
+                                x-on:click="showConfirm = !showConfirm"
+                                class="{{ $eyeButtonClass }}"
+                                x-bind:aria-label="showConfirm ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                                x-bind:title="showConfirm ? '{{ __('Peida parool') }}' : '{{ __('Näita parooli') }}'"
+                            >
+                                <template x-if="showConfirm">
+                                    <x-icons.eye class="h-5 w-5" />
+                                </template>
+
+                                <template x-if="!showConfirm">
+                                    <x-icons.eye-off class="h-5 w-5" />
+                                </template>
+                            </button>
+                        </div>
+
+                        @error('password_confirmation')
+                            <p class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <button
+                            type="submit"
+                            data-test="update-password-button"
+                            class="{{ $primaryButton }}"
+                        >
+                            {{ __('Salvesta') }}
+                        </button>
+
+                        @if (session('status') === 'password-updated')
+                            <p class="w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800 ring-1 ring-emerald-900/10">
+                                {{ __('Salvestatud.') }}
+                            </p>
+                        @endif
+                    </div>
+                </form>
+            </x-settings.layout>
+        </section>
+    </div>
 </x-layouts.app.public>
