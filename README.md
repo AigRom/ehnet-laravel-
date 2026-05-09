@@ -4,18 +4,52 @@
 
 Paigalda arvutisse:
 
-- Visual Studio Code
-- Git
-- XAMPP
-- Composer
-- Node.js LTS
+- Visual Studio Code - https://code.visualstudio.com/thank-you?dv=win64user
+- Git - https://git-scm.com/install/windows
+- XAMPP - https://www.apachefriends.org/
+- Composer - https://getcomposer.org/download/  
+  Lae alla `Composer-Setup.exe` ja paigalda Windowsi installeriga. Paigaldamisel vali PHP asukohaks `C:\xampp\php\php.exe`.
+- Node.js LTS - https://nodejs.org/en/download  
+  Lae alla ja paigalda Windowsi installeriga. Node.js paigaldusega tuleb kaasa ka npm.
 
 XAMPP-is käivita:
 
 - Apache
 - MySQL
 
-## 2. Kontrolli, et käsud töötavad
+## 2. Luba PHP GD extension
+
+Projekt kasutab piltide töötlemist, seetõttu peab PHP-s olema lubatud `gd` extension.
+
+Ava fail:
+
+```text
+C:\xampp\php\php.ini
+```
+
+Leia rida:
+
+```ini
+;extension=gd
+```
+
+Eemalda rea algusest semikoolon:
+
+```ini
+extension=gd
+```
+
+Salvesta fail ja taaskäivita XAMPP-is Apache.
+
+Kontrolli PowerShellis:
+
+```powershell
+php -m | findstr gd
+```
+
+Kui kuvatakse `gd`, on extension lubatud.
+
+## 3. Kontrolli, et käsud töötavad
 
 Ava PowerShell ja käivita:
 
@@ -29,7 +63,13 @@ npm -v
 
 Kui `npm` ei tööta, kasuta edaspidi `npm.cmd`.
 
-## 3. Klooni projekt GitHubist
+Näiteks:
+
+```powershell
+npm.cmd -v
+```
+
+## 4. Klooni projekt GitHubist
 
 ```powershell
 cd C:\
@@ -39,7 +79,7 @@ git clone SINU_REPO_LINK
 cd ehnet
 ```
 
-## 4. Ava projekt VS Code’is
+## 5. Ava projekt VS Code’is
 
 ```powershell
 code .
@@ -47,31 +87,31 @@ code .
 
 Kui see ei tööta, ava VS Code käsitsi ja vali kloonitud projekti kaust.
 
-## 5. Paigalda PHP sõltuvused
+## 6. Paigalda PHP sõltuvused
 
 ```powershell
 composer install
 ```
 
-## 6. Paigalda JavaScripti sõltuvused
+## 7. Paigalda JavaScripti sõltuvused
 
 ```powershell
 npm.cmd install
 ```
 
-## 7. Loo `.env` fail
+## 8. Loo `.env` fail
 
 ```powershell
 copy .env.example .env
 ```
 
-## 8. Genereeri rakenduse võti
+## 9. Genereeri rakenduse võti
 
 ```powershell
 php artisan key:generate
 ```
 
-## 9. Loo andmebaas
+## 10. Loo andmebaas
 
 Kui MySQL root kasutajal parooli ei ole:
 
@@ -91,7 +131,7 @@ Andmebaasi nimi:
 ehnet
 ```
 
-## 10. Kontrolli `.env` faili
+## 11. Kontrolli `.env` faili
 
 `.env` failis peavad olema vähemalt järgmised seaded:
 
@@ -124,25 +164,25 @@ Kui MySQL kasutajal on parool, lisa see reale:
 DB_PASSWORD=sinu_parool
 ```
 
-## 11. Loo andmebaasi tabelid ja algandmed
+## 12. Loo andmebaasi tabelid ja algandmed
 
 ```powershell
 php artisan migrate:fresh --seed
 ```
 
-## 12. Loo storage link
+## 13. Loo storage link
 
 ```powershell
 php artisan storage:link
 ```
 
-## 13. Puhasta cache
+## 14. Puhasta cache
 
 ```powershell
 php artisan optimize:clear
 ```
 
-## 14. Käivita frontend
+## 15. Käivita frontend
 
 Ava esimene PowerShelli aken projekti kaustas:
 
@@ -152,7 +192,7 @@ npm.cmd run dev
 
 Jäta see aken avatuks.
 
-## 15. Käivita Laravel server
+## 16. Käivita Laravel server
 
 Ava teine PowerShelli aken projekti kaustas:
 
@@ -166,7 +206,7 @@ Ava brauseris:
 http://127.0.0.1:8000
 ```
 
-## 16. Registreerimislingi leidmine
+## 17. Registreerimislingi leidmine
 
 Kuna e-kirjad salvestatakse logisse, ava fail:
 
@@ -176,7 +216,7 @@ storage/logs/laravel.log
 
 Sealt leiab registreerimise lõpetamise lingi.
 
-## 17. Kasulikud käsud
+## 18. Kasulikud käsud
 
 ```powershell
 php artisan route:list
