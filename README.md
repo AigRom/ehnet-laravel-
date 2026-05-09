@@ -72,7 +72,7 @@ Kui `npm` ei tööta, kasuta edaspidi `npm.cmd`.
 cd C:\
 mkdir Projektid
 cd Projektid
-git clone SINU_REPO_LINK
+git clone https://github.com/AigRom/ehnet-laravel-.git
 cd ehnet
 ```
 
