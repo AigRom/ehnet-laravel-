@@ -17,9 +17,9 @@ XAMPP-is käivita:
 - Apache
 - MySQL
 
-## 2. Luba PHP GD extension
+## 2. Luba vajalikud PHP extensionid
 
-Projekt kasutab piltide töötlemist, seetõttu peab PHP-s olema lubatud `gd` extension.
+Projekt kasutab piltide töötlemist ja Composer vajab pakettide paigaldamiseks ZIP tuge. Seetõttu peavad PHP-s olema lubatud `gd` ja `zip` extensionid.
 
 Ava fail:
 
