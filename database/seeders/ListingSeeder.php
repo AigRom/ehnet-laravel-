@@ -31,135 +31,300 @@ class ListingSeeder extends Seeder
 
         if ($users->isEmpty() || $categories->isEmpty() || $locations->isEmpty()) {
             $this->command->warn('ListingSeeder vajab kasutajaid, kategooriaid ja asukohti.');
-
             return;
         }
 
-        $templates = [
+        $listings = [
             [
-                'title' => 'Üle jäänud puitmaterjal',
-                'description' => 'Ehitusest üle jäänud kuiv ja kasutuskõlblik puitmaterjal. Sobib väiksemateks ehitus- või remonditöödeks.',
-                'price' => 45,
+                'title' => 'Üle jäänud kipsplaadid 12,5 mm',
+                'description' => 'Üle jäänud korralikud kipsplaadid. Plaadid on kuivad ja hoiustatud siseruumis. Pikkus 2,6 m. Saadaval ca 40tk. Hind plaadi kohta.',
+                'price' => 4.50,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'image' => 'kipsplaadid.jpg',
             ],
             [
-                'title' => 'Kasutatud siseuks koos lengiga',
-                'description' => 'Korralik kasutatud siseuks koos lengiga. Esineb väiksemaid kasutusjälgi, kuid sobib taaskasutuseks.',
-                'price' => 35,
+                'title' => 'Fibo 3 plokid',
+                'description' => 'Umbes 35 tükki.',
+                'price' => 20,
+                'intent' => 'sell',
+                'condition' => 'new',
+                'image' => 'fibo.jpg',
+            ],
+            [
+                'title' => 'Puitprussid 50x100',
+                'description' => 'Ehitusest üle jäänud kuivad puitprussid. Sobivad kuuri, terrassi või väiksema karkassi ehituseks.',
+                'price' => 20,
+                'intent' => 'sell',
+                'condition' => 'leftover',
+                'image' => 'puit.jpg',
+            ],
+            [
+                'title' => 'Makita akudrellid',
+                'description' => 'Makita akudrellide komplekt, 2 akut ja laadija. Töökorras.',
+                'price' => 70,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'image' => 'makita.jpg',
             ],
             [
-                'title' => 'Tasuta ära anda ehitusplokid',
-                'description' => 'Väiksem kogus ehitusplokke, mis jäid objektist üle. Tule ise järele.',
+                'title' => 'Kasutatud PVC aknad renoveerimisest',
+                'description' => 'Renoveerimise käigus eemaldatud PVC aknad. Klaaspaketid on terved, raamidel esineb kasutusjälgi. Sobivad kõrvalhoonele, kasvuhoonele või töökojale.',
+                'price' => 50,
+                'intent' => 'sell',
+                'condition' => 'used',
+                'image' => 'aknad2.jpg',
+            ],
+            [
+                'title' => 'Katuse plekkide jäägid',
+                'description' => 'erinevas toonis ja pikkuses katusepleki jääke.',
+                'price' => 40,
+                'intent' => 'sell',
+                'condition' => 'leftover',
+                'image' => 'katuseplekk.jpg',
+            ],
+            [
+                'title' => 'Kivivill 100mm',
+                'description' => 'Ehitusest üle jäänud soojustusvilla pakid. Kivivill 100mm 5 pakki.',
+                'price' => 50,
+                'intent' => 'sell',
+                'condition' => 'new',
+                'image' => 'vill.jpg',
+            ],
+            [
+                'title' => 'Siseuks koos lengidega',
+                'description' => 'Korteri renoveerimisest üle jäänud siseuks koos lengidega. Uks on kasutatud, kuid korralik. Vajavad kerget puhastust.',
+                'price' => 15,
+                'intent' => 'sell',
+                'condition' => 'used',
+                'image' => 'uks.jpg',
+            ],
+            [
+                'title' => 'Ruberoid katusekattematerjal',
+                'description' => 'Rullis 10m, kokku 10 rulli, ca 100m2',
+                'price' => 200,
+                'intent' => 'sell',
+                'condition' => 'new',
+                'image' => 'ruberoid.jpg',
+            ],
+            [
+                'title' => 'Keraamilised seinaplaadid vannituppa',
+                'description' => 'Üle jäänud vannitoa valged seinaplaadid. ca 20m2 Sobivad väiksema vanntoa plaatimiseks.',
+                'price' => null,
+                'intent' => 'sell',
+                'condition' => 'new',
+                'image' => 'seinaplaadid.jpg',
+            ],
+            [
+                'title' => 'Villa jäägid',
+                'description' => 'Suuremas koguses Isover villa jääke, erinevas mõõdus.',
                 'price' => 0,
-                'intent' => 'giveaway',
-                'condition' => 'leftover',
-            ],
-            [
-                'title' => 'Katusepleki jäägid',
-                'description' => 'Erinevas mõõdus katusepleki jäägid. Sobivad kuuri, varjualuse või väiksema projekti jaoks.',
-                'price' => 60,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'image' => 'soojustus.jpg',
             ],
             [
-                'title' => 'Kasutatud aknad',
-                'description' => 'Renoveerimise käigus eemaldatud aknad. Klaasid terved, raamidel kasutusjäljed.',
-                'price' => 80,
-                'intent' => 'sell',
-                'condition' => 'used',
-            ],
-            [
-                'title' => 'Viimistlusmaterjalide jäägid',
-                'description' => 'Erinevad viimistlusmaterjalid: liistud, plaadid ja väiksemad tarvikud. Sobib väiksemaks remondiks.',
+                'title' => 'Kasutatud kivivill',
+                'description' => 'Kasutatud kivivill 100mm. Hoitud kuivas. Tule vii ära.',
                 'price' => null,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'image' => 'villajaagid.jpg',
+            ],
+            [
+                'title' => 'Suured pvc aknad',
+                'description' => 'Kasutatud suured pvc aknad (5 tk), mis sobivad näiteks garaaži või töökoja akendeks. Klaaspaketid terved, raamidel kasutusjälgi.',
+                'price' => 75,
+                'intent' => 'sell',
+                'condition' => 'leftover',
+                'image' => 'aknad.jpg',
+            ],
+            [
+                'title' => 'Kasutatud terrassilauad',
+                'description' => 'Demonteeritud terrassilt pärit lauad.',
+                'price' => 0,
+                'intent' => 'sell',
+                'condition' => 'used',
+                'image' => 'terrassilauad.jpg',
+            ],
+            [
+                'title' => 'Tuuletõkke plaadid',
+                'description' => 'Defektsed kuid kasutuskõlblikud tuuletõkke plaadid. 3 eur/tk, saadaval üle saja. Küsi lisa.',
+                'price' => 3,
+                'intent' => 'sell',
+                'condition' => 'used',
+                'image' => 'tuuletõke.jpg',
+            ],
+
+            // Need 5 jäävad meelega ilma pildita.
+            [
+                'title' => 'Vanad maakivid aia või haljastuse jaoks',
+                'description' => 'Ära anda maakivid, mis jäid krundi korrastamisest üle. Sobivad aiaääriseks, haljastuseks või dekoratiivseks kasutuseks.',
+                'price' => 0,
+                'intent' => 'giveaway',
+                'condition' => 'used',
+                'image' => null,
+            ],
+            [
+                'title' => 'Üle jäänud kuivsegud ja pahtel',
+                'description' => 'Mõned avamata kuivsegu ja pahtli kotid. Säilitatud kuivas ruumis. Sobivad väiksemateks remondi- ja viimistlustöödeks.',
+                'price' => 12,
+                'intent' => 'sell',
+                'condition' => 'leftover',
+                'image' => null,
+            ],
+            [
+                'title' => 'Vihmaveerennide jäägid',
+                'description' => 'Katuseprojektist üle jäänud vihmaveerennide ja kinnituste komplekt. Mõned detailid on mõõtu lõigatud.',
+                'price' => 28,
+                'intent' => 'sell',
+                'condition' => 'leftover',
+                'image' => null,
+            ],
+            [
+                'title' => 'Kasutatud radiaatorid',
+                'description' => 'Küttesüsteemi uuendamise käigus eemaldatud radiaatorid. Töökorras eemaldamise hetkel, vajavad ülevaatust enne paigaldust.',
+                'price' => 45,
+                'intent' => 'sell',
+                'condition' => 'used',
+                'image' => null,
+            ],
+            [
+                'title' => 'Annetada ehitusmaterjale kogukonnaprojektile',
+                'description' => 'Väiksem kogus erinevaid ehitusmaterjale, mida soovime annetada kogukondliku remondiprojekti jaoks. Sisaldab puitu, plaate ja tarvikuid.',
+                'price' => 0,
+                'intent' => 'donate',
+                'condition' => 'leftover',
+                'image' => null,
             ],
         ];
 
-        $counter = 1;
+        foreach ($listings as $item) {
+            $user = $users->random();
 
-        foreach ($users as $user) {
-            for ($i = 0; $i < 3; $i++) {
-                $template = $templates[($counter - 1) % count($templates)];
+            $listing = Listing::query()->create([
+                'user_id' => $user->id,
+                'category_id' => $categories->random()->id,
+                'location_id' => $locations->random()->id,
+                'title' => $item['title'],
+                'description' => $item['description'],
+                'price' => $item['price'],
+                'currency' => 'EUR',
+                'listing_type' => 'sale',
+                'status' => 'published',
+                'published_at' => now()->subDays(rand(1, 35)),
+                'expires_at' => now()->addDays(rand(14, 60)),
+                'intent' => $item['intent'],
+                'condition' => $item['condition'],
+                'delivery_options' => collect([
+                    ['pickup'],
+                    ['pickup', 'agreement'],
+                    ['agreement'],
+                ])->random(),
+                'vat_included' => $user->role === 'business',
+            ]);
 
-                $listing = Listing::query()->create([
-                    'user_id' => $user->id,
-                    'category_id' => $categories->random()->id,
-                    'location_id' => $locations->random()->id,
-                    'title' => $template['title'].' #'.$counter,
-                    'description' => $template['description'],
-                    'price' => $template['price'],
-                    'currency' => 'EUR',
-                    'listing_type' => 'sale',
-                    'status' => 'published',
-                    'published_at' => now()->subDays(rand(1, 20)),
-                    'expires_at' => now()->addDays(rand(14, 60)),
-                    'intent' => $template['intent'],
-                    'condition' => $template['condition'],
-                    'delivery_options' => ['pickup', 'agreement'],
-                    'vat_included' => $user->role === 'business',
-                ]);
-
-                $this->createDemoImage($listing, $counter);
-
-                $counter++;
+            if (! empty($item['image'])) {
+                $this->attachDemoImage($listing, $item['image']);
             }
         }
     }
 
-    private function createDemoImage(Listing $listing, int $number): void
+    private function attachDemoImage(Listing $listing, string $imageName): void
     {
+        $sourcePath = database_path('seeders/demo-images/'.$imageName);
+
+        if (! file_exists($sourcePath)) {
+            $this->command->warn("Demo pilti ei leitud: {$imageName}");
+            return;
+        }
+
         $directory = 'listings/demo/'.$listing->id;
 
         Storage::disk('public')->makeDirectory($directory);
 
-        $filename = 'demo-'.Str::slug($listing->title).'.jpg';
-        $thumbFilename = 'thumb-'.Str::slug($listing->title).'.jpg';
+        $extension = pathinfo($imageName, PATHINFO_EXTENSION);
+        $safeName = Str::slug(pathinfo($imageName, PATHINFO_FILENAME));
+
+        $filename = Str::uuid().'-'.$safeName.'.'.$extension;
+        $thumbFilename = Str::uuid().'-'.$safeName.'-thumb.jpg';
 
         $path = $directory.'/'.$filename;
         $thumbPath = $directory.'/'.$thumbFilename;
 
+        Storage::disk('public')->put($path, file_get_contents($sourcePath));
+
         $fullAbsolutePath = Storage::disk('public')->path($path);
         $thumbAbsolutePath = Storage::disk('public')->path($thumbPath);
 
-        $this->generateImage($fullAbsolutePath, 1200, 800, $listing->title, $number);
-        $this->generateImage($thumbAbsolutePath, 400, 267, $listing->title, $number);
+        $this->createThumbnail($sourcePath, $thumbAbsolutePath, 400, 267);
+
+        [$width, $height] = getimagesize($sourcePath) ?: [null, null];
 
         ListingImage::query()->create([
             'listing_id' => $listing->id,
             'disk' => 'public',
             'path' => $path,
             'thumb_path' => $thumbPath,
-            'mime_type' => 'image/jpeg',
+            'mime_type' => mime_content_type($sourcePath) ?: 'image/jpeg',
             'file_size' => file_exists($fullAbsolutePath) ? filesize($fullAbsolutePath) : null,
-            'width' => 1200,
-            'height' => 800,
+            'width' => $width,
+            'height' => $height,
             'sort_order' => 0,
         ]);
     }
 
-    private function generateImage(string $absolutePath, int $width, int $height, string $title, int $number): void
+    private function createThumbnail(string $sourcePath, string $targetPath, int $targetWidth, int $targetHeight): void
     {
-        $image = imagecreatetruecolor($width, $height);
+        $mime = mime_content_type($sourcePath);
 
-        $background = imagecolorallocate($image, 236, 244, 239);
-        $accent = imagecolorallocate($image, 31, 120, 82);
-        $text = imagecolorallocate($image, 35, 35, 35);
-        $muted = imagecolorallocate($image, 110, 110, 110);
+        $source = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($sourcePath),
+            'image/png' => imagecreatefrompng($sourcePath),
+            'image/webp' => imagecreatefromwebp($sourcePath),
+            default => null,
+        };
 
-        imagefilledrectangle($image, 0, 0, $width, $height, $background);
-        imagefilledrectangle($image, 0, 0, $width, 90, $accent);
+        if (! $source) {
+            return;
+        }
 
-        imagestring($image, 5, 30, 30, 'EHNET demo kuulutus #'.$number, imagecolorallocate($image, 255, 255, 255));
-        imagestring($image, 5, 40, 150, mb_substr($title, 0, 45), $text);
-        imagestring($image, 4, 40, 210, 'Demo-pilt seederiga loodud', $muted);
-        imagestring($image, 4, 40, 250, 'Asenda hiljem päris tootepildiga', $muted);
+        $sourceWidth = imagesx($source);
+        $sourceHeight = imagesy($source);
 
-        imagejpeg($image, $absolutePath, 85);
-        imagedestroy($image);
+        $sourceRatio = $sourceWidth / $sourceHeight;
+        $targetRatio = $targetWidth / $targetHeight;
+
+        if ($sourceRatio > $targetRatio) {
+            $cropHeight = $sourceHeight;
+            $cropWidth = (int) ($sourceHeight * $targetRatio);
+            $cropX = (int) (($sourceWidth - $cropWidth) / 2);
+            $cropY = 0;
+        } else {
+            $cropWidth = $sourceWidth;
+            $cropHeight = (int) ($sourceWidth / $targetRatio);
+            $cropX = 0;
+            $cropY = (int) (($sourceHeight - $cropHeight) / 2);
+        }
+
+        $thumb = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        imagecopyresampled(
+            $thumb,
+            $source,
+            0,
+            0,
+            $cropX,
+            $cropY,
+            $targetWidth,
+            $targetHeight,
+            $cropWidth,
+            $cropHeight
+        );
+
+        imagejpeg($thumb, $targetPath, 85);
+
+        imagedestroy($source);
+        imagedestroy($thumb);
     }
 }
