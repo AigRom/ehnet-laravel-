@@ -26,6 +26,13 @@
     $deliveryLabels = $listing->deliveryOptionsLabels() ?? [];
     $priceText = method_exists($listing, 'priceLabel') ? $listing->priceLabel() : 'Kokkuleppel';
 
+    $hasPrice = !is_null($listing->price ?? null);
+    $vatIncluded = $hasPrice
+        && (float) $listing->price > 0
+        && (bool) ($listing->vat_included ?? false);
+
+    $vatText = $vatIncluded ? __('Hind sisaldab käibemaksu') : '';
+
     $deliveryHtml = '—';
 
     if (!empty($deliveryLabels)) {
@@ -170,12 +177,21 @@
                         </div>
                     </div>
 
-                    <div class="flex items-end justify-between gap-3">
+                    <div class="flex items-start justify-between gap-3">
                         <div class="text-xs uppercase tracking-wide text-zinc-500">
                             {{ __('Hind') }}
                         </div>
-                        <div class="text-lg font-semibold text-zinc-900">
-                            {{ $priceText }}
+
+                        <div class="text-right">
+                            <div class="text-lg font-semibold text-zinc-900">
+                                {{ $priceText }}
+                            </div>
+
+                            @if($vatText)
+                                <div class="mt-1 text-xs font-medium text-zinc-500">
+                                    {{ $vatText }}
+                                </div>
+                            @endif
                         </div>
                     </div>
 
