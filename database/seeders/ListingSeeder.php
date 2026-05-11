@@ -27,6 +27,8 @@ class ListingSeeder extends Seeder
             ->get();
 
         $categories = Category::query()->get();
+        $categoriesBySlug = $categories->keyBy('slug');
+
         $locations = Location::query()->get();
 
         if ($users->isEmpty() || $categories->isEmpty() || $locations->isEmpty()) {
@@ -41,6 +43,7 @@ class ListingSeeder extends Seeder
                 'price' => 4.50,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'ehitusplaadid',
                 'image' => 'kipsplaadid.jpg',
             ],
             [
@@ -49,6 +52,7 @@ class ListingSeeder extends Seeder
                 'price' => 20,
                 'intent' => 'sell',
                 'condition' => 'new',
+                'category_slug' => 'tellised-ja-plokid',
                 'image' => 'fibo.jpg',
             ],
             [
@@ -57,6 +61,7 @@ class ListingSeeder extends Seeder
                 'price' => 20,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'puitmaterjalid',
                 'image' => 'puit.jpg',
             ],
             [
@@ -65,6 +70,7 @@ class ListingSeeder extends Seeder
                 'price' => 70,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'category_slug' => 'tooriistad',
                 'image' => 'makita.jpg',
             ],
             [
@@ -73,14 +79,16 @@ class ListingSeeder extends Seeder
                 'price' => 50,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'category_slug' => 'aknad-ja-uksed',
                 'image' => 'aknad2.jpg',
             ],
             [
                 'title' => 'Katuse plekkide jäägid',
-                'description' => 'erinevas toonis ja pikkuses katusepleki jääke.',
+                'description' => 'Erinevas toonis ja pikkuses katusepleki jääke.',
                 'price' => 40,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'katusematerjalid',
                 'image' => 'katuseplekk.jpg',
             ],
             [
@@ -89,6 +97,7 @@ class ListingSeeder extends Seeder
                 'price' => 50,
                 'intent' => 'sell',
                 'condition' => 'new',
+                'category_slug' => 'soojustusmaterjalid',
                 'image' => 'vill.jpg',
             ],
             [
@@ -97,22 +106,25 @@ class ListingSeeder extends Seeder
                 'price' => 15,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'category_slug' => 'aknad-ja-uksed',
                 'image' => 'uks.jpg',
             ],
             [
                 'title' => 'Ruberoid katusekattematerjal',
-                'description' => 'Rullis 10m, kokku 10 rulli, ca 100m2',
+                'description' => 'Rullis 10m, kokku 10 rulli, ca 100m2.',
                 'price' => 200,
                 'intent' => 'sell',
                 'condition' => 'new',
+                'category_slug' => 'katusematerjalid',
                 'image' => 'ruberoid.jpg',
             ],
             [
                 'title' => 'Keraamilised seinaplaadid vannituppa',
-                'description' => 'Üle jäänud vannitoa valged seinaplaadid. ca 20m2 Sobivad väiksema vanntoa plaatimiseks.',
+                'description' => 'Üle jäänud vannitoa valged seinaplaadid. ca 20m2. Sobivad väiksema vannitoa plaatimiseks.',
                 'price' => null,
                 'intent' => 'sell',
                 'condition' => 'new',
+                'category_slug' => 'viimistlusmaterjalid',
                 'image' => 'seinaplaadid.jpg',
             ],
             [
@@ -121,6 +133,7 @@ class ListingSeeder extends Seeder
                 'price' => 0,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'soojustusmaterjalid',
                 'image' => 'soojustus.jpg',
             ],
             [
@@ -129,14 +142,16 @@ class ListingSeeder extends Seeder
                 'price' => null,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'soojustusmaterjalid',
                 'image' => 'villajaagid.jpg',
             ],
             [
-                'title' => 'Suured pvc aknad',
-                'description' => 'Kasutatud suured pvc aknad (5 tk), mis sobivad näiteks garaaži või töökoja akendeks. Klaaspaketid terved, raamidel kasutusjälgi.',
+                'title' => 'Suured PVC aknad',
+                'description' => 'Kasutatud suured PVC aknad (5 tk), mis sobivad näiteks garaaži või töökoja akendeks. Klaaspaketid terved, raamidel kasutusjälgi.',
                 'price' => 75,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'aknad-ja-uksed',
                 'image' => 'aknad.jpg',
             ],
             [
@@ -145,6 +160,7 @@ class ListingSeeder extends Seeder
                 'price' => 0,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'category_slug' => 'puitmaterjalid',
                 'image' => 'terrassilauad.jpg',
             ],
             [
@@ -153,7 +169,8 @@ class ListingSeeder extends Seeder
                 'price' => 3,
                 'intent' => 'sell',
                 'condition' => 'used',
-                'image' => 'tuuletõke.jpg',
+                'category_slug' => 'ehitusplaadid',
+                'image' => 'tuuletoke.jpg',
             ],
 
             // Need 5 jäävad meelega ilma pildita.
@@ -163,6 +180,7 @@ class ListingSeeder extends Seeder
                 'price' => 0,
                 'intent' => 'giveaway',
                 'condition' => 'used',
+                'category_slug' => 'muu',
                 'image' => null,
             ],
             [
@@ -171,6 +189,7 @@ class ListingSeeder extends Seeder
                 'price' => 12,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'segud-ja-mordid',
                 'image' => null,
             ],
             [
@@ -179,6 +198,7 @@ class ListingSeeder extends Seeder
                 'price' => 28,
                 'intent' => 'sell',
                 'condition' => 'leftover',
+                'category_slug' => 'katusematerjalid',
                 'image' => null,
             ],
             [
@@ -187,6 +207,7 @@ class ListingSeeder extends Seeder
                 'price' => 45,
                 'intent' => 'sell',
                 'condition' => 'used',
+                'category_slug' => 'sanitaartehnika',
                 'image' => null,
             ],
             [
@@ -195,6 +216,7 @@ class ListingSeeder extends Seeder
                 'price' => 0,
                 'intent' => 'donate',
                 'condition' => 'leftover',
+                'category_slug' => 'muu',
                 'image' => null,
             ],
         ];
@@ -202,9 +224,16 @@ class ListingSeeder extends Seeder
         foreach ($listings as $item) {
             $user = $users->random();
 
+            $category = $categoriesBySlug->get($item['category_slug']);
+
+            if (! $category) {
+                $this->command->warn("Kategooriat ei leitud: {$item['category_slug']} ({$item['title']})");
+                continue;
+            }
+
             $listing = Listing::query()->create([
                 'user_id' => $user->id,
-                'category_id' => $categories->random()->id,
+                'category_id' => $category->id,
                 'location_id' => $locations->random()->id,
                 'title' => $item['title'],
                 'description' => $item['description'],
@@ -239,18 +268,24 @@ class ListingSeeder extends Seeder
             return;
         }
 
-        $directory = 'listings/demo/'.$listing->id;
+        $monthPath = now()->format('Y/m');
 
-        Storage::disk('public')->makeDirectory($directory);
+        $largeDirectory = 'listings/large/'.$monthPath;
+        $thumbDirectory = 'listings/thumb/'.$monthPath;
 
-        $extension = pathinfo($imageName, PATHINFO_EXTENSION);
+        Storage::disk('public')->makeDirectory($largeDirectory);
+        Storage::disk('public')->makeDirectory($thumbDirectory);
+
+        $extension = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
         $safeName = Str::slug(pathinfo($imageName, PATHINFO_FILENAME));
 
-        $filename = Str::uuid().'-'.$safeName.'.'.$extension;
-        $thumbFilename = Str::uuid().'-'.$safeName.'-thumb.jpg';
+        $baseFilename = Str::uuid().'-'.$safeName;
 
-        $path = $directory.'/'.$filename;
-        $thumbPath = $directory.'/'.$thumbFilename;
+        $filename = $baseFilename.'.'.$extension;
+        $thumbFilename = $baseFilename.'-thumb.jpg';
+
+        $path = $largeDirectory.'/'.$filename;
+        $thumbPath = $thumbDirectory.'/'.$thumbFilename;
 
         Storage::disk('public')->put($path, file_get_contents($sourcePath));
 
@@ -286,6 +321,7 @@ class ListingSeeder extends Seeder
         };
 
         if (! $source) {
+            $this->command->warn("Thumbnaili ei saanud luua: {$sourcePath}");
             return;
         }
 

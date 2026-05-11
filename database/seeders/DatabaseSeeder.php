@@ -3,13 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->cleanPublicUploads();
+        $this->cleanListingUploads();
 
         $this->call([
             LocationSeeder::class,
@@ -19,20 +19,19 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 
-    private function cleanPublicUploads(): void
+    private function cleanListingUploads(): void
     {
         if (! app()->environment('local')) {
             return;
         }
 
-        foreach (['avatars', 'listings', 'messages'] as $directory) {
-            $path = public_path($directory);
-
-            if (File::exists($path)) {
-                File::deleteDirectory($path);
-            }
-
-            File::makeDirectory($path, 0755, true, true);
+        foreach ([
+            'listings/demo',
+            'listings/large',
+            'listings/thumb',
+        ] as $directory) {
+            Storage::disk('public')->deleteDirectory($directory);
+            Storage::disk('public')->makeDirectory($directory);
         }
     }
 }
