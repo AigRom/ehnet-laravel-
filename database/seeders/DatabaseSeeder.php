@@ -26,7 +26,6 @@ class DatabaseSeeder extends Seeder
         }
 
         foreach ([
-            'listings/demo',
             'listings/large',
             'listings/thumb',
         ] as $directory) {

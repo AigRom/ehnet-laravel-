@@ -70,7 +70,6 @@ Route::post('/logout', function (Request $request) {
 })->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
-
     Route::redirect('/settings', '/settings/profile');
 
     Route::get('/settings/profile', [ProfileController::class, 'edit'])
@@ -97,9 +96,11 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/', [UserListingController::class, 'store'])
             ->name('listings.store');
+
         Route::post('/{listing}/open-conversation', [ConversationController::class, 'openFromListing'])
             ->whereNumber('listing')
             ->name('listings.conversation.open');
+
         Route::post('/{listing}/buy-intent', [TradeController::class, 'expressInterestFromListing'])
             ->whereNumber('listing')
             ->name('listings.buy-intent');
@@ -108,6 +109,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages', [ConversationController::class, 'index'])
         ->name('messages.index');
 
+    Route::get('/messages/unread-count', [ConversationController::class, 'unreadCount'])
+        ->name('messages.unread-count');
+
     Route::get('/messages/{conversation}', [ConversationController::class, 'show'])
         ->whereNumber('conversation')
         ->name('messages.show');
@@ -115,6 +119,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages/{conversation}/listing', [ConversationController::class, 'showListing'])
         ->whereNumber('conversation')
         ->name('messages.listing.show');
+
+    Route::get('/messages/{conversation}/poll', [ConversationController::class, 'poll'])
+        ->whereNumber('conversation')
+        ->name('messages.poll');
+
+    Route::patch('/messages/{conversation}/mark-read', [ConversationController::class, 'markRead'])
+        ->whereNumber('conversation')
+        ->name('messages.mark-read');
 
     Route::post('/messages/{conversation}', [MessageController::class, 'storeInConversation'])
         ->whereNumber('conversation')
@@ -222,5 +234,4 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/my/reviews', [UserReviewController::class, 'received'])
         ->name('reviews.received');
-
 });

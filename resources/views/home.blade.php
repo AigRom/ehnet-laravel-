@@ -1,6 +1,11 @@
 <x-layouts.app.public :title="'EHNET'" :container="false">
     <div class="space-y-12">
-        <x-home.hero :categories="$categories" />
+        <x-home.hero
+            :categories="$categories"
+            :users-count="$usersCount"
+            :listings-count="$listingsCount"
+            :saved-co2="$savedCo2"
+        />
 
         <div class="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <x-home.featured-grid :listings="$featured" />

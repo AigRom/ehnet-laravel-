@@ -13,6 +13,10 @@
     $loginUrl = route('login', ['redirect' => $authRedirect]);
     $registerUrl = route('register', ['redirect' => $authRedirect]);
 
+    $messagesUnreadUrl = auth()->check()
+        ? route('messages.unread-count')
+        : null;
+
     $navLink = 'inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 text-base font-semibold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800';
     $primaryNavLink = 'inline-flex items-center gap-2.5 rounded-2xl bg-emerald-900 px-5 py-3 text-base font-semibold text-white shadow-sm shadow-emerald-950/20 transition hover:bg-emerald-800 hover:shadow-md';
     $mobileLink = 'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-50';
@@ -26,6 +30,9 @@
 
 <header
     x-data="{ mobileOpen: false, userOpen: false, mobileUserOpen: false }"
+    @if($messagesUnreadUrl)
+        data-messages-unread-url="{{ $messagesUnreadUrl }}"
+    @endif
     class="sticky top-0 z-50 w-full border-b border-emerald-950/10 bg-gradient-to-b from-white/95 to-white/85 shadow-sm backdrop-blur-xl"
 >
     <div class="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
@@ -51,11 +58,14 @@
                         <span class="relative">
                             <x-icons.chat-bubble class="{{ $iconClass }}" />
 
-                            @if(($unreadConversationsCount ?? 0) > 0)
-                                <span class="absolute -right-2 -top-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white">
-                                    {{ $unreadConversationsCount > 99 ? '99+' : $unreadConversationsCount }}
+                            <span
+                                data-unread-badge
+                                class="{{ ($unreadConversationsCount ?? 0) > 0 ? 'inline-flex' : 'hidden' }} absolute -right-2 -top-2 min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white"
+                            >
+                                <span data-unread-count>
+                                    {{ ($unreadConversationsCount ?? 0) > 99 ? '99+' : ($unreadConversationsCount ?? 0) }}
                                 </span>
-                            @endif
+                            </span>
                         </span>
 
                         <span>{{ __('Sõnumid') }}</span>
@@ -170,11 +180,14 @@
                         <span>{{ __('Sõnumid') }}</span>
                     </span>
 
-                    @if(($unreadConversationsCount ?? 0) > 0)
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                            {{ $unreadConversationsCount > 99 ? '99+' : $unreadConversationsCount }}
+                    <span
+                        data-unread-badge
+                        class="{{ ($unreadConversationsCount ?? 0) > 0 ? 'inline-flex' : 'hidden' }} min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                    >
+                        <span data-unread-count>
+                            {{ ($unreadConversationsCount ?? 0) > 99 ? '99+' : ($unreadConversationsCount ?? 0) }}
                         </span>
-                    @endif
+                    </span>
                 </a>
 
                 <div class="mt-3 overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">

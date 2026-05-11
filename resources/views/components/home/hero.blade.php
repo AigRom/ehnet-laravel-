@@ -1,8 +1,8 @@
 @props([
     'categories',
-    'usersCount' => 12458,
-    'listingsCount' => 4231,
-    'savedCo2' => '2 341 t',
+    'usersCount' => 0,
+    'listingsCount' => 0,
+    'savedCo2' => '0 kg',
 ])
 
 <section class="relative overflow-hidden bg-gradient-to-br from-white via-emerald-50/40 to-lime-50/70">

@@ -50,6 +50,9 @@
 
 <a
     href="{{ route('messages.show', $conversation) }}"
+    data-conversation-list-item
+    data-conversation-id="{{ $conversation->id }}"
+    data-active="{{ $active ? '1' : '0' }}"
     @if($active) aria-current="page" @endif
     class="group block rounded-2xl border p-2.5 transition sm:p-3 {{ $cardClasses }}"
 >
@@ -73,7 +76,10 @@
         <div class="min-w-0 flex-1">
             <div class="flex min-w-0 items-start gap-2">
                 <div class="min-w-0 flex-1">
-                    <div class="min-w-0 truncate text-sm font-extrabold leading-5 sm:text-[15px] {{ $titleClasses }}">
+                    <div
+                        data-conversation-title
+                        class="min-w-0 truncate text-sm font-extrabold leading-5 sm:text-[15px] {{ $titleClasses }}"
+                    >
                         {{ $listing->title ?? __('Kuulutus') }}
                     </div>
 
@@ -101,20 +107,27 @@
                         @endif
                     </div>
 
-                    @if($hasUnread)
-                        <div class="whitespace-nowrap text-[11px] font-extrabold text-red-600 sm:text-xs">
-                            {{ __('Lugemata sõnum') }}
-                        </div>
-                    @endif
+                    <div
+                        data-conversation-unread-label
+                        class="{{ $hasUnread ? '' : 'hidden' }} whitespace-nowrap text-[11px] font-extrabold text-red-600 sm:text-xs"
+                    >
+                        {{ __('Lugemata sõnum') }}
+                    </div>
                 </div>
             </div>
 
             @if($previewText)
-                <div class="mt-1.5 truncate text-sm leading-5 {{ $previewClasses }}">
+                <div
+                    data-conversation-preview
+                    class="mt-1.5 truncate text-sm leading-5 {{ $previewClasses }}"
+                >
                     {{ $previewText }}
                 </div>
             @else
-                <div class="mt-1.5 truncate text-sm font-medium leading-5 text-zinc-400">
+                <div
+                    data-conversation-preview
+                    class="mt-1.5 truncate text-sm font-medium leading-5 text-zinc-400"
+                >
                     {{ __('Sõnumeid pole veel') }}
                 </div>
             @endif

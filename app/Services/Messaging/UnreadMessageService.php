@@ -9,7 +9,13 @@ class UnreadMessageService
 {
     public function unreadConversationsCountFor(User $user): int
     {
+        return count($this->unreadCountsByConversationFor($user));
+    }
+
+    public function unreadCountsByConversationFor(User $user): array
+    {
         return Message::query()
+            ->selectRaw('conversation_id, COUNT(*) as unread_count')
             ->where(function ($query) use ($user) {
                 $query
                     ->where(function ($sellerQuery) use ($user) {
@@ -39,7 +45,9 @@ class UnreadMessageService
                             ->where('sender_id', '!=', $user->id);
                     });
             })
-            ->distinct()
-            ->count('conversation_id');
+            ->groupBy('conversation_id')
+            ->pluck('unread_count', 'conversation_id')
+            ->map(fn ($count) => (int) $count)
+            ->all();
     }
 }

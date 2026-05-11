@@ -7,8 +7,10 @@ use App\Models\Conversation;
 use App\Models\Listing;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\Messaging\UnreadMessageService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,6 +29,21 @@ class ConversationController extends Controller
         ]);
     }
 
+    public function unreadCount(
+        Request $request,
+        UnreadMessageService $unreadMessageService
+    ): JsonResponse {
+        $countsByConversation = $unreadMessageService
+            ->unreadCountsByConversationFor($request->user());
+
+        return response()
+            ->json([
+                'count' => count($countsByConversation),
+                'conversations' => $countsByConversation,
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
     public function show(Request $request, Conversation $conversation): View
     {
         $user = $request->user();
@@ -34,16 +51,7 @@ class ConversationController extends Controller
         abort_unless($conversation->hasParticipant($user), 404);
         abort_if($conversation->isHiddenFor($user), 404);
 
-        $readColumn = $conversation->readColumnFor($user);
-
-        $conversation->messages()
-            ->whereNull($readColumn)
-            ->where(function ($query) use ($user) {
-                $this->applyReadableMessagesForUser($query, $user);
-            })
-            ->update([
-                $readColumn => now(),
-            ]);
+        $this->markReadableMessagesAsRead($conversation, $user);
 
         $conversation->load([
             'listing',
@@ -61,6 +69,64 @@ class ConversationController extends Controller
             'conversation' => $conversation,
             'conversations' => $this->visibleConversationsQuery($user)->get(),
         ]);
+    }
+
+    public function poll(Request $request, Conversation $conversation): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($conversation->hasParticipant($user), 404);
+        abort_if($conversation->isHiddenFor($user), 404);
+
+        $afterId = (int) $request->integer('after_id', 0);
+
+        $messages = $conversation->messages()
+            ->with([
+                'sender:id,name,avatar_path',
+                'attachments',
+            ])
+            ->where('id', '>', $afterId)
+            ->reorder()
+            ->orderBy('id')
+            ->limit(50)
+            ->get();
+
+        if ($messages->isNotEmpty()) {
+            $this->markMessagesAsRead($conversation, $user, $messages->pluck('id')->all());
+        }
+
+        return response()
+            ->json([
+                'messages' => $messages
+                    ->map(function (Message $message) {
+                        return [
+                            'id' => $message->id,
+                            'html' => view('components.messaging.chat-message', [
+                                'message' => $message,
+                            ])->render(),
+                        ];
+                    })
+                    ->values(),
+
+                'last_message_id' => $messages->last()?->id ?? $afterId,
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    public function markRead(Request $request, Conversation $conversation): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($conversation->hasParticipant($user), 404);
+        abort_if($conversation->isHiddenFor($user), 404);
+
+        $this->markReadableMessagesAsRead($conversation, $user);
+
+        return response()
+            ->json([
+                'ok' => true,
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     public function showListing(Request $request, Conversation $conversation): View
@@ -192,6 +258,39 @@ class ConversationController extends Controller
                 });
             })
             ->latest('updated_at');
+    }
+
+    private function markReadableMessagesAsRead(Conversation $conversation, User $user): void
+    {
+        $readColumn = $conversation->readColumnFor($user);
+
+        $conversation->messages()
+            ->whereNull($readColumn)
+            ->where(function ($query) use ($user) {
+                $this->applyReadableMessagesForUser($query, $user);
+            })
+            ->update([
+                $readColumn => now(),
+            ]);
+    }
+
+    private function markMessagesAsRead(Conversation $conversation, User $user, array $messageIds): void
+    {
+        if (empty($messageIds)) {
+            return;
+        }
+
+        $readColumn = $conversation->readColumnFor($user);
+
+        $conversation->messages()
+            ->whereIn('id', $messageIds)
+            ->whereNull($readColumn)
+            ->where(function ($query) use ($user) {
+                $this->applyReadableMessagesForUser($query, $user);
+            })
+            ->update([
+                $readColumn => now(),
+            ]);
     }
 
     private function applyUnreadMessagesForUser(Builder|HasMany $query, User $user): void
