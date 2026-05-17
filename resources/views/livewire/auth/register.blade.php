@@ -128,6 +128,7 @@
                                 type="checkbox"
                                 name="terms"
                                 value="1"
+                                required
                                 @checked(old('terms'))
                                 class="mt-1 h-5 w-5 rounded border-zinc-300 text-emerald-900 focus:ring-emerald-900 dark:border-zinc-700 dark:bg-zinc-900"
                             >
@@ -137,20 +138,24 @@
 
                                 <a
                                     href="{{ route('terms') }}"
-                                    wire:navigate
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     class="font-bold text-emerald-900 underline underline-offset-2 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
                                 >
                                     {{ __('kasutustingimustega') }}
+                                 
                                 </a>
 
                                 {{ __('ja') }}
 
                                 <a
                                     href="{{ route('privacy') }}"
-                                    wire:navigate
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     class="font-bold text-emerald-900 underline underline-offset-2 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
                                 >
                                     {{ __('privaatsuspoliitikaga') }}
+    
                                 </a>
                             </span>
                         </label>

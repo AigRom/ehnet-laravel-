@@ -7,6 +7,7 @@ use App\Http\Requests\CompleteRegistrationRequest;
 use App\Mail\CompleteRegistrationMail;
 use App\Models\PendingRegistration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -18,7 +19,6 @@ class EmailRegistrationController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'terms' => ['accepted', 'required'],
-
         ]);
 
         $token = Str::random(64);
@@ -93,7 +93,6 @@ class EmailRegistrationController extends Controller
             'contact_last_name' => $data['contact_last_name'] ?? null,
             'password' => $data['password'],
             'password_confirmation' => $request->input('password_confirmation'),
-
             'terms' => true,
         ];
 
@@ -102,6 +101,18 @@ class EmailRegistrationController extends Controller
         $pending->delete();
 
         auth()->login($user);
+
+        Cookie::queue(cookie(
+            name: 'ehnet_last_auth_user_id',
+            value: (string) $user->id,
+            minutes: 60 * 24 * 30,
+            path: '/',
+            domain: null,
+            secure: null,
+            httpOnly: true,
+            raw: false,
+            sameSite: 'lax'
+        ));
 
         return redirect()->route('dashboard');
     }

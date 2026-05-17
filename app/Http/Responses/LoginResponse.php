@@ -6,16 +6,40 @@ use App\Models\Listing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Illuminate\Support\Facades\Cookie;
 
 class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request): RedirectResponse
     {
+        $currentUserId = $request->user()?->id;
+        $previousUserId = $request->cookie('ehnet_last_auth_user_id');
+
+        $isDifferentUser = $previousUserId
+            && $currentUserId
+            && (int) $previousUserId !== (int) $currentUserId;
+
+        Cookie::queue(cookie(
+            name: 'ehnet_last_auth_user_id',
+            value: (string) $currentUserId,
+            minutes: 60 * 24 * 30,
+            path: '/',
+            domain: null,
+            secure: null,
+            httpOnly: true,
+            raw: false,
+            sameSite: 'lax'
+        ));
+
+        $request->session()->forget('url.intended');
+
+        if ($isDifferentUser) {
+            return redirect()->route('home');
+        }
+
         $redirect = $this->safeRedirect($request->input('redirect'), $request)
             ?? $this->safeRedirect($request->session()->pull('url.intended'), $request)
             ?? route('home');
-
-        $request->session()->forget('url.intended');
 
         return redirect()->to($redirect);
     }
