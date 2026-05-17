@@ -37,6 +37,14 @@
             ->first();
     }
 
+    $reservedConversationAction = $reservedTrade?->conversation_id
+        ? route('messages.show', $reservedTrade->conversation_id)
+        : null;
+
+    $sellerReservedConversationAction = $isSeller && $isReserved
+        ? $reservedConversationAction
+        : null;
+
     $messageAction = $existingConversation
         ? route('messages.show', $existingConversation)
         : route('listings.conversation.open', $listing);
@@ -47,23 +55,12 @@
 
     $buyIntentAction = route('listings.buy-intent', $listing);
 
-
-
-
     $currentRelativeUrl = request()->getRequestUri();
 
     $editAction = route('listings.mine.edit', [
         'listing' => $listing,
         'return_to' => $currentRelativeUrl,
     ]);
-
-    $completeTradeAction = $reservedTrade
-        ? route('messages.complete', $reservedTrade->conversation_id)
-        : null;
-
-    $cancelTradeAction = $reservedTrade
-        ? route('messages.trades.cancel', [$reservedTrade->conversation_id, $reservedTrade])
-        : null;
 
     $loginAction = route('login', [
         'redirect' => $currentRelativeUrl,
@@ -74,8 +71,6 @@
     $darkButton = 'inline-flex w-full items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-zinc-950/15 transition hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-zinc-900/15';
 
     $secondaryButton = 'inline-flex w-full items-center justify-center rounded-2xl border border-emerald-950/10 bg-white px-5 py-3.5 text-sm font-bold text-emerald-950 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-900/10';
-
-    $warningButton = 'inline-flex w-full items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3.5 text-sm font-bold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-200/60';
 @endphp
 
 <div class="space-y-4">
@@ -128,32 +123,17 @@
                 </a>
             @endif
 
-            @if($isReserved && $completeTradeAction && $cancelTradeAction)
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <form method="POST" action="{{ $completeTradeAction }}">
-                        @csrf
-                        @method('PATCH')
+            @if($sellerReservedConversationAction)
+                <a
+                    href="{{ $sellerReservedConversationAction }}"
+                    class="{{ $primaryButton }}"
+                >
+                    {{ __('Ava vestlus') }}
+                </a>
 
-                        <button
-                            type="submit"
-                            class="{{ $primaryButton }}"
-                        >
-                            {{ __('Märgi üleantuks') }}
-                        </button>
-                    </form>
-
-                    <form method="POST" action="{{ $cancelTradeAction }}">
-                        @csrf
-                        @method('PATCH')
-
-                        <button
-                            type="submit"
-                            class="{{ $warningButton }}"
-                        >
-                            {{ __('Tühista broneering') }}
-                        </button>
-                    </form>
-                </div>
+                <p class="text-center text-xs font-medium text-zinc-500">
+                    {{ __('Broneeringu tühistamine ja üleantuks märkimine toimub vestluse vaates.') }}
+                </p>
             @endif
         @else
             @auth

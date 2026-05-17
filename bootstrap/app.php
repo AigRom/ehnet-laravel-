@@ -27,44 +27,69 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $safeRedirect = function (?string $url) use ($request): ?string {
-                if (! $url) {
+                if (! is_string($url) || trim($url) === '') {
                     return null;
                 }
 
-                if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
-                    return $url;
+                $url = trim($url);
+
+                if (str_starts_with($url, '//')) {
+                    return null;
                 }
 
-                $host = parse_url($url, PHP_URL_HOST);
+                if (str_starts_with($url, '/')) {
+                    $path = parse_url($url, PHP_URL_PATH) ?: '/';
+                    $query = parse_url($url, PHP_URL_QUERY);
+                } else {
+                    $host = parse_url($url, PHP_URL_HOST);
 
-                if ($host && $host === $request->getHost()) {
-                    return $url;
+                    if (! $host || $host !== $request->getHost()) {
+                        return null;
+                    }
+
+                    $path = parse_url($url, PHP_URL_PATH) ?: '/';
+                    $query = parse_url($url, PHP_URL_QUERY);
                 }
 
-                return null;
+                $path = '/'.ltrim($path, '/');
+                $cleanPath = trim($path, '/');
+
+                $blockedPrefixes = [
+                    'login',
+                    'logout',
+                    'register',
+                    'register/complete',
+                    'forgot-password',
+                    'reset-password',
+                    'email/verify',
+                    'user/confirm-password',
+                ];
+
+                foreach ($blockedPrefixes as $blockedPrefix) {
+                    if ($cleanPath === $blockedPrefix || str_starts_with($cleanPath, $blockedPrefix.'/')) {
+                        return null;
+                    }
+                }
+
+                return $query ? $path.'?'.$query : $path;
             };
 
             $redirectTo = $safeRedirect($request->headers->get('referer'));
 
-            if (! $redirectTo) {
-                $redirectTo = route('home');
-            }
-
-            $path = parse_url($redirectTo, PHP_URL_PATH);
-            $cleanPath = trim((string) $path, '/');
-
-            if (in_array($cleanPath, ['login', 'logout'], true)) {
-                $redirectTo = route('home');
-            }
-
             if (auth()->check()) {
                 return redirect()
-                    ->to($redirectTo)
-                    ->with('status', 'Sessioon uuendati. Palun proovi tegevust uuesti.');
+                    ->to($redirectTo ?? route('home'))
+                    ->with('status', 'Sessioon aegus. Palun proovi tegevust uuesti.');
+            }
+
+            if ($redirectTo) {
+                return redirect()
+                    ->route('login', ['redirect' => $redirectTo])
+                    ->with('status', 'Sessioon aegus. Palun logi uuesti sisse.');
             }
 
             return redirect()
-                ->route('login', ['redirect' => $redirectTo])
+                ->route('login')
                 ->with('status', 'Sessioon aegus. Palun logi uuesti sisse.');
         });
     })

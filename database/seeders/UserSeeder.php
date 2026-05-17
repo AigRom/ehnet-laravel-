@@ -77,6 +77,10 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
+            $user['phone'] = isset($user['phone'])
+                ? preg_replace('/\D+/', '', $user['phone'])
+                : null;
+
             User::updateOrCreate(
                 ['email' => $user['email']],
                 array_merge([

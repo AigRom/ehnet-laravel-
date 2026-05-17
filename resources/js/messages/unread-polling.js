@@ -1,7 +1,9 @@
 const UNREAD_POLL_INTERVAL_MS = 5000;
 const UNREAD_POLL_TIMEOUT_MS = 8000;
+const USER_IDLE_LIMIT_MS = 30 * 1000; // testimiseks 30 sekundit; tootmises nt 10 * 60 * 1000
 
 let lastUnreadCount = null;
+let lastUserActivityAt = Date.now();
 
 const unreadCardClasses = [
     'border-emerald-900/20',
@@ -19,6 +21,22 @@ const readCardClasses = [
     'hover:bg-white',
     'hover:shadow-md',
 ];
+
+function markUserActive() {
+    lastUserActivityAt = Date.now();
+}
+
+function userIsRecentlyActive() {
+    return Date.now() - lastUserActivityAt < USER_IDLE_LIMIT_MS;
+}
+
+['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+    window.addEventListener(eventName, markUserActive, { passive: true });
+});
+
+function loginRedirectUrl() {
+    return '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+}
 
 function updateUnreadBadges(count) {
     if (lastUnreadCount === count) {
@@ -77,8 +95,21 @@ function updateConversationListItems(conversationCounts) {
     });
 }
 
-async function refreshUnreadCount(unreadCountUrl, state) {
-    if (document.hidden || state.isPolling) {
+function stopUnreadPolling(state) {
+    if (!state.intervalId) {
+        return;
+    }
+
+    window.clearInterval(state.intervalId);
+    state.intervalId = null;
+}
+
+async function refreshUnreadCount(unreadCountUrl, state, force = false) {
+    if (
+        document.hidden ||
+        state.isPolling ||
+        (!force && !userIsRecentlyActive())
+    ) {
         return;
     }
 
@@ -97,6 +128,12 @@ async function refreshUnreadCount(unreadCountUrl, state) {
                 'X-Requested-With': 'XMLHttpRequest',
             },
         });
+
+        if (response.status === 401 || response.status === 419) {
+            stopUnreadPolling(state);
+            window.location.href = loginRedirectUrl();
+            return;
+        }
 
         if (!response.ok) {
             return;
@@ -139,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        refreshUnreadCount(unreadCountUrl, state);
+        refreshUnreadCount(unreadCountUrl, state, true);
 
         state.intervalId = window.setInterval(() => {
             refreshUnreadCount(unreadCountUrl, state);
@@ -147,12 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const stopPolling = () => {
-        if (!state.intervalId) {
-            return;
-        }
-
-        window.clearInterval(state.intervalId);
-        state.intervalId = null;
+        stopUnreadPolling(state);
     };
 
     if (!document.hidden) {
@@ -163,7 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.hidden) {
             stopPolling();
         } else {
+            markUserActive();
             startPolling();
         }
+    });
+
+    document.addEventListener('messages:refresh-unread', () => {
+        refreshUnreadCount(unreadCountUrl, state, true);
     });
 });

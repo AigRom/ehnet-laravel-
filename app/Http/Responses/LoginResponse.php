@@ -2,34 +2,126 @@
 
 namespace App\Http\Responses;
 
+use App\Models\Listing;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request): RedirectResponse
     {
-        $redirect = $request->input('redirect');
+        $redirect = $this->safeRedirect($request->input('redirect'), $request)
+            ?? $this->safeRedirect($request->session()->pull('url.intended'), $request)
+            ?? route('home');
 
-        if ($this->isSafeRedirect($redirect, $request)) {
-            return redirect()->to($redirect);
-        }
+        $request->session()->forget('url.intended');
 
-        return redirect()->intended(route('home'));
+        return redirect()->to($redirect);
     }
 
-    private function isSafeRedirect(?string $redirect, $request): bool
+    private function safeRedirect(mixed $redirect, Request $request): ?string
     {
-        if (! $redirect) {
-            return false;
+        if (! is_string($redirect) || trim($redirect) === '') {
+            return null;
         }
 
-        if (str_starts_with($redirect, '/') && ! str_starts_with($redirect, '//')) {
-            return true;
+        $redirect = trim($redirect);
+
+        if (str_starts_with($redirect, '//')) {
+            return null;
         }
 
-        $redirectHost = parse_url($redirect, PHP_URL_HOST);
+        if (str_starts_with($redirect, '/')) {
+            $path = parse_url($redirect, PHP_URL_PATH) ?: '/';
+            $query = parse_url($redirect, PHP_URL_QUERY);
+        } else {
+            $host = parse_url($redirect, PHP_URL_HOST);
 
-        return $redirectHost && $redirectHost === $request->getHost();
+            if (! $host || $host !== $request->getHost()) {
+                return null;
+            }
+
+            $path = parse_url($redirect, PHP_URL_PATH) ?: '/';
+            $query = parse_url($redirect, PHP_URL_QUERY);
+        }
+
+        $path = '/'.ltrim($path, '/');
+
+        return $this->allowedPath($path, $query);
+    }
+
+    private function allowedPath(string $path, ?string $query = null): ?string
+    {
+        $cleanPath = trim($path, '/');
+
+        $blockedPrefixes = [
+            'login',
+            'logout',
+            'register',
+            'register/complete',
+            'forgot-password',
+            'reset-password',
+            'email/verify',
+            'user/confirm-password',
+        ];
+
+        foreach ($blockedPrefixes as $blockedPrefix) {
+            if ($cleanPath === $blockedPrefix || str_starts_with($cleanPath, $blockedPrefix.'/')) {
+                return null;
+            }
+        }
+
+        if ($path === '/') {
+            return route('home');
+        }
+
+        if ($path === '/dashboard') {
+            return route('dashboard');
+        }
+
+        if ($path === '/listings') {
+            return $query ? route('listings.index').'?'.$query : route('listings.index');
+        }
+
+        if ($path === '/listings/create') {
+            return route('listings.create');
+        }
+
+        if (preg_match('#^/listings/(\d+)$#', $path, $matches)) {
+            $listingId = (int) $matches[1];
+
+            if (Listing::query()->whereKey($listingId)->exists()) {
+                return route('listings.show', $listingId);
+            }
+
+            return null;
+        }
+
+        if ($path === '/messages' || preg_match('#^/messages/\d+$#', $path)) {
+            return route('messages.index');
+        }
+
+        if ($path === '/my-listings' || str_starts_with($path, '/my-listings/')) {
+            return route('listings.mine');
+        }
+
+        if ($path === '/my/purchases' || str_starts_with($path, '/my/purchases/')) {
+            return route('purchases.index');
+        }
+
+        if ($path === '/favorites') {
+            return route('favorites.index');
+        }
+
+        if ($path === '/settings/profile') {
+            return route('profile.edit');
+        }
+
+        if ($path === '/settings/password') {
+            return route('user-password.edit');
+        }
+
+        return null;
     }
 }

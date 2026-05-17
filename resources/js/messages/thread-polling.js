@@ -1,6 +1,25 @@
 const THREAD_POLL_INTERVAL_MS = 5000;
 const THREAD_POLL_TIMEOUT_MS = 8000;
 const MARK_READ_TIMEOUT_MS = 8000;
+const USER_IDLE_LIMIT_MS = 30 * 1000; // testimiseks 30 sekundit; tootmises nt 10 * 60 * 1000
+
+let lastUserActivityAt = Date.now();
+
+function markUserActive() {
+    lastUserActivityAt = Date.now();
+}
+
+function userIsRecentlyActive() {
+    return Date.now() - lastUserActivityAt < USER_IDLE_LIMIT_MS;
+}
+
+['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+    window.addEventListener(eventName, markUserActive, { passive: true });
+});
+
+function loginRedirectUrl() {
+    return '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+}
 
 function isElementVisible(element) {
     return Boolean(
@@ -50,6 +69,7 @@ function appendMessageHtml(messagesContainer, html) {
 async function markThreadAsRead(thread) {
     if (
         document.hidden ||
+        !userIsRecentlyActive() ||
         !isElementVisible(thread) ||
         thread.dataset.markingRead === '1'
     ) {
@@ -80,6 +100,11 @@ async function markThreadAsRead(thread) {
             },
         });
 
+        if (response.status === 401 || response.status === 419) {
+            window.location.href = loginRedirectUrl();
+            return;
+        }
+
         if (response.ok) {
             notifyUnreadRefresh();
         }
@@ -96,6 +121,7 @@ async function markThreadAsRead(thread) {
 async function pollThread(thread) {
     if (
         document.hidden ||
+        !userIsRecentlyActive() ||
         !isElementVisible(thread) ||
         thread.dataset.polling === '1'
     ) {
@@ -130,6 +156,11 @@ async function pollThread(thread) {
                 'X-Requested-With': 'XMLHttpRequest',
             },
         });
+
+        if (response.status === 401 || response.status === 419) {
+            window.location.href = loginRedirectUrl();
+            return;
+        }
 
         if (!response.ok) {
             return;
@@ -228,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.hidden) {
             stopPolling();
         } else {
+            markUserActive();
             startPolling();
         }
     });

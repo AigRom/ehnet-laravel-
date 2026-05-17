@@ -46,7 +46,7 @@ class CompleteRegistrationRequest extends FormRequest
                 'string',
                 'min:3',
                 'max:25',
-                'alpha_dash',
+                'regex:/^[\pL\pN\s_-]+$/u',
                 'unique:users,name',
             ],
 
@@ -132,8 +132,8 @@ class CompleteRegistrationRequest extends FormRequest
 
             'name.required' => 'Kasutajanimi on kohustuslik.',
             'name.min' => 'Kasutajanimi peab olema vähemalt 3 tähemärki pikk.',
-            'name.max' => 'Kasutajanimi ei tohi olla pikem kui 40 tähemärki.',
-            'name.alpha_dash' => 'Kasutajanimi võib sisaldada ainult tähti, numbreid, sidekriipse ja alakriipse.',
+            'name.max' => 'Kasutajanimi ei tohi olla pikem kui 25 tähemärki.',
+            'name.regex' => 'Kasutajanimi võib sisaldada tähti, numbreid, tühikuid, sidekriipse ja alakriipse.',
             'name.unique' => 'See kasutajanimi on juba kasutusel.',
 
             'first_name.required_if' => 'Eesnimi on eraisiku konto puhul kohustuslik.',

@@ -13,6 +13,15 @@ class UpdateProfileRequest extends FormRequest
         return auth()->check();
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('phone')) {
+            $this->merge([
+                'phone' => preg_replace('/\D+/', '', (string) $this->input('phone')),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
 
@@ -24,6 +33,7 @@ class UpdateProfileRequest extends FormRequest
                 'string',
                 'min:3',
                 'max:25',
+                'regex:/^[\pL\pN\s_-]+$/u',
                 Rule::unique(User::class, 'name')->ignore($user->id),
             ],
 

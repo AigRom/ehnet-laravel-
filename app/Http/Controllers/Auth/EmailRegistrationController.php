@@ -85,7 +85,7 @@ class EmailRegistrationController extends Controller
             'first_name' => $data['first_name'] ?? null,
             'last_name' => $data['last_name'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
-            'phone' => '+'.$data['phone'],
+            'phone' => $data['phone'],
             'location_id' => (int) $data['location_id'],
             'company_name' => $data['company_name'] ?? null,
             'company_reg_no' => $data['company_reg_no'] ?? null,

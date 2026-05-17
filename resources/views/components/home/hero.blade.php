@@ -25,14 +25,14 @@
                 </p>
             </div>
 
-            <div class="relative z-10 -mt-2 flex justify-center lg:-mt-30 lg:justify-end">
+            <!-- <div class="relative z-10 -mt-2 flex justify-center lg:-mt-30 lg:justify-end">
                 <img
                     src="/images/hero/ehnet-hero.png"
                     alt="Ehitusmaterjalid"
                     class="w-full max-w-[660px] object-contain drop-shadow-2xl"
                 >
             </div>
-        </div>
+        </div> -->
 
         <div class="relative z-10 mt-1 grid gap-4 sm:grid-cols-3 lg:-mt-2 lg:gap-8">
 

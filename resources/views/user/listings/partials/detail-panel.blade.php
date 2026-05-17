@@ -43,15 +43,26 @@
 
     $statusHelpText = $listing->statusHelpText();
 
-    $showTradeInfoNote =
-        $primaryConversationUrl
-        || $purchaseRequestsCount > 0
-        || $reviewMissing
-        || in_array($listing->status, ['reserved', 'sold'], true);
-
     $showPurchaseRequestsPanel =
         ! in_array($listing->status, ['draft', 'sold'], true)
         && $purchaseRequestsCount > 0;
+
+    /*
+     * Kui allpool kuvatakse Ostusoovid blokk, siis päises ei dubleeri
+     * tehingu/ostusoovi infot.
+     *
+     * NB! See EI mõjuta kuulutuse enda tegevusnuppe:
+     * Muuda, Avalda, Peata, Aktiveeri, Uuesti müüki, Kustuta.
+     */
+    $showHeaderTradeDetails = ! $showPurchaseRequestsPanel;
+
+    $showTradeInfoNote =
+        $showHeaderTradeDetails
+        && (
+            $primaryConversationUrl
+            || $reviewMissing
+            || in_array($listing->status, ['reserved', 'sold'], true)
+        );
 
     $deleteTitle = $listing->status === 'draft'
         ? __('Kustuta mustand?')
@@ -75,13 +86,13 @@
                         {{ $listing->statusLabel() }}
                     </x-ui.status-badge>
 
-                    @if($statusHelpText)
+                    @if($statusHelpText && $showHeaderTradeDetails)
                         <span class="text-sm font-medium text-zinc-600">
                             {{ $statusHelpText }}
                         </span>
                     @endif
 
-                    @if($reviewMissing)
+                    @if($reviewMissing && $showHeaderTradeDetails)
                         <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
                             {{ __('Jäta tagasiside vestluses') }}
                         </span>
@@ -100,7 +111,7 @@
             </div>
 
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap xl:justify-end">
-                @if($primaryConversationUrl)
+                @if($showHeaderTradeDetails && $primaryConversationUrl)
                     <a
                         href="{{ $primaryConversationUrl }}"
                         class="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
@@ -109,7 +120,7 @@
                     </a>
                 @endif
 
-                @if($primaryBuyerProfileUrl)
+                @if($showHeaderTradeDetails && $primaryBuyerProfileUrl)
                     <a
                         href="{{ $primaryBuyerProfileUrl }}"
                         class="inline-flex items-center justify-center rounded-2xl border border-emerald-950/10 bg-white px-4 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50 hover:text-emerald-800"
