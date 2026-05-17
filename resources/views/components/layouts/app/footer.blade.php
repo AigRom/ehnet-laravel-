@@ -59,9 +59,11 @@
                         {{ __('Privaatsus') }}
                     </a>
 
-                    <a href="mailto:info@ehmera.ee"
+                    <x-support.modal />
+
+                    <a href="mailto:info@ehnet.ee"
                        class="block text-sm font-medium text-emerald-100/75 transition hover:text-white lg:text-base">
-                        info@ehmera.ee
+                        info@ehnet.ee
                     </a>
                 </div>
             </div>

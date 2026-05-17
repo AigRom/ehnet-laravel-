@@ -8,16 +8,12 @@
     $successMessage = session($successKey) ?: session('status');
     $errorMessage = session($errorKey);
 
-    if (!$successMessage && !$errorMessage && $errors->any()) {
-        $errorMessage = __('Palun paranda vormi vead.');
-    }
-
     $message = $successMessage ?: $errorMessage;
     $type = $successMessage ? 'success' : ($errorMessage ? 'error' : 'info');
 
     $title = match ($type) {
         'success' => 'Õnnestus',
-        'error' => 'Kontrolli vormi',
+        'error' => 'Tähelepanu',
         default => null,
     };
 @endphp
@@ -51,7 +47,7 @@
 
         getTitle(type) {
             if (type === 'success') return 'Õnnestus';
-            if (type === 'error') return 'Kontrolli vormi';
+            if (type === 'error') return 'Tähelepanu';
             return null;
         },
 

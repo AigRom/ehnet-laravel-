@@ -1,6 +1,4 @@
 @php
-
-
     $redirectTo = request('redirect');
 @endphp
 
@@ -64,40 +62,6 @@
                     method="POST"
                     action="{{ route('login.store') }}"
                     class="space-y-6"
-                    novalidate
-                    x-data="{
-                        emailError: '',
-                        passwordError: '',
-
-                        validate() {
-                            this.emailError = '';
-                            this.passwordError = '';
-
-                            const email = this.$refs.email;
-                            const password = this.$refs.password;
-
-                            if (!email.value.trim()) {
-                                this.emailError = 'E-posti aadress on kohustuslik.';
-                                email.focus();
-                                return false;
-                            }
-
-                            if (!email.checkValidity()) {
-                                this.emailError = 'Sisesta korrektne e-posti aadress.';
-                                email.focus();
-                                return false;
-                            }
-
-                            if (!password.value.trim()) {
-                                this.passwordError = 'Parool on kohustuslik.';
-                                password.focus();
-                                return false;
-                            }
-
-                            return true;
-                        }
-                    }"
-                    @submit="if (!validate()) $event.preventDefault()"
                 >
                     @csrf
 
@@ -112,25 +76,25 @@
 
                         <input
                             id="email"
-                            x-ref="email"
                             name="email"
                             type="email"
                             value="{{ old('email') }}"
                             required
-                            autofocus
-                            autocomplete="email"
+                            inputmode="email"
+                            autocomplete="username"
+                            autocapitalize="none"
+                            autocorrect="off"
+                            spellcheck="false"
+                            enterkeyhint="next"
                             placeholder="email@example.com"
-                            @input="emailError = ''"
                             class="block w-full rounded-2xl border border-emerald-950/10 bg-stone-50 px-5 py-4 text-base font-medium text-emerald-950 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-900/30 focus:bg-white focus:ring-4 focus:ring-emerald-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
-                            :class="emailError ? 'border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100' : ''"
                         >
 
-                        <p
-                            x-cloak
-                            x-show="emailError"
-                            x-text="emailError"
-                            class="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
-                        ></p>
+                        @error('email')
+                            <p class="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <div>
@@ -152,16 +116,14 @@
                         <div x-data="{ show: false }" class="relative">
                             <input
                                 id="password"
-                                x-ref="password"
                                 name="password"
                                 type="password"
                                 x-bind:type="show ? 'text' : 'password'"
                                 required
                                 autocomplete="current-password"
+                                enterkeyhint="done"
                                 placeholder="{{ __('Sisesta parool') }}"
-                                @input="passwordError = ''"
                                 class="block w-full rounded-2xl border border-emerald-950/10 bg-stone-50 px-5 py-4 pr-14 text-base font-medium text-emerald-950 placeholder:text-zinc-400 shadow-sm outline-none transition focus:border-emerald-900/30 focus:bg-white focus:ring-4 focus:ring-emerald-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-900/30"
-                                :class="passwordError ? 'border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100' : ''"
                             >
 
                             <button
@@ -181,12 +143,11 @@
                             </button>
                         </div>
 
-                        <p
-                            x-cloak
-                            x-show="passwordError"
-                            x-text="passwordError"
-                            class="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
-                        ></p>
+                        @error('password')
+                            <p class="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <div class="flex items-center justify-between gap-4">

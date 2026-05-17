@@ -17,6 +17,7 @@ use App\Http\Controllers\User\PasswordController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\PurchaseController;
 use App\Http\Controllers\User\ReviewController as UserReviewController;
+use App\Http\Controllers\Support\SupportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,10 @@ Route::get('/users/{user}', [UserProfileController::class, 'show'])
 
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
+
+Route::post('/support', [SupportController::class, 'store'])
+    ->middleware('throttle:support')
+    ->name('support.store');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', function () {

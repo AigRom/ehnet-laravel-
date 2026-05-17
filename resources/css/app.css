@@ -43,6 +43,76 @@
     }
 }
 
+@layer components {
+    .support-modal-root {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        overflow: hidden;
+        height: 100vh;
+        height: 100dvh;
+        background: #ffffff;
+    }
+
+    .support-modal-backdrop {
+        display: none;
+    }
+
+    .support-modal-panel {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        flex-direction: column;
+        overflow: hidden;
+        background: #ffffff;
+        color: #022c22;
+    }
+
+    .support-modal-scroll {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @media (min-width: 640px) {
+        .support-modal-root {
+            align-items: center;
+            padding: 1.5rem;
+            background: rgba(9, 9, 11, 0.6);
+            backdrop-filter: blur(6px);
+        }
+
+        .support-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            display: block;
+        }
+
+        .support-modal-panel {
+            width: 100%;
+            max-width: 36rem;
+            height: auto;
+            max-height: 88vh;
+            border: 1px solid rgba(6, 78, 59, 0.12);
+            border-radius: 2rem;
+            box-shadow: 0 25px 70px rgba(2, 44, 34, 0.25);
+        }
+
+        .support-modal-scroll {
+            flex: 0 1 auto;
+            max-height: calc(88vh - 210px);
+        }
+    }
+}
+
 [x-cloak] {
     display: none !important;
 }

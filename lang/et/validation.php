@@ -11,12 +11,21 @@ return [
         'string' => ':attribute peab sisaldama vähemalt :min tähemärki.',
         'numeric' => ':attribute peab olema vähemalt :min.',
     ],
+
     'max' => [
         'string' => ':attribute ei tohi olla pikem kui :max tähemärki.',
         'numeric' => ':attribute ei tohi olla suurem kui :max.',
         'array' => ':attribute võib sisaldada maksimaalselt :max elementi.',
         'file' => ':attribute võib olla maksimaalselt :max kB.',
     ],
+
+    'size' => [
+        'string' => ':attribute peab olema täpselt :size tähemärki.',
+        'numeric' => ':attribute peab olema :size.',
+        'array' => ':attribute peab sisaldama :size elementi.',
+        'file' => ':attribute peab olema :size kB.',
+    ],
+
     'confirmed' => ':attribute ei ühti.',
     'numeric' => ':attribute peab olema number.',
     'string' => ':attribute peab olema tekst.',
@@ -31,6 +40,10 @@ return [
     'uploaded' => ':attribute üleslaadimine ebaõnnestus.',
 
     'custom' => [
+
+        'website' => [
+            'size' => 'Vormi saatmine ebaõnnestus.',
+        ],
 
         'images' => [
             'max' => 'Lisada saab maksimaalselt 10 pilti.',
@@ -73,7 +86,11 @@ return [
 
         'title' => 'pealkiri',
         'description' => 'kirjeldus',
+        'category' => 'teema',
         'category_id' => 'kategooria',
+        'subject' => 'pealkiri',
+        'message' => 'sõnum',
+        'website' => 'veebileht',
         'location_id' => 'asukoht',
         'price' => 'hind',
         'price_mode' => 'hinna tüüp',

@@ -4,8 +4,7 @@ use App\Http\Middleware\PreventAuthPageCache;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
-use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,10 +18,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+        $exceptions->respond(function (Response $response) {
+            if ($response->getStatusCode() !== 419) {
+                return $response;
+            }
+
+            $request = request();
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Sessioon aegus. Palun värskenda lehte ja proovi uuesti.',
+                    'message' => 'Sessioon aegus. Palun proovi uuesti.',
                 ], 419);
             }
 
@@ -76,10 +81,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $redirectTo = $safeRedirect($request->headers->get('referer'));
 
+            if ($request->is('support')) {
+                return redirect()
+                    ->to($redirectTo ?? route('home'))
+                    ->withInput($request->except([
+                        '_token',
+                        'password',
+                        'password_confirmation',
+                    ]))
+                    ->with('error', 'Sessioon aegus. Palun proovi uuesti.')
+                    ->with('support_modal_open', true);
+            }
+
             if (auth()->check()) {
                 return redirect()
                     ->to($redirectTo ?? route('home'))
-                    ->with('status', 'Sessioon aegus. Palun proovi tegevust uuesti.');
+                    ->with('error', 'Sessioon aegus. Palun proovi tegevust uuesti.');
             }
 
             if ($redirectTo) {
