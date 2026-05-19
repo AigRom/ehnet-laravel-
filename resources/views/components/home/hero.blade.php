@@ -76,7 +76,7 @@
                         {{ $savedCo2 }}
                     </div>
                     <div class="text-sm font-medium text-zinc-500">
-                        {{ __('CO₂ säästetud') }}
+                        {{ __('hinnanguline CO₂ sääst') }}
                     </div>
                 </div>
             </div>
